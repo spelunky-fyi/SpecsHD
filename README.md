@@ -57,4 +57,11 @@ cargo +stable-i686-pc-windows-gnu build --release
 
 # Troubleshooting
 
+
+### Not seeing tool window
+
 The hook for dx9 seems finnicky and I believe it can conflict with the Steam overlay to some degree. I have the best luck when injecting as soon as possible before the steam popups occur or after the game has already been running for a minute. If you attempt to inject the dll and don't see the tool window then it likely didn't work and Spelunky will need to be restarted to try again. The provided injector will wait and inject as soon as the game launches and works best when run before launching the game.
+
+### Seeing a link error when building the DLL
+
+This happens if you've injected the DLL and the game is still running as the linker can't overwrite the DLL while it is still in use.
