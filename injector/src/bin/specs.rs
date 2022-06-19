@@ -480,14 +480,18 @@ pub fn write_n_bytes(
 #[derive(Parser, Debug)]
 #[clap(long_about = None)]
 struct Args {
-    #[clap()]
-    dll: String,
+    #[clap(multiple_values = true)]
+    dll: Vec<String>,
 }
 
 fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
 
-    let dll = PathBuf::from(args.dll).canonicalize()?;
+    let dll = if args.dll.is_empty() {
+        PathBuf::from("specs.dll").canonicalize()?
+    } else {
+        PathBuf::from(args.dll[0].clone()).canonicalize()?
+    };
     let dll = CString::new(dll.to_string_lossy().as_bytes())?;
 
     let dll_path_with_bytes = dll.as_bytes_with_nul();

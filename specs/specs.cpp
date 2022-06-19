@@ -1,7 +1,9 @@
-#include "3rdparty/imgui/imgui.h"
 
 #include <Windows.h>
 #include <format>
+#include <unordered_set>
+
+#include "3rdparty/imgui/imgui.h"
 
 #include "hd.h"
 
@@ -22,6 +24,9 @@ bool gEnableBackgroundEntityIds = false;
 bool gEnabledUnknown1400 = false;
 bool gEnabledUnknown5800 = false;
 bool gEnabledFlag15 = false;
+
+int gExcludeEntityInput = -1;
+std::unordered_set<uint32_t> gExcludedEntities = {};
 
 void specsOnInit() { gBaseAddress = (size_t)GetModuleHandleA(NULL); }
 
@@ -51,9 +56,15 @@ void drawEntityIds(Entity **entities, size_t count) {
     if (!ent) {
       continue;
     }
+
+    if (gExcludedEntities.contains(ent->entity_type)) {
+      continue;
+    }
+
     auto screen = gameToScreen({ent->x, ent->y});
     auto out = std::format("{}", ent->entity_type);
-    gOverlayDrawList->AddText(ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
+    gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2,
+                              ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                               out.c_str());
   }
 }
@@ -153,7 +164,7 @@ void drawToolWindow() {
   ImGuiIO &io = ImGui::GetIO();
 
   ImGui::SetNextWindowPos(ImVec2{0.f, 0.f}, ImGuiCond_Once);
-  ImGui::SetNextWindowSize(ImVec2{400.f, 300.f}, ImGuiCond_Once);
+  ImGui::SetNextWindowSize(ImVec2{400.f, 500.f}, ImGuiCond_Once);
   ImGui::Begin("Specs HD");
 
   if (ImGui::IsWindowHovered()) {
@@ -166,9 +177,11 @@ void drawToolWindow() {
 
   auto mouse_game = screenToGame(io.MousePos);
 
-  ImGui::Text("Mouse: %f %f", io.MousePos.x, io.MousePos.y);
+  // ImGui::Text("Mouse: %f %f", io.MousePos.x, io.MousePos.y);
   ImGui::Checkbox("Draw Tile Borders", &gEnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gEnableBinBorders);
+  ImGui::Separator();
+
   ImGui::Checkbox("Draw Active Entity IDs", &gEnableActiveEntityIds);
   ImGui::Checkbox("Draw Active Flag 15? IDs", &gEnabledFlag15);
   ImGui::Checkbox("Draw Unknown 1400 IDs", &gEnabledUnknown1400);
@@ -177,7 +190,22 @@ void drawToolWindow() {
   ImGui::Checkbox("Draw Floor2 Entity IDs", &gEnableFloor2EntityIds);
   ImGui::Checkbox("Draw Background Entity IDs", &gEnableBackgroundEntityIds);
 
-  ImGui::End();
+  ImGui::Separator();
+
+  ImGui::InputInt("Exclude Entity", &gExcludeEntityInput);
+  if (ImGui::Button("Exclude")) {
+    if (gExcludeEntityInput >= 0) {
+      gExcludedEntities.insert(gExcludeEntityInput);
+      gExcludeEntityInput = 0;
+    }
+  }
+  ImGui::Separator();
+  for (auto ent_type : gExcludedEntities) {
+    auto label = std::format("Remove {}", ent_type);
+    if (ImGui::Button(label.c_str())) {
+      gExcludedEntities.erase(ent_type);
+    }
+  }
 }
 
 void specsOnFrame() {
