@@ -22,6 +22,10 @@ public:
   float N0000099F;      // 0x003C
   float current_z;      // 0x0040
   float original_z;     // 0x0044
+  float N000009A2;      // 0x0048
+  float hitbox_up;      // 0x004C
+  float hitbox_down;    // 0x0050
+  float hitbox_x;       // 0x0054
 };
 
 class CameraState {

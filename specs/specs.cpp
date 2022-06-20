@@ -22,6 +22,8 @@ bool gEnableFloorEntityIds = false;
 bool gEnableFloor2EntityIds = false;
 bool gEnableBackgroundEntityIds = false;
 
+bool gEnabledHitboxes = false;
+
 bool gEnabledUnknown1400 = false;
 bool gEnabledUnknown5800 = false;
 bool gEnabledFlag15 = false;
@@ -75,6 +77,30 @@ void drawEntityIds(Entity **entities, size_t count) {
   }
 }
 
+void drawEntityHitboxes() {
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    auto screen = gameToScreen({ent->x, ent->y});
+    ImVec2 topLeft =
+        gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
+    ImVec2 topRight =
+        gameToScreen({ent->x + ent->hitbox_x, ent->y + ent->hitbox_up});
+    ImVec2 bottomRight =
+        gameToScreen({ent->x + ent->hitbox_x, ent->y - ent->hitbox_down});
+    ImVec2 bottomLeft =
+        gameToScreen({ent->x - ent->hitbox_x, ent->y - ent->hitbox_down});
+
+    gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft,
+                              ImGui::GetColorU32({255.f, 0.0f, 238.0f, 0.7f}),
+                              1.f);
+  }
+}
+
 void drawPacifistOverlay() {
   for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
        idx++) {
@@ -89,7 +115,7 @@ void drawPacifistOverlay() {
 
     auto screen = gameToScreen({ent->x, ent->y});
     auto out = std::format("{}", ent->owner);
-    gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2,
+    gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                               out.c_str());
   }
@@ -159,6 +185,10 @@ void drawOverlayWindow() {
     drawPacifistOverlay();
   }
 
+  if (gEnabledHitboxes) {
+    drawEntityHitboxes();
+  }
+
   // Active
   if (gEnableActiveEntityIds) {
     drawEntityIds(gGlobalState->entities->entities_active,
@@ -202,8 +232,8 @@ void drawOverlayWindow() {
 void drawToolWindow() {
   ImGuiIO &io = ImGui::GetIO();
 
-  ImGui::SetNextWindowPos(ImVec2{0.f, 0.f}, ImGuiCond_Once);
-  ImGui::SetNextWindowSize(ImVec2{400.f, 500.f}, ImGuiCond_Once);
+  ImGui::SetNextWindowPos(ImVec2{0.f, 0.f}, ImGuiCond_FirstUseEver);
+  ImGui::SetNextWindowSize(ImVec2{400.f, 500.f}, ImGuiCond_FirstUseEver);
   ImGui::Begin("Specs HD");
 
   if (ImGui::IsWindowHovered()) {
@@ -220,6 +250,10 @@ void drawToolWindow() {
   ImGui::Checkbox("Draw Tile Borders", &gEnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gEnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gEnablePacifistOverlay);
+
+  ImGui::Separator();
+
+  ImGui::Checkbox("Draw Hitboxes", &gEnabledHitboxes);
 
   ImGui::Separator();
 
