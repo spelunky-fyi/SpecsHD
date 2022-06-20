@@ -8,7 +8,7 @@
 #include "hd.h"
 
 // Global States
-size_t gBaseAddress = NULL;
+DWORD gBaseAddress = NULL;
 ImDrawList *gOverlayDrawList = NULL;
 
 CameraState *gCameraState = NULL;
@@ -16,6 +16,7 @@ GlobalState *gGlobalState = NULL;
 
 bool gEnableTileBorders = false;
 bool gEnableBinBorders = false;
+bool gEnablePacifistOverlay = false;
 bool gEnableActiveEntityIds = false;
 bool gEnableFloorEntityIds = false;
 bool gEnableFloor2EntityIds = false;
@@ -28,7 +29,12 @@ bool gEnabledFlag15 = false;
 int gExcludeEntityInput = -1;
 std::unordered_set<uint32_t> gExcludedEntities = {};
 
-void specsOnInit() { gBaseAddress = (size_t)GetModuleHandleA(NULL); }
+int gSpawnEntityInput = 0;
+
+void specsOnInit() {
+  gBaseAddress = (size_t)GetModuleHandleA(NULL);
+  setupOffsets(gBaseAddress);
+}
 
 ImVec2 screenToGame(ImVec2 screen) {
   ImGuiIO &io = ImGui::GetIO();
@@ -63,6 +69,26 @@ void drawEntityIds(Entity **entities, size_t count) {
 
     auto screen = gameToScreen({ent->x, ent->y});
     auto out = std::format("{}", ent->entity_type);
+    gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 5,
+                              ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
+                              out.c_str());
+  }
+}
+
+void drawPacifistOverlay() {
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->owner == -99) {
+      continue;
+    }
+
+    auto screen = gameToScreen({ent->x, ent->y});
+    auto out = std::format("{}", ent->owner);
     gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                               out.c_str());
@@ -96,6 +122,15 @@ void drawTileBorders() {
 void drawOverlayWindow() {
   ImGuiIO &io = ImGui::GetIO();
 
+  if (io.MouseClicked[1]) {
+    auto player = gGlobalState->player1;
+    if (player) {
+      auto pos = screenToGame(io.MousePos);
+      player->x = pos.x;
+      player->y = pos.y;
+    }
+  }
+
   ImGui::SetNextWindowSize(io.DisplaySize);
   ImGui::SetNextWindowPos({0, 0});
   ImGui::Begin(
@@ -118,6 +153,10 @@ void drawOverlayWindow() {
 
   if (gEnableBinBorders) {
     drawBinBorders();
+  }
+
+  if (gEnablePacifistOverlay) {
+    drawPacifistOverlay();
   }
 
   // Active
@@ -180,6 +219,8 @@ void drawToolWindow() {
   // ImGui::Text("Mouse: %f %f", io.MousePos.x, io.MousePos.y);
   ImGui::Checkbox("Draw Tile Borders", &gEnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gEnableBinBorders);
+  ImGui::Checkbox("Draw Owned Entities", &gEnablePacifistOverlay);
+
   ImGui::Separator();
 
   ImGui::Checkbox("Draw Active Entity IDs", &gEnableActiveEntityIds);
@@ -192,6 +233,17 @@ void drawToolWindow() {
 
   ImGui::Separator();
 
+  ImGui::InputInt("Spawn Entity", &gSpawnEntityInput);
+  if (ImGui::Button("Spawn")) {
+    if (gSpawnEntityInput >= 0) {
+      gGlobalState->SpawnEntity(gGlobalState->player1->x,
+                                gGlobalState->player1->y, gSpawnEntityInput,
+                                true);
+      gSpawnEntityInput = 0;
+    }
+  }
+
+  ImGui::Separator();
   ImGui::InputInt("Exclude Entity", &gExcludeEntityInput);
   if (ImGui::Button("Exclude")) {
     if (gExcludeEntityInput >= 0) {
@@ -199,6 +251,7 @@ void drawToolWindow() {
       gExcludeEntityInput = 0;
     }
   }
+
   ImGui::Separator();
   for (auto ent_type : gExcludedEntities) {
     auto label = std::format("Remove {}", ent_type);
@@ -215,6 +268,7 @@ void specsOnFrame() {
   gGlobalState =
       reinterpret_cast<GlobalState *>(*((DWORD *)(gBaseAddress + 0x15446C)));
 
+  gGlobalState->N00001004 = 0; // 440629
   drawOverlayWindow();
   drawToolWindow();
 }

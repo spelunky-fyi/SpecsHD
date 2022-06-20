@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdint.h>
+
+#include "Windows.h"
+
 class Entity {
 public:
   char pad_0000[8];     // 0x0000
@@ -7,7 +11,7 @@ public:
   uint32_t entity_type; // 0x000C
   uint32_t bin_x;       // 0x0010
   uint32_t bin_y;       // 0x0014
-  uint32_t owner;       // 0x0018
+  int32_t owner;        // 0x0018
   char pad_001C[4];     // 0x001C
   int32_t N00000997;    // 0x0020
   char pad_0024[8];     // 0x0024
@@ -274,4 +278,9 @@ public:
   uint8_t N000020E4;            // 0x446028
   uint8_t N0007A565;            // 0x446029
   char pad_44602A[126];         // 0x44602A
-};                              // Size: 0x4460A8
+
+  Entity *SpawnEntity(float x, float y, uint32_t entity_type, bool active);
+
+}; // Size: 0x4460A8
+
+void setupOffsets(DWORD baseAddress);
