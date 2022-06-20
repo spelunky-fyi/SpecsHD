@@ -7,11 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.2] - 2022-06-20
+
 ### Added
 
 - Ability to spawn entities
-- Ability to teleport
+- Ability to teleport (Right Click)
 - Pacifist Overlay
+- Hitboxes
+
+### Changed
+
+- Updated names for some entity lists to be more descriptive
 
 ## [0.0.1] - 2022-06-19
 

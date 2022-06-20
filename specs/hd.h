@@ -123,29 +123,29 @@ public:
 
 class LevelState {
 public:
-  Entity *entity_backgrounds[512];    // 0x0000
-  uint32_t entity_backgrounds_count;  // 0x0800
-  uint32_t N0000256C;                 // 0x0804
-  class N0000823A *entity_items[720]; // 0x0808
-  uint32_t entity_items_count;        // 0x1348
-  class Entity *entity_floors[4692];  // 0x134C
-  Entity *entity_floors2[4692];       // 0x5C9C
-  uint32_t room_types[48];            // 0xA5EC
-  char pad_A6AC[25528];               // 0xA6AC
-  uint32_t room_types2[48];           // 0x10A64
-  char pad_10B24[26252];              // 0x10B24
-};                                    // Size: 0x171B0
+  Entity *entity_backgrounds[512];   // 0x0000
+  uint32_t entity_backgrounds_count; // 0x0800
+  uint32_t N0000256C;                // 0x0804
+  Entity *entity_items[720];         // 0x0808
+  uint32_t entity_items_count;       // 0x1348
+  Entity *entity_floors[4692];       // 0x134C
+  Entity *entity_floors_bg[4692];    // 0x5C9C
+  uint32_t room_types[48];           // 0xA5EC
+  char pad_A6AC[25528];              // 0xA6AC
+  uint32_t room_types2[48];          // 0x10A64
+  char pad_10B24[26252];             // 0x10B24
+};                                   // Size: 0x171B0
 static_assert(sizeof(LevelState) == 0x171B0);
 
 class EntityStruct {
 public:
   class Entity *entities_active[1280];                    // 0x0000
   class Entity *array_1400[3072];                         // 0x1400
-  class Entity *entities_active_flag_15[1280];            // 0x4400
-  class Entity *array_5800[2048];                         // 0x5800
-  uint32_t array_5800_count;                              // 0x7800
+  class Entity *entities_light_emitting[1280];            // 0x4400
+  class Entity *entities_foreground[2048];                // 0x5800
+  uint32_t array_entities_foreground_count;               // 0x7800
   uint32_t N0007A2E7;                                     // 0x7804
-  uint32_t entities_active_flag_15_count;                 // 0x7808
+  uint32_t entities_light_emitting_count;                 // 0x7808
   uint32_t array_1400_count;                              // 0x780C
   uint32_t entities_active_count;                         // 0x7810
   uint32_t N0007A2EB;                                     // 0x7814

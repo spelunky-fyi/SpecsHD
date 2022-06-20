@@ -19,14 +19,17 @@ bool gEnableBinBorders = false;
 bool gEnablePacifistOverlay = false;
 bool gEnableActiveEntityIds = false;
 bool gEnableFloorEntityIds = false;
-bool gEnableFloor2EntityIds = false;
+bool gEnableFloorBgEntityIds = false;
 bool gEnableBackgroundEntityIds = false;
 
-bool gEnabledHitboxes = false;
+bool gEnabledActiveHitboxes = false;
+bool gEnabledFloorHitboxes = false;
+bool gEnabledBackgroundHitboxes = false;
+bool gEnabledForegroundHitboxes = false;
 
 bool gEnabledUnknown1400 = false;
-bool gEnabledUnknown5800 = false;
-bool gEnabledFlag15 = false;
+bool gEnabledForegroundEntities = false;
+bool gEnabledEntitiesLightEmitting = false;
 
 int gExcludeEntityInput = -1;
 std::unordered_set<uint32_t> gExcludedEntities = {};
@@ -77,10 +80,9 @@ void drawEntityIds(Entity **entities, size_t count) {
   }
 }
 
-void drawEntityHitboxes() {
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = gGlobalState->entities->entities_active[idx];
+void drawEntityHitboxes(Entity **entities, size_t count) {
+  for (size_t idx = 0; idx < count; idx++) {
+    auto ent = entities[idx];
     if (!ent) {
       continue;
     }
@@ -185,8 +187,21 @@ void drawOverlayWindow() {
     drawPacifistOverlay();
   }
 
-  if (gEnabledHitboxes) {
-    drawEntityHitboxes();
+  if (gEnabledActiveHitboxes) {
+    drawEntityHitboxes(gGlobalState->entities->entities_active,
+                       gGlobalState->entities->entities_active_count);
+  }
+
+  if (gEnabledFloorHitboxes) {
+    drawEntityHitboxes(gGlobalState->level_state->entity_floors, 4692);
+  }
+  if (gEnabledBackgroundHitboxes) {
+    drawEntityHitboxes(gGlobalState->level_state->entity_backgrounds,
+                       gGlobalState->level_state->entity_backgrounds_count);
+  }
+  if (gEnabledForegroundHitboxes) {
+    drawEntityHitboxes(gGlobalState->entities->entities_foreground,
+                       gGlobalState->entities->array_entities_foreground_count);
   }
 
   // Active
@@ -200,24 +215,24 @@ void drawOverlayWindow() {
     drawEntityIds(gGlobalState->entities->array_1400,
                   gGlobalState->entities->array_1400_count);
   }
-  // 5800
-  if (gEnabledUnknown5800) {
-    drawEntityIds(gGlobalState->entities->array_5800,
-                  gGlobalState->entities->array_5800_count);
+  // Foreground
+  if (gEnabledForegroundEntities) {
+    drawEntityIds(gGlobalState->entities->entities_foreground,
+                  gGlobalState->entities->array_entities_foreground_count);
   }
 
-  // Flag 15
-  if (gEnabledFlag15) {
-    drawEntityIds(gGlobalState->entities->entities_active_flag_15,
-                  gGlobalState->entities->entities_active_flag_15_count);
+  // Light Emitting
+  if (gEnabledEntitiesLightEmitting) {
+    drawEntityIds(gGlobalState->entities->entities_light_emitting,
+                  gGlobalState->entities->entities_light_emitting_count);
   }
 
   // Floors
   if (gEnableFloorEntityIds) {
     drawEntityIds(gGlobalState->level_state->entity_floors, 4692);
   }
-  if (gEnableFloor2EntityIds) {
-    drawEntityIds(gGlobalState->level_state->entity_floors2, 4692);
+  if (gEnableFloorBgEntityIds) {
+    drawEntityIds(gGlobalState->level_state->entity_floors_bg, 4692);
   }
 
   // Backgrounds
@@ -252,30 +267,19 @@ void drawToolWindow() {
   ImGui::Checkbox("Draw Owned Entities", &gEnablePacifistOverlay);
 
   ImGui::Separator();
-
-  ImGui::Checkbox("Draw Hitboxes", &gEnabledHitboxes);
+  ImGui::Checkbox("Draw Active Hitboxes", &gEnabledActiveHitboxes);
+  ImGui::Checkbox("Draw Floor Hitboxes", &gEnabledFloorHitboxes);
+  ImGui::Checkbox("Draw Background Hitboxes", &gEnabledBackgroundHitboxes);
+  ImGui::Checkbox("Draw Foreground Hitboxes", &gEnabledForegroundHitboxes);
 
   ImGui::Separator();
-
   ImGui::Checkbox("Draw Active Entity IDs", &gEnableActiveEntityIds);
-  ImGui::Checkbox("Draw Active Flag 15? IDs", &gEnabledFlag15);
-  ImGui::Checkbox("Draw Unknown 1400 IDs", &gEnabledUnknown1400);
-  ImGui::Checkbox("Draw Unknown 5800 IDs", &gEnabledUnknown5800);
+  ImGui::Checkbox("Draw Light Emitting IDs", &gEnabledEntitiesLightEmitting);
+  ImGui::Checkbox("Draw Unknown 1400 IDs (BG + Active?)", &gEnabledUnknown1400);
+  ImGui::Checkbox("Draw Foreground Entity IDs", &gEnabledForegroundEntities);
   ImGui::Checkbox("Draw Floor Entity IDs", &gEnableFloorEntityIds);
-  ImGui::Checkbox("Draw Floor2 Entity IDs", &gEnableFloor2EntityIds);
+  ImGui::Checkbox("Draw Floor Background Entity IDs", &gEnableFloorBgEntityIds);
   ImGui::Checkbox("Draw Background Entity IDs", &gEnableBackgroundEntityIds);
-
-  ImGui::Separator();
-
-  ImGui::InputInt("Spawn Entity", &gSpawnEntityInput);
-  if (ImGui::Button("Spawn")) {
-    if (gSpawnEntityInput >= 0) {
-      gGlobalState->SpawnEntity(gGlobalState->player1->x,
-                                gGlobalState->player1->y, gSpawnEntityInput,
-                                true);
-      gSpawnEntityInput = 0;
-    }
-  }
 
   ImGui::Separator();
   ImGui::InputInt("Exclude Entity", &gExcludeEntityInput);
@@ -291,6 +295,17 @@ void drawToolWindow() {
     auto label = std::format("Remove {}", ent_type);
     if (ImGui::Button(label.c_str())) {
       gExcludedEntities.erase(ent_type);
+    }
+  }
+
+  ImGui::Separator();
+  ImGui::InputInt("Spawn Entity", &gSpawnEntityInput);
+  if (ImGui::Button("Spawn")) {
+    if (gSpawnEntityInput >= 0) {
+      gGlobalState->SpawnEntity(gGlobalState->player1->x,
+                                gGlobalState->player1->y, gSpawnEntityInput,
+                                true);
+      gSpawnEntityInput = 0;
     }
   }
 }
