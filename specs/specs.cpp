@@ -1,5 +1,6 @@
 
 #include <Windows.h>
+#include <algorithm>
 #include <format>
 #include <unordered_set>
 
@@ -14,32 +15,55 @@ ImDrawList *gOverlayDrawList = NULL;
 CameraState *gCameraState = NULL;
 GlobalState *gGlobalState = NULL;
 
-bool gEnableTileBorders = false;
-bool gEnableBinBorders = false;
-bool gEnablePacifistOverlay = false;
-bool gEnableActiveEntityIds = false;
-bool gEnableFloorEntityIds = false;
-bool gEnableFloorBgEntityIds = false;
-bool gEnableBackgroundEntityIds = false;
+struct DebugState {
 
-bool gEnabledActiveHitboxes = false;
-bool gEnabledFloorHitboxes = false;
-bool gEnabledBackgroundHitboxes = false;
-bool gEnabledForegroundHitboxes = false;
+  bool EnableTileBorders = false;
+  bool EnableBinBorders = false;
+  bool EnablePacifistOverlay = false;
 
-bool gEnabledUnknown1400 = false;
-bool gEnabledForegroundEntities = false;
-bool gEnabledEntitiesLightEmitting = false;
+  bool EnableActiveEntityIds = false;
+  bool EnableFloorEntityIds = false;
+  bool EnableFloorBgEntityIds = false;
+  bool EnableBackgroundEntityIds = false;
 
-int gExcludeEntityInput = -1;
-std::unordered_set<uint32_t> gExcludedEntities = {};
+  bool EnabledActiveHitboxes = false;
+  bool Hide171Hitbox = true;
+  bool Hide177Hitbox = true;
+  bool EnabledFloorHitboxes = false;
+  bool EnabledBackgroundHitboxes = false;
+  bool EnabledForegroundHitboxes = false;
 
-int gSpawnEntityInput = 0;
+  bool EnabledUnknown1400 = false;
+  bool EnabledForegroundEntities = false;
+  bool EnabledEntitiesLightEmitting = false;
+
+  int ExcludeEntityInput = -1;
+  std::unordered_set<uint32_t> ExcludedEntities = {};
+};
+DebugState gDebugState = {};
+
+struct SpawnState {
+  int SpawnEntityInput = 0;
+  bool ClickToSpawn = false;
+};
+SpawnState gSpawnState = {};
 
 void specsOnInit() {
   gBaseAddress = (size_t)GetModuleHandleA(NULL);
   setupOffsets(gBaseAddress);
 }
+
+struct PlayerState {
+  bool LockHealth = false;
+  int LockedHealthAmount = 0;
+
+  bool LockBombs = false;
+  int LockedBombsAmount = 0;
+
+  bool LockRopes = false;
+  int LockedRopesAmount = 0;
+};
+PlayerState gPlayersState[4] = {{}, {}, {}, {}};
 
 ImVec2 screenToGame(ImVec2 screen) {
   ImGuiIO &io = ImGui::GetIO();
@@ -68,7 +92,7 @@ void drawEntityIds(Entity **entities, size_t count) {
       continue;
     }
 
-    if (gExcludedEntities.contains(ent->entity_type)) {
+    if (gDebugState.ExcludedEntities.contains(ent->entity_type)) {
       continue;
     }
 
@@ -84,6 +108,14 @@ void drawEntityHitboxes(Entity **entities, size_t count) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
+      continue;
+    }
+
+    if (gDebugState.Hide171Hitbox && ent->entity_type == 171) {
+      continue;
+    }
+
+    if (gDebugState.Hide177Hitbox && ent->entity_type == 177) {
       continue;
     }
 
@@ -111,12 +143,12 @@ void drawPacifistOverlay() {
       continue;
     }
 
-    if (ent->owner == -99) {
+    if (ent->owner == Ownership::Unowned) {
       continue;
     }
 
     auto screen = gameToScreen({ent->x, ent->y});
-    auto out = std::format("{}", ent->owner);
+    auto out = std::format("{}", (int)ent->owner);
     gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                               out.c_str());
@@ -150,15 +182,6 @@ void drawTileBorders() {
 void drawOverlayWindow() {
   ImGuiIO &io = ImGui::GetIO();
 
-  if (io.MouseClicked[1]) {
-    auto player = gGlobalState->player1;
-    if (player) {
-      auto pos = screenToGame(io.MousePos);
-      player->x = pos.x;
-      player->y = pos.y;
-    }
-  }
-
   ImGui::SetNextWindowSize(io.DisplaySize);
   ImGui::SetNextWindowPos({0, 0});
   ImGui::Begin(
@@ -171,77 +194,430 @@ void drawOverlayWindow() {
           ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
   gOverlayDrawList = ImGui::GetWindowDrawList();
 
+  if (ImGui::IsWindowHovered()) {
+    if (io.MouseClicked[1]) {
+      auto player = gGlobalState->player1;
+      if (player) {
+        auto pos = screenToGame(io.MousePos);
+        player->x = pos.x;
+        player->y = pos.y;
+      }
+    }
+
+    if (gSpawnState.ClickToSpawn && io.MouseClicked[0]) {
+      auto gamePos = screenToGame(io.MousePos);
+      if (gSpawnState.SpawnEntityInput > 0) {
+        gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
+                                  gSpawnState.SpawnEntityInput, true);
+      }
+    }
+  }
+
   gOverlayDrawList->AddText(
       ImGui::GetFont(), ImGui::GetFontSize() + 5, {148.f, 40.f},
       ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.05f}), "SpecsHD");
 
-  if (gEnableTileBorders) {
+  if (gDebugState.EnableTileBorders) {
     drawTileBorders();
   }
 
-  if (gEnableBinBorders) {
+  if (gDebugState.EnableBinBorders) {
     drawBinBorders();
   }
 
-  if (gEnablePacifistOverlay) {
+  if (gDebugState.EnablePacifistOverlay) {
     drawPacifistOverlay();
   }
 
-  if (gEnabledActiveHitboxes) {
+  if (gDebugState.EnabledActiveHitboxes) {
     drawEntityHitboxes(gGlobalState->entities->entities_active,
                        gGlobalState->entities->entities_active_count);
   }
 
-  if (gEnabledFloorHitboxes) {
+  if (gDebugState.EnabledFloorHitboxes) {
     drawEntityHitboxes(gGlobalState->level_state->entity_floors, 4692);
   }
-  if (gEnabledBackgroundHitboxes) {
+  if (gDebugState.EnabledBackgroundHitboxes) {
     drawEntityHitboxes(gGlobalState->level_state->entity_backgrounds,
                        gGlobalState->level_state->entity_backgrounds_count);
   }
-  if (gEnabledForegroundHitboxes) {
+  if (gDebugState.EnabledForegroundHitboxes) {
     drawEntityHitboxes(gGlobalState->entities->entities_foreground,
                        gGlobalState->entities->array_entities_foreground_count);
   }
 
   // Active
-  if (gEnableActiveEntityIds) {
+  if (gDebugState.EnableActiveEntityIds) {
     drawEntityIds(gGlobalState->entities->entities_active,
                   gGlobalState->entities->entities_active_count);
   }
 
   // 1400
-  if (gEnabledUnknown1400) {
+  if (gDebugState.EnabledUnknown1400) {
     drawEntityIds(gGlobalState->entities->array_1400,
                   gGlobalState->entities->array_1400_count);
   }
   // Foreground
-  if (gEnabledForegroundEntities) {
+  if (gDebugState.EnabledForegroundEntities) {
     drawEntityIds(gGlobalState->entities->entities_foreground,
                   gGlobalState->entities->array_entities_foreground_count);
   }
 
   // Light Emitting
-  if (gEnabledEntitiesLightEmitting) {
+  if (gDebugState.EnabledEntitiesLightEmitting) {
     drawEntityIds(gGlobalState->entities->entities_light_emitting,
                   gGlobalState->entities->entities_light_emitting_count);
   }
 
   // Floors
-  if (gEnableFloorEntityIds) {
+  if (gDebugState.EnableFloorEntityIds) {
     drawEntityIds(gGlobalState->level_state->entity_floors, 4692);
   }
-  if (gEnableFloorBgEntityIds) {
+  if (gDebugState.EnableFloorBgEntityIds) {
     drawEntityIds(gGlobalState->level_state->entity_floors_bg, 4692);
   }
 
   // Backgrounds
-  if (gEnableBackgroundEntityIds) {
+  if (gDebugState.EnableBackgroundEntityIds) {
     drawEntityIds(gGlobalState->level_state->entity_backgrounds,
                   gGlobalState->level_state->entity_backgrounds_count);
   }
 
   ImGui::End();
+}
+
+void drawSpawnTab() {
+  ImGui::InputInt("Spawn Entity", &gSpawnState.SpawnEntityInput);
+  ImGui::Checkbox("Click to spawn", &gSpawnState.ClickToSpawn);
+
+  if (ImGui::Button("Spawn")) {
+    if (gSpawnState.SpawnEntityInput > 0) {
+      gGlobalState->SpawnEntity(gGlobalState->player1->x,
+                                gGlobalState->player1->y,
+                                gSpawnState.SpawnEntityInput, true);
+    }
+  }
+}
+
+void warpToLevel(uint32_t level) {
+  gGlobalState->level = level;
+  gGlobalState->screen_state = 3;
+}
+
+void drawLevelTab() {
+
+  auto isDisabled =
+      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+
+  if (isDisabled) {
+    ImGui::BeginDisabled();
+  }
+  ImGui::Text("");
+  ImGui::SameLine(100.0f);
+  if (ImGui::Button("Next Level")) {
+    warpToLevel(gGlobalState->level);
+  }
+
+  ImGui::Text("Mines");
+  ImGui::SameLine(100.0f);
+  if (ImGui::Button("1-1"))
+    warpToLevel(0);
+  ImGui::SameLine();
+  if (ImGui::Button("1-2"))
+    warpToLevel(1);
+  ImGui::SameLine();
+  if (ImGui::Button("1-3")) {
+    warpToLevel(2);
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("1-4")) {
+    warpToLevel(3);
+  }
+
+  ImGui::Text("Jungle");
+  ImGui::SameLine(100.0f);
+  if (ImGui::Button("2-1"))
+    warpToLevel(4);
+  ImGui::SameLine();
+  if (ImGui::Button("2-2"))
+    warpToLevel(5);
+  ImGui::SameLine();
+  if (ImGui::Button("2-3")) {
+    warpToLevel(6);
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("2-4")) {
+    warpToLevel(7);
+  }
+
+  ImGui::Text("Ice Caves");
+  ImGui::SameLine(100.0f);
+  if (ImGui::Button("3-1"))
+    warpToLevel(8);
+  ImGui::SameLine();
+  if (ImGui::Button("3-2"))
+    warpToLevel(9);
+  ImGui::SameLine();
+  if (ImGui::Button("3-3")) {
+    warpToLevel(10);
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("3-4")) {
+    warpToLevel(11);
+  }
+
+  ImGui::Text("Temple");
+  ImGui::SameLine(100.0f);
+  if (ImGui::Button("4-1"))
+    warpToLevel(12);
+  ImGui::SameLine();
+  if (ImGui::Button("4-2"))
+    warpToLevel(13);
+  ImGui::SameLine();
+  if (ImGui::Button("4-3")) {
+    warpToLevel(14);
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Olmec")) {
+    warpToLevel(15);
+  }
+
+  ImGui::Text("Hell");
+  ImGui::SameLine(100.0f);
+  if (ImGui::Button("5-1"))
+    warpToLevel(16);
+  ImGui::SameLine();
+  if (ImGui::Button("5-2"))
+    warpToLevel(17);
+  ImGui::SameLine();
+  if (ImGui::Button("5-3")) {
+    warpToLevel(18);
+  }
+  ImGui::SameLine();
+  if (ImGui::Button("Yama")) {
+    warpToLevel(19);
+  }
+
+  if (isDisabled) {
+    ImGui::EndDisabled();
+  }
+}
+
+void ensureLockedAmountsForPlayer(Entity *player, PlayerData &data,
+                                  PlayerState *state) {
+  if (state->LockHealth) {
+    // If you ressurect a player it gets into a bad state.
+    if (player->health > 0) {
+      player->health = state->LockedHealthAmount;
+    }
+  }
+
+  if (state->LockBombs) {
+    data.bombs = state->LockedBombsAmount;
+  }
+
+  if (state->LockRopes) {
+    data.ropes = state->LockedRopesAmount;
+  }
+}
+
+void ensureLockedAmounts() {
+  if (gGlobalState->player1) {
+    ensureLockedAmountsForPlayer(gGlobalState->player1,
+                                 gGlobalState->player1_data, &gPlayersState[0]);
+  }
+
+  if (gGlobalState->player2) {
+    ensureLockedAmountsForPlayer(gGlobalState->player2,
+                                 gGlobalState->player2_data, &gPlayersState[1]);
+  }
+
+  if (gGlobalState->player3) {
+    ensureLockedAmountsForPlayer(gGlobalState->player3,
+                                 gGlobalState->player3_data, &gPlayersState[2]);
+  }
+
+  if (gGlobalState->player4) {
+    ensureLockedAmountsForPlayer(gGlobalState->player4,
+                                 gGlobalState->player4_data, &gPlayersState[3]);
+  }
+}
+
+void drawPlayerTab(Entity *player, PlayerData &data, PlayerState *state) {
+  if (!player) {
+    ImGui::Text("No Player Entity");
+    return;
+  }
+
+  if (ImGui::Button("Max Health/Bombs/Ropes")) {
+    player->health = 99;
+    state->LockedHealthAmount = player->health;
+    data.bombs = 99;
+    state->LockedBombsAmount = data.bombs;
+    data.ropes = 99;
+    state->LockedRopesAmount = data.ropes;
+  }
+
+  ImGui::Text("Locked?");
+  ImGui::SameLine(80.0f);
+  ImGui::Text("Amount");
+
+  if (ImGui::Checkbox("##LockHealth", &state->LockHealth)) {
+    if (state->LockHealth) {
+      state->LockedHealthAmount = player->health;
+    }
+  };
+  ImGui::SameLine(80.0f);
+  ImGui::PushItemWidth(100);
+  if (ImGui::InputInt("Health", &player->health)) {
+    player->health = std::clamp(player->health, 0, 99);
+    state->LockedHealthAmount = player->health;
+  }
+  ImGui::PopItemWidth();
+
+  if (ImGui::Checkbox("##LockBombs", &state->LockBombs)) {
+    if (state->LockBombs) {
+      state->LockedBombsAmount = data.bombs;
+    }
+  }
+  ImGui::SameLine(80.0f);
+  ImGui::PushItemWidth(100);
+  if (ImGui::InputInt("Bombs", &data.bombs)) {
+    data.bombs = std::clamp(data.bombs, 0, 99);
+    state->LockedBombsAmount = data.bombs;
+  }
+  ImGui::PopItemWidth();
+
+  if (ImGui::Checkbox("##LockRopes", &state->LockRopes)) {
+    if (state->LockRopes) {
+      state->LockedRopesAmount = data.ropes;
+    }
+  }
+  ImGui::SameLine(80.0f);
+  ImGui::PushItemWidth(100);
+  if (ImGui::InputInt("Ropes", &data.ropes)) {
+    data.ropes = std::clamp(data.ropes, 0, 99);
+    state->LockedRopesAmount = data.ropes;
+  }
+  ImGui::PopItemWidth();
+  ImGui::Separator();
+
+  ImGui::Checkbox("Compass", &data.has_compass);
+  ImGui::Checkbox("Parachute", &data.has_parachute);
+
+  ImGui::Checkbox("Jetpack", &data.has_jetpack);
+  ImGui::SameLine();
+  if (ImGui::Button("Spawn##Jetpack")) {
+    gGlobalState->SpawnEntity(player->x, player->y, 522, true);
+  }
+
+  ImGui::Checkbox("Climbing Gloves", &data.has_climbing_gloves);
+  ImGui::Checkbox("Pitcher's Mitt", &data.has_pitchers_mitt);
+  ImGui::Checkbox("Spring Shoes", &data.has_spring_shoes);
+  ImGui::Checkbox("Spike Shoes", &data.has_spike_shoes);
+  ImGui::Checkbox("Spectacles", &data.has_spectacles);
+  ImGui::Checkbox("Kapala", &data.has_kapala);
+  ImGui::Checkbox("Hedjet", &data.has_hedjet);
+  ImGui::Checkbox("Udjat Eye", &data.has_udjat);
+  ImGui::Checkbox("Book of the Dead", &data.has_book_of_dead);
+  ImGui::Checkbox("Ankh", &data.has_ankh);
+  ImGui::Checkbox("Paste", &data.has_paste);
+
+  ImGui::Checkbox("Cape", &data.has_cape);
+  ImGui::SameLine();
+  if (ImGui::Button("Spawn##Cape")) {
+    gGlobalState->SpawnEntity(player->x, player->y, 521, true);
+  }
+
+  ImGui::Checkbox("Vlad's Cape", &data.has_vlads_cape);
+  ImGui::SameLine();
+  if (ImGui::Button("Spawn##VladsCape")) {
+    gGlobalState->SpawnEntity(player->x, player->y, 532, true);
+  }
+
+  ImGui::Checkbox("Crysknife", &data.has_crysknife);
+  ImGui::Checkbox("Vlad's Amulet", &data.has_vlads_amulet);
+  ImGui::Checkbox("White Flag", &data.has_white_flag);
+}
+
+void drawPlayersTab() {
+
+  if (ImGui::BeginTabBar("Players")) {
+    if (ImGui::BeginTabItem("Player 1")) {
+      drawPlayerTab(gGlobalState->player1, gGlobalState->player1_data,
+                    &gPlayersState[0]);
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("Player 2")) {
+      drawPlayerTab(gGlobalState->player2, gGlobalState->player2_data,
+                    &gPlayersState[1]);
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("Player 3")) {
+      drawPlayerTab(gGlobalState->player3, gGlobalState->player3_data,
+                    &gPlayersState[2]);
+      ImGui::EndTabItem();
+    }
+    if (ImGui::BeginTabItem("Player 4")) {
+      drawPlayerTab(gGlobalState->player4, gGlobalState->player4_data,
+                    &gPlayersState[3]);
+      ImGui::EndTabItem();
+    }
+    ImGui::EndTabBar();
+  }
+}
+
+void drawDebugTab() {
+  ImGuiIO &io = ImGui::GetIO();
+
+  ImGui::Text("Mouse: %f %f", io.MousePos.x, io.MousePos.y);
+  ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
+  ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
+  ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
+
+  ImGui::Separator();
+  ImGui::Checkbox("Draw Active Hitboxes", &gDebugState.EnabledActiveHitboxes);
+  ImGui::SameLine();
+  ImGui::Checkbox("Hide 171", &gDebugState.Hide171Hitbox);
+  ImGui::SameLine();
+  ImGui::Checkbox("Hide 177", &gDebugState.Hide177Hitbox);
+
+  ImGui::Checkbox("Draw Floor Hitboxes", &gDebugState.EnabledFloorHitboxes);
+  ImGui::Checkbox("Draw Background Hitboxes",
+                  &gDebugState.EnabledBackgroundHitboxes);
+  ImGui::Checkbox("Draw Foreground Hitboxes",
+                  &gDebugState.EnabledForegroundHitboxes);
+
+  ImGui::Separator();
+  ImGui::Checkbox("Draw Active Entity IDs", &gDebugState.EnableActiveEntityIds);
+  ImGui::Checkbox("Draw Light Emitting IDs",
+                  &gDebugState.EnabledEntitiesLightEmitting);
+  ImGui::Checkbox("Draw Unknown 1400 IDs (BG + Active?)",
+                  &gDebugState.EnabledUnknown1400);
+  ImGui::Checkbox("Draw Foreground Entity IDs",
+                  &gDebugState.EnabledForegroundEntities);
+  ImGui::Checkbox("Draw Floor Entity IDs", &gDebugState.EnableFloorEntityIds);
+  ImGui::Checkbox("Draw Floor Background Entity IDs",
+                  &gDebugState.EnableFloorBgEntityIds);
+  ImGui::Checkbox("Draw Background Entity IDs",
+                  &gDebugState.EnableBackgroundEntityIds);
+
+  ImGui::Separator();
+  ImGui::InputInt("Exclude Entity", &gDebugState.ExcludeEntityInput);
+  if (ImGui::Button("Exclude")) {
+    if (gDebugState.ExcludeEntityInput >= 0) {
+      gDebugState.ExcludedEntities.insert(gDebugState.ExcludeEntityInput);
+      gDebugState.ExcludeEntityInput = 0;
+    }
+  }
+
+  ImGui::Separator();
+  for (auto ent_type : gDebugState.ExcludedEntities) {
+    auto label = std::format("Remove {}", ent_type);
+    if (ImGui::Button(label.c_str())) {
+      gDebugState.ExcludedEntities.erase(ent_type);
+    }
+  }
 }
 
 void drawToolWindow() {
@@ -261,52 +637,28 @@ void drawToolWindow() {
 
   auto mouse_game = screenToGame(io.MousePos);
 
-  // ImGui::Text("Mouse: %f %f", io.MousePos.x, io.MousePos.y);
-  ImGui::Checkbox("Draw Tile Borders", &gEnableTileBorders);
-  ImGui::Checkbox("Draw Bin Borders", &gEnableBinBorders);
-  ImGui::Checkbox("Draw Owned Entities", &gEnablePacifistOverlay);
-
-  ImGui::Separator();
-  ImGui::Checkbox("Draw Active Hitboxes", &gEnabledActiveHitboxes);
-  ImGui::Checkbox("Draw Floor Hitboxes", &gEnabledFloorHitboxes);
-  ImGui::Checkbox("Draw Background Hitboxes", &gEnabledBackgroundHitboxes);
-  ImGui::Checkbox("Draw Foreground Hitboxes", &gEnabledForegroundHitboxes);
-
-  ImGui::Separator();
-  ImGui::Checkbox("Draw Active Entity IDs", &gEnableActiveEntityIds);
-  ImGui::Checkbox("Draw Light Emitting IDs", &gEnabledEntitiesLightEmitting);
-  ImGui::Checkbox("Draw Unknown 1400 IDs (BG + Active?)", &gEnabledUnknown1400);
-  ImGui::Checkbox("Draw Foreground Entity IDs", &gEnabledForegroundEntities);
-  ImGui::Checkbox("Draw Floor Entity IDs", &gEnableFloorEntityIds);
-  ImGui::Checkbox("Draw Floor Background Entity IDs", &gEnableFloorBgEntityIds);
-  ImGui::Checkbox("Draw Background Entity IDs", &gEnableBackgroundEntityIds);
-
-  ImGui::Separator();
-  ImGui::InputInt("Exclude Entity", &gExcludeEntityInput);
-  if (ImGui::Button("Exclude")) {
-    if (gExcludeEntityInput >= 0) {
-      gExcludedEntities.insert(gExcludeEntityInput);
-      gExcludeEntityInput = 0;
+  if (ImGui::BeginTabBar("Specs HD")) {
+    if (ImGui::BeginTabItem("Spawn")) {
+      drawSpawnTab();
+      ImGui::EndTabItem();
     }
-  }
 
-  ImGui::Separator();
-  for (auto ent_type : gExcludedEntities) {
-    auto label = std::format("Remove {}", ent_type);
-    if (ImGui::Button(label.c_str())) {
-      gExcludedEntities.erase(ent_type);
+    if (ImGui::BeginTabItem("Level")) {
+      drawLevelTab();
+      ImGui::EndTabItem();
     }
-  }
 
-  ImGui::Separator();
-  ImGui::InputInt("Spawn Entity", &gSpawnEntityInput);
-  if (ImGui::Button("Spawn")) {
-    if (gSpawnEntityInput >= 0) {
-      gGlobalState->SpawnEntity(gGlobalState->player1->x,
-                                gGlobalState->player1->y, gSpawnEntityInput,
-                                true);
-      gSpawnEntityInput = 0;
+    if (ImGui::BeginTabItem("Players")) {
+      drawPlayersTab();
+      ImGui::EndTabItem();
     }
+
+    if (ImGui::BeginTabItem("Debug")) {
+      drawDebugTab();
+      ImGui::EndTabItem();
+    }
+
+    ImGui::EndTabBar();
   }
 }
 
@@ -318,6 +670,9 @@ void specsOnFrame() {
       reinterpret_cast<GlobalState *>(*((DWORD *)(gBaseAddress + 0x15446C)));
 
   gGlobalState->N00001004 = 0; // 440629
+
+  ensureLockedAmounts();
+
   drawOverlayWindow();
   drawToolWindow();
 }

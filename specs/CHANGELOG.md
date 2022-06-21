@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Broke up UI into various tabs
+  - Debug Overlays in `Debug` tab
+  - Spawning in `Spawn` tab
+
+### Added
+
+- `Players` tab with ability to set health/bombs/ropes and items for each player
+- `Levels` tab with ability to jump to a level
+
 ## [0.0.2] - 2022-06-20
 
 ### Added

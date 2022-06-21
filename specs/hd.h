@@ -4,28 +4,133 @@
 
 #include "Windows.h"
 
+enum class Ownership : int32_t {
+  Unowned = -99,
+  HiredHand = -1,
+  Player1 = 0,
+  Player2 = 1,
+  Player3 = 2,
+  Player4 = 3
+};
+
+enum class EntityKind : int32_t {
+  KIND_ENTITY = -99,
+  KIND_FLOOR = 0,
+  KIND_ACTIVE = 1,
+  KIND_PLAYER = 2,
+  KIND_MONSTER = 3,
+  KIND_ITEM = 4,
+  KIND_BACKGROUND = 5,
+  KIND_EXPLOSION = 6
+};
+
 class Entity {
 public:
-  char pad_0000[8];     // 0x0000
-  uint32_t N00000992;   // 0x0008
-  uint32_t entity_type; // 0x000C
-  uint32_t bin_x;       // 0x0010
-  uint32_t bin_y;       // 0x0014
-  int32_t owner;        // 0x0018
-  char pad_001C[4];     // 0x001C
-  int32_t N00000997;    // 0x0020
-  char pad_0024[8];     // 0x0024
-  float N0000099B;      // 0x002C
-  float x;              // 0x0030
-  float y;              // 0x0034
-  float N0000099E;      // 0x0038
-  float N0000099F;      // 0x003C
-  float current_z;      // 0x0040
-  float original_z;     // 0x0044
-  float N000009A2;      // 0x0048
-  float hitbox_up;      // 0x004C
-  float hitbox_down;    // 0x0050
-  float hitbox_x;       // 0x0054
+  char pad_0000[8];              // 0x0000
+  EntityKind N00000992;          // 0x0008
+  uint32_t entity_type;          // 0x000C
+  uint32_t bin_x;                // 0x0010
+  uint32_t bin_y;                // 0x0014
+  Ownership owner;               // 0x0018
+  char pad_001C[4];              // 0x001C
+  int32_t N00000997;             // 0x0020
+  char pad_0024[8];              // 0x0024
+  float N0000099B;               // 0x002C
+  float x;                       // 0x0030
+  float y;                       // 0x0034
+  float width;                   // 0x0038
+  float height;                  // 0x003C
+  float current_z;               // 0x0040
+  float original_z;              // 0x0044
+  float N000009A2;               // 0x0048
+  float hitbox_up;               // 0x004C
+  float hitbox_down;             // 0x0050
+  float hitbox_x;                // 0x0054
+  float N000009A6;               // 0x0058
+  float N000009A7;               // 0x005C
+  float N000009A8;               // 0x0060
+  float N000009A9;               // 0x0064
+  float N000009AA;               // 0x0068
+  float N000009AB;               // 0x006C
+  float N000009AC;               // 0x0070
+  float N000009AD;               // 0x0074
+  float N000009AE;               // 0x0078
+  float N000009AF;               // 0x007C
+  float N000009B0;               // 0x0080
+  float N000009B1;               // 0x0084
+  float N000009B2;               // 0x0088
+  float N000009B3;               // 0x008C
+  float N000009B4;               // 0x0090
+  float N00000DA9;               // 0x0094
+  float N000009B7;               // 0x0098
+  uint8_t deletion_flag;         // 0x009C
+  uint8_t horizontal_flip;       // 0x009D
+  uint8_t N00000DAD;             // 0x009E
+  uint8_t N000009B7b;            // 0x009F
+  uint8_t N000009B9;             // 0x00A0
+  uint8_t N000017EF;             // 0x00A1
+  uint8_t N000017FE;             // 0x00A2
+  uint8_t N000017F0;             // 0x00A3
+  uint8_t N000009BA;             // 0x00A4
+  uint8_t N000017F2;             // 0x00A5
+  uint8_t N00001801;             // 0x00A6
+  uint8_t N000017F3;             // 0x00A7
+  uint8_t N000009BB;             // 0x00A8
+  uint8_t N000017F5;             // 0x00A9
+  uint8_t N00001804;             // 0x00AA
+  uint8_t N000017F6;             // 0x00AB
+  uint8_t translucent;           // 0x00AC
+  uint8_t invisible;             // 0x00AD
+  uint8_t N00001807;             // 0x00AE
+  uint8_t N000017F9;             // 0x00AF
+  uint8_t brighten_maybe;        // 0x00B0
+  uint8_t N000017FB;             // 0x00B1
+  uint8_t eviscerate;            // 0x00B2
+  uint8_t N000017FC;             // 0x00B3
+  class Texture *texture_info;   // 0x00B4
+  char pad_00B8[4];              // 0x00B8
+  Entity *embedded_deco;         // 0x00BC
+  Entity *top_deco;              // 0x00C0
+  Entity *bottom_deco;           // 0x00C4
+  Entity *left_deco;             // 0x00C8
+  Entity *right_deco;            // 0x00CC
+  char pad_00D0[100];            // 0x00D0
+  uint32_t animation_type;       // 0x0134
+  uint32_t animation_frame;      // 0x0138
+  uint32_t N00000DB3;            // 0x013C
+  int32_t health;                // 0x0140
+  char pad_0144[8];              // 0x0144
+  uint32_t favor_given;          // 0x014C
+  char pad_0150[136];            // 0x0150
+  float max_run_velocity_x;      // 0x01D8
+  float N00000B24;               // 0x01DC
+  float jump_multiplier;         // 0x01E0
+  char pad_01E4[28];             // 0x01E4
+  uint8_t N00000B2D;             // 0x0200
+  uint8_t N0007A094;             // 0x0201
+  uint8_t N0007A097;             // 0x0202
+  uint8_t N0007A095;             // 0x0203
+  uint8_t on_floor;              // 0x0204
+  uint8_t N0007A02A;             // 0x0205
+  uint8_t ducking;               // 0x0206
+  uint8_t ledge_hanging;         // 0x0207
+  char pad_0208[4];              // 0x0208
+  uint8_t N00000B30;             // 0x020C
+  uint8_t N0007A023;             // 0x020D
+  uint8_t N0007A026;             // 0x020E
+  uint8_t N0007A024;             // 0x020F
+  uint8_t N00000B31;             // 0x0210
+  uint8_t N0007A08F;             // 0x0211
+  char pad_0212[30];             // 0x0212
+  class Entity *holder_entity;   // 0x0230
+  class Entity *holding_entity;  // 0x0234
+  class Entity *backitem_entity; // 0x0238
+  char pad_023C[8];              // 0x023C
+  float velocity_x;              // 0x0244
+  float velocity_y;              // 0x0248
+  char pad_024C[72];             // 0x024C
+  class N0008895B *N00000DD4;    // 0x0294
+  char pad_0298[176];            // 0x0298
 };
 
 class CameraState {
@@ -76,12 +181,12 @@ public:
 
 class PlayerData {
 public:
-  uint32_t health;              // 0x0000
-  uint32_t health2;             // 0x0004
+  int32_t health;               // 0x0000
+  int32_t health2;              // 0x0004
   uint32_t N00008C19;           // 0x0008
   uint32_t N00008C1A;           // 0x000C
-  uint32_t bombs;               // 0x0010
-  uint32_t ropes;               // 0x0014
+  int32_t bombs;                // 0x0010
+  int32_t ropes;                // 0x0014
   uint32_t N00008C1D;           // 0x0018
   char pad_001C[4];             // 0x001C
   uint32_t hh_count;            // 0x0020
@@ -89,35 +194,35 @@ public:
   uint32_t N00008C28[8];        // 0x0044
   char pad_0064[8];             // 0x0064
   float classic_HUD_heart_size; // 0x006C
-  uint8_t has_compass;          // 0x0070
-  uint8_t has_parachute;        // 0x0071
-  uint8_t has_jetpack;          // 0x0072
-  uint8_t has_climbing_gloves;  // 0x0073
-  uint8_t has_pitchers_mitt;    // 0x0074
-  uint8_t has_spring_shoes;     // 0x0075
-  uint8_t has_spike_shoes;      // 0x0076
-  uint8_t has_spectacles;       // 0x0077
-  uint8_t has_kapala;           // 0x0078
-  uint8_t has_hedjet;           // 0x0079
-  uint8_t has_udjat;            // 0x007A
-  uint8_t has_book_of_dead;     // 0x007B
-  uint8_t has_ankh;             // 0x007C
-  uint8_t has_paste;            // 0x007D
-  uint8_t has_cape;             // 0x007E
-  uint8_t has_vlads_cape;       // 0x007F
-  uint8_t has_crysknife;        // 0x0080
-  uint8_t has_vlads_amulet;     // 0x0081
-  uint8_t has_white_flag;       // 0x0082
-  uint8_t padding;              // 0x0083
-  uint32_t kapala_charge;       // 0x0084
-  uint32_t held_item_id;        // 0x0088
-  uint32_t held_item_metadata;  // 0x008C
-  uint32_t total_kills;         // 0x0090
-  uint32_t total_damsel_saves;  // 0x0094
-  uint32_t kill_ids[256];       // 0x0098
-  uint32_t loot_ids[1024];      // 0x0498
-  uint32_t level_kills;         // 0x1498
-  uint32_t level_looted_count;  // 0x149C
+  bool has_compass;             // 0x0070
+  bool has_parachute;           // 0x0071
+  bool has_jetpack;             // 0x0072
+  bool has_climbing_gloves;     // 0x0073
+  bool has_pitchers_mitt;       // 0x0074
+  bool has_spring_shoes;        // 0x0075
+  bool has_spike_shoes;         // 0x0076
+  bool has_spectacles;          // 0x0077
+  bool has_kapala;              // 0x0078
+  bool has_hedjet;              // 0x0079
+  bool has_udjat;               // 0x007A
+  bool has_book_of_dead;        // 0x007B
+  bool has_ankh;                // 0x007C
+  bool has_paste;               // 0x007D
+  bool has_cape;                // 0x007E
+  bool has_vlads_cape;          // 0x007F
+  bool has_crysknife;           // 0x0080
+  bool has_vlads_amulet;        // 0x0081
+  bool has_white_flag;          // 0x0082
+  int8_t padding;               // 0x0083
+  int32_t kapala_charge;        // 0x0084
+  int32_t held_item_id;         // 0x0088
+  int32_t held_item_metadata;   // 0x008C
+  int32_t total_kills;          // 0x0090
+  int32_t total_damsel_saves;   // 0x0094
+  int32_t kill_ids[256];        // 0x0098
+  int32_t loot_ids[1024];       // 0x0498
+  int32_t level_kills;          // 0x1498
+  int32_t level_looted_count;   // 0x149C
   char pad_14A0[4];             // 0x14A0
 };                              // Size: 0x14A4
 
@@ -174,7 +279,10 @@ public:
   class Particles *particles;                         // 0x0048
   void *_4cstruct;                                    // 0x004C
   void *_50struct;                                    // 0x0050
-  char pad_0054[84];                                  // 0x0054
+  char pad_0054[4];                                   // 0x0054
+  uint32_t screen_state;                              // 0x0058
+  uint32_t play_state;                                // 0x005C
+  char pad_0060[72];                                  // 0x0060
   uint32_t flag_player;                               // 0x00A8
   char pad_00AC[24];                                  // 0x00AC
   uint16_t N000001A7;                                 // 0x00C4
@@ -261,14 +369,14 @@ public:
   uint8_t N0000100D;                                  // 0x44062A
   uint8_t N00001005;                                  // 0x44062B
   char pad_44062C[88];                                // 0x44062C
-  class Entity *player1;                              // 0x440684
-  class Entity *player2;                              // 0x440688
-  class Player *player3;                              // 0x44068C
-  class Player *player4;                              // 0x440690
-  class PlayerData player1_data;                      // 0x440694
-  class PlayerData player2_data;                      // 0x441B38
-  class PlayerData player3_data;                      // 0x442FDC
-  class PlayerData player4_data;                      // 0x444480
+  Entity *player1;                                    // 0x440684
+  Entity *player2;                                    // 0x440688
+  Entity *player3;                                    // 0x44068C
+  Entity *player4;                                    // 0x440690
+  PlayerData player1_data;                            // 0x440694
+  PlayerData player2_data;                            // 0x441B38
+  PlayerData player3_data;                            // 0x442FDC
+  PlayerData player4_data;                            // 0x444480
   char pad_445924[28];                                // 0x445924
   uint32_t total_minutes;                             // 0x445940
   uint32_t total_seconds;                             // 0x445944
@@ -286,5 +394,6 @@ public:
   Entity *SpawnEntity(float x, float y, uint32_t entity_type, bool active);
 
 }; // Size: 0x4460A8
+static_assert(sizeof(GlobalState) == 0x4460A8);
 
 void setupOffsets(DWORD baseAddress);
