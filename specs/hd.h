@@ -131,6 +131,8 @@ public:
   char pad_024C[72];             // 0x024C
   class N0008895B *N00000DD4;    // 0x0294
   char pad_0298[176];            // 0x0298
+
+  void PlaySound(const char *audioName);
 };
 
 class CameraState {

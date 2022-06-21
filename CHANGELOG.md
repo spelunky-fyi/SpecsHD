@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Players` tab with ability to set health/bombs/ropes and items for each player
 - `Levels` tab with ability to jump to a level
+- `Audio` tab with ability to play audio effects
 
 ## [0.0.2] - 2022-06-20
 
