@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <format>
 #include <unordered_set>
+#include <functional>
 
 #include "3rdparty/imgui/imgui.h"
 
@@ -15,6 +16,7 @@ ImDrawList *gOverlayDrawList = NULL;
 
 CameraState *gCameraState = NULL;
 GlobalState *gGlobalState = NULL;
+Entity* gSelectedEntity = NULL;
 
 const size_t gNumAudioNames = 230;
 const char *gAudioNames[gNumAudioNames] = {
@@ -414,6 +416,74 @@ void drawTileBorders() {
   }
 }
 
+void drawEntityId(Entity* ent) {
+    auto screen = gameToScreen({ent->x, ent->y});
+    auto out = std::format("{}", ent->entity_type);
+    gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 5,
+                              ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
+                              out.c_str());
+}
+
+using EntityCallback = std::function<void (Entity* e)>;
+void forEntities(EntityCallback callback, Entity **entities, size_t count) {
+  for (size_t idx = 0; idx < count; idx++) {
+    auto ent = entities[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (gDebugState.ExcludedEntities.contains(ent->entity_type)) {
+      continue;
+    }
+
+    callback(ent);
+  }
+}
+
+void forAllEntities(EntityCallback callback) {
+  
+  // Active
+  if (gDebugState.EnableActiveEntityIds) {
+    forEntities(callback, gGlobalState->entities->entities_active,
+                  gGlobalState->entities->entities_active_count);
+  }
+
+  // 1400
+  if (gDebugState.EnabledUnknown1400) {
+    forEntities(callback, gGlobalState->entities->array_1400,
+                  gGlobalState->entities->array_1400_count);
+  }
+  // Foreground
+  if (gDebugState.EnabledForegroundEntities) {
+    forEntities(callback, gGlobalState->entities->entities_foreground,
+                  gGlobalState->entities->array_entities_foreground_count);
+  }
+
+  // Light Emitting
+  if (gDebugState.EnabledEntitiesLightEmitting) {
+    forEntities(callback, gGlobalState->entities->entities_light_emitting,
+                  gGlobalState->entities->entities_light_emitting_count);
+  }
+
+  // Floors
+  if (gDebugState.EnableFloorEntityIds) {
+    forEntities(callback, gGlobalState->level_state->entity_floors, 4692);
+  }
+  if (gDebugState.EnableFloorBgEntityIds) {
+    forEntities(callback, gGlobalState->level_state->entity_floors_bg, 4692);
+  }
+
+  // Backgrounds
+  if (gDebugState.EnableBackgroundEntityIds) {
+    forEntities(callback, gGlobalState->level_state->entity_backgrounds,
+                  gGlobalState->level_state->entity_backgrounds_count);
+  }
+}
+
+float dist(ImVec2 pos1, ImVec2 pos2) {
+  return sqrt(pow(pos2.x - pos1.x, 2.0f) + pow(pos2.y - pos1.y, 2.0f));
+}
+
 void drawOverlayWindow() {
   ImGuiIO &io = ImGui::GetIO();
 
@@ -444,6 +514,23 @@ void drawOverlayWindow() {
       if (gSpawnState.SpawnEntityInput > 0) {
         gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
                                   gSpawnState.SpawnEntityInput, true);
+      }
+    }
+
+    if (io.MouseClicked[2]) {
+      auto gamePos = screenToGame(io.MousePos);
+      float closestEntDist = 99999.0;
+      Entity* closestEnt = 0x0;
+      EntityCallback getClosestEnt = [&](Entity* e) mutable -> void {
+        auto eDist = dist(gamePos, ImVec2(e->x, e->y));
+        if (eDist < closestEntDist) {
+          closestEnt = e;
+          closestEntDist = eDist;
+        }
+      };
+      forAllEntities(getClosestEnt);
+      if (closestEnt != NULL) {
+        gSelectedEntity = closestEnt;
       }
     }
   }
@@ -481,43 +568,7 @@ void drawOverlayWindow() {
                        gGlobalState->entities->array_entities_foreground_count);
   }
 
-  // Active
-  if (gDebugState.EnableActiveEntityIds) {
-    drawEntityIds(gGlobalState->entities->entities_active,
-                  gGlobalState->entities->entities_active_count);
-  }
-
-  // 1400
-  if (gDebugState.EnabledUnknown1400) {
-    drawEntityIds(gGlobalState->entities->array_1400,
-                  gGlobalState->entities->array_1400_count);
-  }
-  // Foreground
-  if (gDebugState.EnabledForegroundEntities) {
-    drawEntityIds(gGlobalState->entities->entities_foreground,
-                  gGlobalState->entities->array_entities_foreground_count);
-  }
-
-  // Light Emitting
-  if (gDebugState.EnabledEntitiesLightEmitting) {
-    drawEntityIds(gGlobalState->entities->entities_light_emitting,
-                  gGlobalState->entities->entities_light_emitting_count);
-  }
-
-  // Floors
-  if (gDebugState.EnableFloorEntityIds) {
-    drawEntityIds(gGlobalState->level_state->entity_floors, 4692);
-  }
-  if (gDebugState.EnableFloorBgEntityIds) {
-    drawEntityIds(gGlobalState->level_state->entity_floors_bg, 4692);
-  }
-
-  // Backgrounds
-  if (gDebugState.EnableBackgroundEntityIds) {
-    drawEntityIds(gGlobalState->level_state->entity_backgrounds,
-                  gGlobalState->level_state->entity_backgrounds_count);
-  }
-
+  forAllEntities(&drawEntityId);
   ImGui::End();
 }
 
@@ -871,6 +922,17 @@ void drawDebugTab() {
   }
 }
 
+void drawSelectedEntityTab() {
+  ImGuiIO &io = ImGui::GetIO();
+  if (!gSelectedEntity) {
+    ImGui::Text("No selected entity");
+    return;
+  }
+  ImGui::Text("Entity ID: %d", gSelectedEntity->entity_type);
+  ImGui::InputFloat("ent_x", &gSelectedEntity->x);
+  ImGui::InputFloat("ent_y", &gSelectedEntity->y);
+}
+
 void drawToolWindow() {
   if (!ui::open) {
     return;
@@ -914,6 +976,11 @@ void drawToolWindow() {
 
     if (ImGui::BeginTabItem("Debug")) {
       drawDebugTab();
+      ImGui::EndTabItem();
+    }
+
+    if (ImGui::BeginTabItem("Selected")) {
+      drawSelectedEntityTab();
       ImGui::EndTabItem();
     }
 
