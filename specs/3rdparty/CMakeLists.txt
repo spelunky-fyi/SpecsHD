@@ -18,9 +18,3 @@ target_include_directories(imgui PUBLIC imgui)
 
 # MinHook
 add_subdirectory(minhook)
-
-
-# Kiero
-add_library(kiero STATIC kiero/kiero.h kiero/kiero.cpp)
-target_include_directories(kiero PUBLIC kiero)
-target_link_libraries(kiero minhook)

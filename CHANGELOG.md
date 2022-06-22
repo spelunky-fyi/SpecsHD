@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.3] - 2022-06-21
+
 ### Changed
 
 - Broke up UI into various tabs
   - Debug Overlays in `Debug` tab
   - Spawning in `Spawn` tab
+- Completely redid dx hooking / imgui setup which now handles fullscreen/resolution changes/late loading
+- Re-did local injector to work as both 32-bit and 64-bit which simplifies development.
 
 ### Added
 

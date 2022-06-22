@@ -3,14 +3,14 @@ use std::intrinsics::transmute;
 use std::mem::size_of;
 use std::path::PathBuf;
 
+use anyhow::anyhow;
 use byteorder::ByteOrder;
 use byteorder::LE;
 use clap::Parser;
+use goblin::pe::PE;
 use thiserror::Error;
+use widestring::U16Str;
 use winapi::shared::minwindef::LPDWORD;
-use winapi::shared::ntdef::PVOID;
-use winapi::um::libloaderapi::GetModuleHandleA;
-use winapi::um::libloaderapi::GetProcAddress;
 use winapi::um::memoryapi::ReadProcessMemory;
 use winapi::um::memoryapi::VirtualAllocEx;
 use winapi::um::memoryapi::WriteProcessMemory;
@@ -20,13 +20,16 @@ use winapi::um::minwinbase::STILL_ACTIVE;
 use winapi::um::processthreadsapi::CreateRemoteThread;
 use winapi::um::processthreadsapi::GetExitCodeProcess;
 use winapi::um::psapi::EnumProcessModules;
+use winapi::um::psapi::EnumProcessModulesEx;
 use winapi::um::psapi::GetModuleFileNameExA;
+use winapi::um::psapi::LIST_MODULES_32BIT;
 use winapi::um::synchapi::WaitForSingleObject;
 use winapi::um::winbase::INFINITE;
 use winapi::um::winnt::MEM_COMMIT;
 use winapi::um::winnt::MEM_RESERVE;
 use winapi::um::winnt::PAGE_EXECUTE_READWRITE;
 use winapi::um::winnt::PROCESS_CREATE_THREAD;
+use winapi::um::wow64apiset::GetSystemWow64DirectoryW;
 use winapi::{
     shared::minwindef::{DWORD, HMODULE, LPCVOID, LPVOID, MAX_PATH},
     shared::ntdef::{HANDLE, NULL},
@@ -376,6 +379,69 @@ impl Process {
         ))
     }
 
+    fn get_kernel32_addr(&self) -> Result<usize, anyhow::Error> {
+        // Get handles for all modules in process.
+        let mut module_handles: [HMODULE; 1024] = [0 as HMODULE; 1024];
+        let hmodule_size: usize = size_of::<HMODULE>()
+            .try_into()
+            .expect("Failed to get size of HMODULE");
+        let mut bytes_written = 0;
+
+        let result = unsafe {
+            EnumProcessModulesEx(
+                self.handle,
+                module_handles.as_mut_ptr(),
+                size_of::<[HMODULE; 1024]>()
+                    .try_into()
+                    .expect("Failed to get size for modules"),
+                &mut bytes_written,
+                LIST_MODULES_32BIT,
+            )
+        };
+
+        if result == 0 {
+            return Err(anyhow!("Failed to enumerate process modules..."));
+        }
+
+        let num_modules = bytes_written as usize / hmodule_size;
+
+        // Enumerate Modules to find handle for EXE module
+        for idx in 0..num_modules {
+            let mut module_filename = [0; MAX_PATH];
+
+            let result = unsafe {
+                GetModuleFileNameExA(
+                    self.handle,
+                    module_handles[idx],
+                    module_filename.as_mut_ptr(),
+                    MAX_PATH as u32,
+                )
+            };
+
+            if result == 0 {
+                continue;
+            }
+
+            let name: String = String::from_utf8_lossy(
+                &module_filename
+                    .map(|c| c as u8)
+                    .into_iter()
+                    .take_while(|c| *c != 0)
+                    .collect::<Vec<u8>>(),
+            )
+            .to_lowercase();
+
+            if !name.ends_with("\\kernel32.dll") {
+                continue;
+            }
+
+            // Found the exe module base address
+            return Ok(module_handles[idx] as usize);
+        }
+
+        Err(anyhow!("Failed to find kernel32 module..."))
+    }
+
     fn alloc(&mut self, size: usize) -> Result<usize, WriteMemoryError> {
         let addr = unsafe {
             VirtualAllocEx(
@@ -394,20 +460,10 @@ impl Process {
         Ok(addr as usize)
     }
 
-    fn get_load_library(&self) -> Result<LPTHREAD_START_ROUTINE, ReadMemoryError> {
-        let kernel32 = CString::new("Kernel32.dll").map_err(|_| ReadMemoryError::Failed)?;
-        let module_handle = unsafe { GetModuleHandleA(kernel32.into_raw()) };
-        if module_handle as PVOID == NULL {
-            return Err(ReadMemoryError::Failed);
-        }
-
-        let load_library = CString::new("LoadLibraryA").map_err(|_| ReadMemoryError::Failed)?;
-        let addr = unsafe { GetProcAddress(module_handle, load_library.into_raw()) };
-        if addr as PVOID == NULL {
-            return Err(ReadMemoryError::Failed);
-        }
-
-        Ok(unsafe { transmute(addr) })
+    fn get_load_library(&self) -> Result<LPTHREAD_START_ROUTINE, anyhow::Error> {
+        let kernel32 = self.get_kernel32_addr()?;
+        let load_library_rva = get_load_library_rva().map_err(|_| ReadMemoryError::Failed)?;
+        Ok(unsafe { transmute(kernel32 + load_library_rva) })
     }
 }
 
@@ -482,6 +538,30 @@ pub fn write_n_bytes(
 struct Args {
     #[clap(multiple_values = true)]
     dll: Vec<String>,
+}
+
+fn get_load_library_rva() -> Result<usize, anyhow::Error> {
+    let mut wow64_path = [0; MAX_PATH];
+    let result = unsafe { GetSystemWow64DirectoryW(wow64_path.as_mut_ptr(), MAX_PATH as u32) };
+
+    if result == 0 {
+        return Err(anyhow!("Failed to get WOW64 directory"));
+    }
+
+    let mut kernel32_path =
+        PathBuf::from(U16Str::from_slice(&wow64_path[..result as usize]).to_os_string());
+    kernel32_path.push("kernel32.dll");
+
+    // load the dll as a pe and extract the fn offsets
+    let module_file_buffer = std::fs::read(kernel32_path)?;
+    let pe = PE::parse(&module_file_buffer)?;
+    let load_library_export = pe
+        .exports
+        .iter()
+        .find(|export| matches!(export.name, Some("LoadLibraryA")))
+        .ok_or(anyhow!("Failed to find LoadLibraryA"))?;
+
+    Ok(load_library_export.rva)
 }
 
 fn main() -> Result<(), anyhow::Error> {
