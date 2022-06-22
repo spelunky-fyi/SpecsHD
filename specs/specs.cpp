@@ -7,6 +7,7 @@
 #include "3rdparty/imgui/imgui.h"
 
 #include "hd.h"
+#include "ui.h"
 
 // Global States
 DWORD gBaseAddress = NULL;
@@ -871,6 +872,9 @@ void drawDebugTab() {
 }
 
 void drawToolWindow() {
+  if (!ui::open) {
+    return;
+  }
   ImGuiIO &io = ImGui::GetIO();
 
   ImGui::SetNextWindowPos(ImVec2{0.f, 0.f}, ImGuiCond_FirstUseEver);

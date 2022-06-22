@@ -183,8 +183,7 @@ LRESULT CALLBACK WindowProcess(HWND window, UINT message, WPARAM wideParam,
     ui::open = !ui::open;
   }
 
-  if (ui::open &&
-      ImGui_ImplWin32_WndProcHandler(window, message, wideParam, longParam)) {
+  if (ImGui_ImplWin32_WndProcHandler(window, message, wideParam, longParam)) {
     return 1L;
   }
 
