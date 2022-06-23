@@ -689,7 +689,7 @@ void drawLevelTab() {
   }
 }
 
-void ensureLockedAmountsForPlayer(Entity *player, PlayerData &data,
+void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
                                   PlayerState *state) {
   if (state->LockHealth) {
     // If you ressurect a player it gets into a bad state.
@@ -729,7 +729,7 @@ void ensureLockedAmounts() {
   }
 }
 
-void drawPlayerTab(Entity *player, PlayerData &data, PlayerState *state) {
+void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   if (!player) {
     ImGui::Text("No Player Entity");
     return;
