@@ -1063,6 +1063,13 @@ void drawSelectedEntityTab() {
     ImGui::InputInt("Favor given", &entityActive->favor_given);
     ImGui::InputFloat("Velocity x", &entityActive->velocity_x);
     ImGui::InputFloat("Velocity y", &entityActive->velocity_y);
+    if (ImGui::CollapsingHeader("Flags2")) {
+      for (size_t i = 0x1f0; i <= 0x218; ++i)
+      {
+        char* addr = ((char*)gSelectedEntity) + i;
+        drawCharBool(std::format("Flag {:X}", i).c_str(), *addr);
+      }
+    }
   }
   if (ImGui::CollapsingHeader("Raw Entity Values")) {
     for (size_t i = 0; i < sizeofEntityKind(gSelectedEntity->entity_kind); i += 4)
