@@ -3,137 +3,7 @@
 #include <stdint.h>
 
 #include "Windows.h"
-
-enum class Ownership : int32_t {
-  Unowned = -99,
-  HiredHand = -1,
-  Player1 = 0,
-  Player2 = 1,
-  Player3 = 2,
-  Player4 = 3
-};
-
-enum class EntityKind : int32_t {
-  KIND_ENTITY = -99,
-  KIND_FLOOR = 0,
-  KIND_ACTIVE = 1,
-  KIND_PLAYER = 2,
-  KIND_MONSTER = 3,
-  KIND_ITEM = 4,
-  KIND_BACKGROUND = 5,
-  KIND_EXPLOSION = 6
-};
-
-class Entity {
-public:
-  char pad_0000[8];              // 0x0000
-  EntityKind N00000992;          // 0x0008
-  uint32_t entity_type;          // 0x000C
-  uint32_t bin_x;                // 0x0010
-  uint32_t bin_y;                // 0x0014
-  Ownership owner;               // 0x0018
-  char pad_001C[4];              // 0x001C
-  int32_t N00000997;             // 0x0020
-  char pad_0024[8];              // 0x0024
-  float N0000099B;               // 0x002C
-  float x;                       // 0x0030
-  float y;                       // 0x0034
-  float width;                   // 0x0038
-  float height;                  // 0x003C
-  float current_z;               // 0x0040
-  float original_z;              // 0x0044
-  float N000009A2;               // 0x0048
-  float hitbox_up;               // 0x004C
-  float hitbox_down;             // 0x0050
-  float hitbox_x;                // 0x0054
-  float N000009A6;               // 0x0058
-  float N000009A7;               // 0x005C
-  float N000009A8;               // 0x0060
-  float N000009A9;               // 0x0064
-  float N000009AA;               // 0x0068
-  float N000009AB;               // 0x006C
-  float N000009AC;               // 0x0070
-  float N000009AD;               // 0x0074
-  float N000009AE;               // 0x0078
-  float N000009AF;               // 0x007C
-  float N000009B0;               // 0x0080
-  float N000009B1;               // 0x0084
-  float N000009B2;               // 0x0088
-  float N000009B3;               // 0x008C
-  float N000009B4;               // 0x0090
-  float N00000DA9;               // 0x0094
-  float N000009B7;               // 0x0098
-  uint8_t deletion_flag;         // 0x009C
-  uint8_t horizontal_flip;       // 0x009D
-  uint8_t N00000DAD;             // 0x009E
-  uint8_t N000009B7b;            // 0x009F
-  uint8_t N000009B9;             // 0x00A0
-  uint8_t N000017EF;             // 0x00A1
-  uint8_t N000017FE;             // 0x00A2
-  uint8_t N000017F0;             // 0x00A3
-  uint8_t N000009BA;             // 0x00A4
-  uint8_t N000017F2;             // 0x00A5
-  uint8_t N00001801;             // 0x00A6
-  uint8_t N000017F3;             // 0x00A7
-  uint8_t N000009BB;             // 0x00A8
-  uint8_t N000017F5;             // 0x00A9
-  uint8_t N00001804;             // 0x00AA
-  uint8_t N000017F6;             // 0x00AB
-  uint8_t translucent;           // 0x00AC
-  uint8_t invisible;             // 0x00AD
-  uint8_t N00001807;             // 0x00AE
-  uint8_t N000017F9;             // 0x00AF
-  uint8_t brighten_maybe;        // 0x00B0
-  uint8_t N000017FB;             // 0x00B1
-  uint8_t eviscerate;            // 0x00B2
-  uint8_t N000017FC;             // 0x00B3
-  class Texture *texture_info;   // 0x00B4
-  char pad_00B8[4];              // 0x00B8
-  Entity *embedded_deco;         // 0x00BC
-  Entity *top_deco;              // 0x00C0
-  Entity *bottom_deco;           // 0x00C4
-  Entity *left_deco;             // 0x00C8
-  Entity *right_deco;            // 0x00CC
-  char pad_00D0[100];            // 0x00D0
-  uint32_t animation_type;       // 0x0134
-  uint32_t animation_frame;      // 0x0138
-  uint32_t N00000DB3;            // 0x013C
-  int32_t health;                // 0x0140
-  char pad_0144[8];              // 0x0144
-  uint32_t favor_given;          // 0x014C
-  char pad_0150[136];            // 0x0150
-  float max_run_velocity_x;      // 0x01D8
-  float N00000B24;               // 0x01DC
-  float jump_multiplier;         // 0x01E0
-  char pad_01E4[28];             // 0x01E4
-  uint8_t N00000B2D;             // 0x0200
-  uint8_t N0007A094;             // 0x0201
-  uint8_t N0007A097;             // 0x0202
-  uint8_t N0007A095;             // 0x0203
-  uint8_t on_floor;              // 0x0204
-  uint8_t N0007A02A;             // 0x0205
-  uint8_t ducking;               // 0x0206
-  uint8_t ledge_hanging;         // 0x0207
-  char pad_0208[4];              // 0x0208
-  uint8_t N00000B30;             // 0x020C
-  uint8_t N0007A023;             // 0x020D
-  uint8_t N0007A026;             // 0x020E
-  uint8_t N0007A024;             // 0x020F
-  uint8_t N00000B31;             // 0x0210
-  uint8_t N0007A08F;             // 0x0211
-  char pad_0212[30];             // 0x0212
-  class Entity *holder_entity;   // 0x0230
-  class Entity *holding_entity;  // 0x0234
-  class Entity *backitem_entity; // 0x0238
-  char pad_023C[8];              // 0x023C
-  float velocity_x;              // 0x0244
-  float velocity_y;              // 0x0248
-  char pad_024C[72];             // 0x024C
-  class N0008895B *N00000DD4;    // 0x0294
-  char pad_0298[176];            // 0x0298
-
-  void PlaySound(const char *audioName);
-};
+#include "hd_entity.h"
 
 class CameraState {
 public:
@@ -371,10 +241,10 @@ public:
   uint8_t N0000100D;                                  // 0x44062A
   uint8_t N00001005;                                  // 0x44062B
   char pad_44062C[88];                                // 0x44062C
-  Entity *player1;                                    // 0x440684
-  Entity *player2;                                    // 0x440688
-  Entity *player3;                                    // 0x44068C
-  Entity *player4;                                    // 0x440690
+  EntityPlayer *player1;                              // 0x440684
+  EntityPlayer *player2;                              // 0x440688
+  EntityPlayer *player3;                              // 0x44068C
+  EntityPlayer *player4;                              // 0x440690
   PlayerData player1_data;                            // 0x440694
   PlayerData player2_data;                            // 0x441B38
   PlayerData player3_data;                            // 0x442FDC
