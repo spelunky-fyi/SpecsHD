@@ -260,6 +260,7 @@ struct EnabledEntities {
   bool unknown1400 = false;
   bool foregroundEntities = false;
   bool lightEmittingEntities = false;
+  bool _4cStructEntities = false;
 
   int excludeEntityInput = -1;
   std::unordered_set<uint32_t> excluded = {171, 177};
@@ -468,6 +469,8 @@ bool forAllEntities(EntityCallback callback) {
   // Backgrounds
   if (forEntities(callback, gGlobalState->level_state->entity_backgrounds,
                 gGlobalState->level_state->entity_backgrounds_count)) return true;
+  if (forEntities(callback, gGlobalState->_4cstruct->entities,
+                  160)) return true;
   return false;
 }
 
@@ -508,6 +511,11 @@ void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback) {
   if (enabledEnts.backgroundEntities) {
     forEntities(enabledEnts.excluded, callback, gGlobalState->level_state->entity_backgrounds,
                   gGlobalState->level_state->entity_backgrounds_count);
+  }
+
+  if (enabledEnts._4cStructEntities) {
+    forEntities(enabledEnts.excluded, callback, gGlobalState->_4cstruct->entities,
+                  160);
   }
 }
 
@@ -922,6 +930,8 @@ void drawToggleEntityTab(const char* preText, EnabledEntities &enabledEnts) {
                   &enabledEnts.floorBgEntities);
   ImGui::Checkbox(std::format("{} Background Entities", preText).c_str(),
                   &enabledEnts.backgroundEntities);
+  ImGui::Checkbox(std::format("{} 4c Struct Entities", preText).c_str(),
+                  &enabledEnts._4cStructEntities);
   
   ImGui::InputInt(std::format("Exclude Entity {}", preText).c_str(), &enabledEnts.excludeEntityInput);
   if (ImGui::Button("Exclude")) {

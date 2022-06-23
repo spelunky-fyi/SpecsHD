@@ -133,6 +133,11 @@ public:
 };                                                        // Size: 0x366D8
 static_assert(sizeof(EntityStruct) == 0x366D8);
 
+class _4cStruct {
+public:
+  Entity *entities[160];
+};
+
 class GlobalState {
 public:
   char pad_0000[4];             // 0x0000
@@ -149,7 +154,7 @@ public:
   class Controls *controls;                           // 0x0040
   class FmodReverbProperties *fmod_reverb_properties; // 0x0044
   class Particles *particles;                         // 0x0048
-  void *_4cstruct;                                    // 0x004C
+  _4cStruct *_4cstruct;                               // 0x004C
   void *_50struct;                                    // 0x0050
   char pad_0054[4];                                   // 0x0054
   uint32_t screen_state;                              // 0x0058
