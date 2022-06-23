@@ -286,11 +286,33 @@ struct SpawnState {
 };
 SpawnState gSpawnState = {};
 
+void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
+  DWORD oldrights;
+  VirtualProtectEx(process, (LPVOID)addr, size, PAGE_EXECUTE_READWRITE,
+                   &oldrights);
+
+  WriteProcessMemory(process, (LPVOID)addr, value, size, NULL);
+  VirtualProtectEx(process, (LPVOID)addr, size, oldrights, &oldrights);
+}
+
 void specsOnInit() {
   gBaseAddress = (size_t)GetModuleHandleA(NULL);
   setupOffsets(gBaseAddress);
+  
   gDebugState.Selection.activeEntities = true;
   gDebugState.Selection.floorEntities = true;
+
+  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                 PROCESS_CREATE_THREAD,
+                             0, GetCurrentProcessId());
+
+  BYTE patch[] = {0x4a};
+  patchReadOnlyCode(process, gBaseAddress + 0x135B2A, patch, 1);
+
+  BYTE patch2[] = {0xF0};
+  patchReadOnlyCode(process, gBaseAddress + 0x1366C6, patch2, 1);
+  CloseHandle(process);
 }
 
 struct PlayerState {

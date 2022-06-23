@@ -6,7 +6,7 @@
 
 #include <stdexcept>
 
-#include "specs.h";
+#include "specs.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND window,
                                                              UINT message,

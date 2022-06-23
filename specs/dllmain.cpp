@@ -17,7 +17,13 @@ void WINAPI MainThread(const HMODULE instance) {
     goto DIE;
   }
 
+#ifdef DEV
+  while (!GetAsyncKeyState(VK_END) & 1) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  }
+#else
   return;
+#endif
 
 DIE:
   hooks::Destroy();
