@@ -1102,7 +1102,6 @@ void drawGlobalStateTab() {
   ImGui::InputScalar("flag_player", ImGuiDataType_U32, &gGlobalState->flag_player);
   ImGui::InputScalar("level", ImGuiDataType_U32, &gGlobalState->level);
   ImGui::InputScalar("level_track", ImGuiDataType_U32, &gGlobalState->level_track);
-  ImGui::InputScalar("has_spawned_udjat", ImGuiDataType_U32, &gGlobalState->has_spawned_udjat);
   if (ImGui::CollapsingHeader("GlobalState Flags")) {
     drawCharBool("dark_level", gGlobalState->dark_level);
     drawCharBool("altar_spawned", gGlobalState->altar_spawned);
