@@ -33,3 +33,5 @@
 
 build
 target
+utils/Spelunky.exe.h
+utils/classes.h
