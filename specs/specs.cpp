@@ -2,8 +2,8 @@
 #include <Windows.h>
 #include <algorithm>
 #include <format>
-#include <unordered_set>
 #include <functional>
+#include <unordered_set>
 
 #include "3rdparty/imgui/imgui.h"
 
@@ -16,7 +16,11 @@ ImDrawList *gOverlayDrawList = NULL;
 
 CameraState *gCameraState = NULL;
 GlobalState *gGlobalState = NULL;
-Entity* gSelectedEntity = NULL;
+Entity *gSelectedEntity = NULL;
+
+int gWindowedMode = 0;
+int gDisplayWidth = 0;
+int gDisplayHeight = 0;
 
 const size_t gNumAudioNames = 230;
 const char *gAudioNames[gNumAudioNames] = {
@@ -299,7 +303,7 @@ void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
 void specsOnInit() {
   gBaseAddress = (size_t)GetModuleHandleA(NULL);
   setupOffsets(gBaseAddress);
-  
+
   gDebugState.Selection.activeEntities = true;
   gDebugState.Selection.floorEntities = true;
 
@@ -328,27 +332,37 @@ struct PlayerState {
 };
 PlayerState gPlayersState[4] = {{}, {}, {}, {}};
 
-ImVec2 screenToGame(ImVec2 screen) {
-  ImGuiIO &io = ImGui::GetIO();
-  auto size = io.DisplaySize;
+// If we want to normalize the screen position to 0,0 at the top-left
+// if (gWindowedMode == 2) {
+//   RECT windowRect;
+//   GetWindowRect(ui::window, &windowRect);
+//   screen.x = screen.x + windowRect.left;
+//   screen.y = screen.y + windowRect.top;
+// }
 
-  auto x = (screen.x - (size.x / 2)) * (20 / size.x) + gCameraState->camera_x;
-  auto y = (screen.y - (size.y / 2)) * -(20 / size.x) + gCameraState->camera_y;
+ImVec2 screenToGame(ImVec2 screen) {
+
+  auto x =
+      (screen.x - ((float)gDisplayWidth / 2)) * (20 / (float)gDisplayWidth) +
+      gCameraState->camera_x;
+  auto y =
+      (screen.y - ((float)gDisplayHeight / 2)) * -(20 / (float)gDisplayWidth) +
+      gCameraState->camera_y;
 
   return {x, y};
 }
 
 ImVec2 gameToScreen(ImVec2 game) {
-  ImGuiIO &io = ImGui::GetIO();
-  auto size = io.DisplaySize;
-
-  auto x = (game.x - gCameraState->camera_x) / (20 / size.x) + (size.x / 2);
-  auto y = (game.y - gCameraState->camera_y) / -(20 / size.x) + (size.y / 2);
-
+  auto x = (game.x - gCameraState->camera_x) / (20 / (float)gDisplayWidth) +
+           ((float)gDisplayWidth / 2);
+  auto y = (game.y - gCameraState->camera_y) / -(20 / (float)gDisplayWidth) +
+           ((float)gDisplayHeight / 2);
   return {x, y};
 }
 
-void drawEntityHitbox(Entity *ent, ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 238.0f, 0.7f})) {
+void drawEntityHitbox(Entity *ent,
+                      ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 238.0f,
+                                                        0.7f})) {
   auto screen = gameToScreen({ent->x, ent->y});
   ImVec2 topLeft =
       gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
@@ -359,14 +373,11 @@ void drawEntityHitbox(Entity *ent, ImU32 color = ImGui::GetColorU32({255.f, 0.0f
   ImVec2 bottomLeft =
       gameToScreen({ent->x - ent->hitbox_x, ent->y - ent->hitbox_down});
 
-  gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft,
-                            color,
+  gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft, color,
                             1.f);
 }
 
-void drawEntityHitboxDefault(Entity *ent) {
-  drawEntityHitbox(ent);
-}
+void drawEntityHitboxDefault(Entity *ent) { drawEntityHitbox(ent); }
 
 void drawPacifistOverlay() {
   for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
@@ -412,7 +423,7 @@ void drawTileBorders() {
   }
 }
 
-void drawEntityId(Entity* ent) {
+void drawEntityId(Entity *ent) {
   auto screen = gameToScreen({ent->x, ent->y});
   auto out = std::format("{}", ent->entity_type);
   gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 5,
@@ -420,8 +431,9 @@ void drawEntityId(Entity* ent) {
                             out.c_str());
 }
 
-using EntityCallback = std::function<void (Entity* e)>;
-void forEntities(std::unordered_set<uint32_t> excludedEntities, EntityCallback callback, Entity **entities, size_t count) {
+using EntityCallback = std::function<void(Entity *e)>;
+void forEntities(std::unordered_set<uint32_t> excludedEntities,
+                 EntityCallback callback, Entity **entities, size_t count) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
@@ -436,80 +448,94 @@ void forEntities(std::unordered_set<uint32_t> excludedEntities, EntityCallback c
   }
 }
 
-bool findEntityArray(Entity* searchEnt, Entity **entities, size_t count) {
+bool findEntityArray(Entity *searchEnt, Entity **entities, size_t count) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
       continue;
     }
 
-    if (searchEnt == ent) return true;
+    if (searchEnt == ent)
+      return true;
   }
   return false;
 }
 
 bool findEntity(Entity *searchEnt) {
-  return (findEntityArray(searchEnt, gGlobalState->entities->entities_active,
-                          gGlobalState->entities->entities_active_count) ||
-          findEntityArray(searchEnt, gGlobalState->entities->array_1400,
-                          gGlobalState->entities->array_1400_count) ||
-          findEntityArray(searchEnt, gGlobalState->entities->entities_foreground,
-                          gGlobalState->entities->array_entities_foreground_count) ||
-          findEntityArray(searchEnt, gGlobalState->entities->entities_foreground,
-                          gGlobalState->entities->array_entities_foreground_count) ||
-          findEntityArray(searchEnt, gGlobalState->entities->entities_light_emitting,
-                          gGlobalState->entities->entities_light_emitting_count) ||
-          findEntityArray(searchEnt, gGlobalState->level_state->entity_floors, 4692) ||
+  return (
+      findEntityArray(searchEnt, gGlobalState->entities->entities_active,
+                      gGlobalState->entities->entities_active_count) ||
+      findEntityArray(searchEnt, gGlobalState->entities->array_1400,
+                      gGlobalState->entities->array_1400_count) ||
+      findEntityArray(
+          searchEnt, gGlobalState->entities->entities_foreground,
+          gGlobalState->entities->array_entities_foreground_count) ||
+      findEntityArray(
+          searchEnt, gGlobalState->entities->entities_foreground,
+          gGlobalState->entities->array_entities_foreground_count) ||
+      findEntityArray(searchEnt,
+                      gGlobalState->entities->entities_light_emitting,
+                      gGlobalState->entities->entities_light_emitting_count) ||
+      findEntityArray(searchEnt, gGlobalState->level_state->entity_floors,
+                      4692) ||
 
-          findEntityArray(searchEnt, gGlobalState->level_state->entity_floors_bg, 4692) ||
+      findEntityArray(searchEnt, gGlobalState->level_state->entity_floors_bg,
+                      4692) ||
 
-          findEntityArray(searchEnt, gGlobalState->level_state->entity_backgrounds,
-                          gGlobalState->level_state->entity_backgrounds_count) ||
-          findEntityArray(searchEnt, gGlobalState->_4cstruct->entities, 160));
+      findEntityArray(searchEnt, gGlobalState->level_state->entity_backgrounds,
+                      gGlobalState->level_state->entity_backgrounds_count) ||
+      findEntityArray(searchEnt, gGlobalState->_4cstruct->entities, 160));
 }
 
 void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback) {
-  
+
   // Active
   if (enabledEnts.activeEntities) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->entities->entities_active,
-                  gGlobalState->entities->entities_active_count);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->entities->entities_active,
+                gGlobalState->entities->entities_active_count);
   }
 
   // 1400
   if (enabledEnts.unknown1400) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->entities->array_1400,
-                  gGlobalState->entities->array_1400_count);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->entities->array_1400,
+                gGlobalState->entities->array_1400_count);
   }
   // Foreground
   if (enabledEnts.foregroundEntities) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->entities->entities_foreground,
-                  gGlobalState->entities->array_entities_foreground_count);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->entities->entities_foreground,
+                gGlobalState->entities->array_entities_foreground_count);
   }
 
   // Light Emitting
   if (enabledEnts.lightEmittingEntities) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->entities->entities_light_emitting,
-                  gGlobalState->entities->entities_light_emitting_count);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->entities->entities_light_emitting,
+                gGlobalState->entities->entities_light_emitting_count);
   }
 
   // Floors
   if (enabledEnts.floorEntities) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->level_state->entity_floors, 4692);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->level_state->entity_floors, 4692);
   }
   if (enabledEnts.floorBgEntities) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->level_state->entity_floors_bg, 4692);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->level_state->entity_floors_bg, 4692);
   }
 
   // Backgrounds
   if (enabledEnts.backgroundEntities) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->level_state->entity_backgrounds,
-                  gGlobalState->level_state->entity_backgrounds_count);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->level_state->entity_backgrounds,
+                gGlobalState->level_state->entity_backgrounds_count);
   }
 
   if (enabledEnts._4cStructEntities) {
-    forEntities(enabledEnts.excluded, callback, gGlobalState->_4cstruct->entities,
-                  160);
+    forEntities(enabledEnts.excluded, callback,
+                gGlobalState->_4cstruct->entities, 160);
   }
 }
 
@@ -532,12 +558,12 @@ void drawOverlayWindow() {
           ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
   gOverlayDrawList = ImGui::GetWindowDrawList();
 
-  //check if selected entity exists
+  // check if selected entity exists
   if (!findEntity(gSelectedEntity)) {
     gSelectedEntity = NULL;
   }
 
-  Entity* closestEnt = NULL;
+  Entity *closestEnt = NULL;
   if (ImGui::IsWindowHovered()) {
     if (io.MouseClicked[1]) {
       auto player = gGlobalState->player1;
@@ -556,11 +582,11 @@ void drawOverlayWindow() {
       }
     }
 
-
-    if (gDebugState.DrawClosestEntHitbox || gDebugState.DrawClosestEntId || io.MouseClicked[2]) {
+    if (gDebugState.DrawClosestEntHitbox || gDebugState.DrawClosestEntId ||
+        io.MouseClicked[2]) {
       auto gamePos = screenToGame(io.MousePos);
       float closestEntDist = 2.5;
-      EntityCallback getClosestEnt = [&](Entity* e) {
+      EntityCallback getClosestEnt = [&](Entity *e) {
         auto eDist = dist(gamePos, ImVec2(e->x, e->y));
         if (eDist < closestEntDist) {
           closestEnt = e;
@@ -595,7 +621,8 @@ void drawOverlayWindow() {
   forEnabledEntities(gDebugState.Ids, &drawEntityId);
 
   if (gSelectedEntity != NULL && gDebugState.DrawSelectedEntHitbox) {
-    drawEntityHitbox(gSelectedEntity, ImGui::GetColorU32({1.0f, 1.0f, 1.0f, .9f}));
+    drawEntityHitbox(gSelectedEntity,
+                     ImGui::GetColorU32({1.0f, 1.0f, 1.0f, .9f}));
   }
   if (closestEnt) {
     if (gDebugState.DrawClosestEntHitbox)
@@ -904,23 +931,27 @@ void drawAudioTab() {
   }
 }
 
-void drawToggleEntityTab(const char* preText, EnabledEntities &enabledEnts) {
-  ImGui::Checkbox(std::format("{} Active Entities", preText).c_str(), &enabledEnts.activeEntities);
+void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
+  ImGui::Checkbox(std::format("{} Active Entities", preText).c_str(),
+                  &enabledEnts.activeEntities);
   ImGui::Checkbox(std::format("{} Light Emitting", preText).c_str(),
                   &enabledEnts.lightEmittingEntities);
-  ImGui::Checkbox(std::format("{} Unknown 1400 (BG + Active?)", preText).c_str(),
-                  &enabledEnts.unknown1400);
+  ImGui::Checkbox(
+      std::format("{} Unknown 1400 (BG + Active?)", preText).c_str(),
+      &enabledEnts.unknown1400);
   ImGui::Checkbox(std::format("{} Foreground Entities", preText).c_str(),
                   &enabledEnts.foregroundEntities);
-  ImGui::Checkbox(std::format("{} Floor Entities", preText).c_str(), &enabledEnts.floorEntities);
+  ImGui::Checkbox(std::format("{} Floor Entities", preText).c_str(),
+                  &enabledEnts.floorEntities);
   ImGui::Checkbox(std::format("{} Floor Background Entities", preText).c_str(),
                   &enabledEnts.floorBgEntities);
   ImGui::Checkbox(std::format("{} Background Entities", preText).c_str(),
                   &enabledEnts.backgroundEntities);
   ImGui::Checkbox(std::format("{} 4c Struct Entities", preText).c_str(),
                   &enabledEnts._4cStructEntities);
-  
-  ImGui::InputInt(std::format("Exclude Entity {}", preText).c_str(), &enabledEnts.excludeEntityInput);
+
+  ImGui::InputInt(std::format("Exclude Entity {}", preText).c_str(),
+                  &enabledEnts.excludeEntityInput);
   if (ImGui::Button("Exclude")) {
     if (enabledEnts.excludeEntityInput >= 0) {
       enabledEnts.excluded.insert(enabledEnts.excludeEntityInput);
@@ -936,10 +967,24 @@ void drawToggleEntityTab(const char* preText, EnabledEntities &enabledEnts) {
   }
 }
 
+int FindExtraWindowHeight(HWND h) {
+  RECT w, c;
+  GetWindowRect(h, &w);
+  GetClientRect(h, &c);
+  return (w.bottom - w.top) - (c.bottom - c.top);
+}
+
 void drawDebugTab() {
   ImGuiIO &io = ImGui::GetIO();
 
+  auto gameMouse = screenToGame(io.MousePos);
   ImGui::Text("Mouse: %f %f", io.MousePos.x, io.MousePos.y);
+  ImGui::Text("Mouse (Game): %f %f", gameMouse.x, gameMouse.y);
+  if (gGlobalState->player1) {
+    auto screenPlayer =
+        gameToScreen({gGlobalState->player1->x, gGlobalState->player1->y});
+    ImGui::Text("Player (Screen): %f %f", screenPlayer.x, screenPlayer.y);
+  }
   ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
@@ -951,8 +996,10 @@ void drawDebugTab() {
     drawToggleEntityTab("Draw", gDebugState.Ids);
   }
   if (ImGui::CollapsingHeader("Selectable Entities")) {
-    ImGui::Checkbox("Draw Selected Entity Hitbox", &gDebugState.DrawSelectedEntHitbox);
-    ImGui::Checkbox("Draw Closest Entity Hitbox", &gDebugState.DrawClosestEntHitbox);
+    ImGui::Checkbox("Draw Selected Entity Hitbox",
+                    &gDebugState.DrawSelectedEntHitbox);
+    ImGui::Checkbox("Draw Closest Entity Hitbox",
+                    &gDebugState.DrawClosestEntHitbox);
     ImGui::Checkbox("Draw Closest Entity Id", &gDebugState.DrawClosestEntId);
     ImGui::Separator();
     drawToggleEntityTab("Enable", gDebugState.Selection);
@@ -960,8 +1007,7 @@ void drawDebugTab() {
 }
 
 size_t sizeofEntityKind(EntityKind entityKind) {
-  switch (entityKind)
-  {
+  switch (entityKind) {
   case EntityKind::KIND_FLOOR:
     return sizeof(EntityFloor);
   case EntityKind::KIND_ACTIVE:
@@ -983,13 +1029,13 @@ size_t sizeofEntityKind(EntityKind entityKind) {
   }
 }
 
-void drawCharBool(const char* label, char &flag) {
+void drawCharBool(const char *label, char &flag) {
   bool bflag = flag ? 1 : 0;
   ImGui::Checkbox(label, &bflag);
   bflag ? flag = 1 : flag = 0;
 }
 
-void drawCharBool(const char* label, uint8_t &flag) {
+void drawCharBool(const char *label, uint8_t &flag) {
   bool bflag = flag ? 1 : 0;
   ImGui::Checkbox(label, &bflag);
   bflag ? flag = 1 : flag = 0;
@@ -1004,7 +1050,7 @@ void drawSelectedEntityTab() {
   ImGui::Text("Address: 0x%X", (uint32_t)gSelectedEntity);
   ImGui::Text("Entity ID: %d", gSelectedEntity->entity_type);
   ImGui::Text("Entity kind: %d", gSelectedEntity->entity_kind);
-  
+
   if (ImGui::CollapsingHeader("Position, hitbox, etc.")) {
     ImGui::InputFloat("Entity x", &gSelectedEntity->x);
     ImGui::InputFloat("Entity y", &gSelectedEntity->y);
@@ -1044,36 +1090,37 @@ void drawSelectedEntityTab() {
     drawCharBool("flag_23", gSelectedEntity->flag_23);
     drawCharBool("flag_24", gSelectedEntity->flag_24);
   }
-  if ((uint32_t)gSelectedEntity->entity_kind > 0 && (uint32_t)gSelectedEntity->entity_kind < 5 && ImGui::CollapsingHeader("EntityActive Stuff")) {
+  if ((uint32_t)gSelectedEntity->entity_kind > 0 &&
+      (uint32_t)gSelectedEntity->entity_kind < 5 &&
+      ImGui::CollapsingHeader("EntityActive Stuff")) {
     auto entityActive = reinterpret_cast<EntityActive *>(gSelectedEntity);
     ImGui::InputInt("Health", &entityActive->health);
     ImGui::InputInt("Favor given", &entityActive->favor_given);
     ImGui::InputFloat("Velocity x", &entityActive->velocity_x);
     ImGui::InputFloat("Velocity y", &entityActive->velocity_y);
     if (ImGui::CollapsingHeader("Flags2")) {
-      for (size_t i = 0x1f0; i <= 0x218; ++i)
-      {
-        char* addr = ((char*)gSelectedEntity) + i;
+      for (size_t i = 0x1f0; i <= 0x218; ++i) {
+        char *addr = ((char *)gSelectedEntity) + i;
         drawCharBool(std::format("Flag {:X}", i).c_str(), *addr);
       }
     }
   }
   if (ImGui::CollapsingHeader("Raw Entity Values")) {
-    for (size_t i = 0; i < sizeofEntityKind(gSelectedEntity->entity_kind); i += 4)
-    {
-      char* addr = ((char*)gSelectedEntity) + i;
+    for (size_t i = 0; i < sizeofEntityKind(gSelectedEntity->entity_kind);
+         i += 4) {
+      char *addr = ((char *)gSelectedEntity) + i;
       ImGui::Text("Addr offset: 0x%X", i);
       {
         uint32_t a1, a2, a3, a4;
         a1 = (*(addr)) & (0xFF);
-        a2 = (*(addr+1)) & (0xFF);
-        a3 = (*(addr+2)) & (0xFF);
-        a4 = (*(addr+3)) & (0xFF);
+        a2 = (*(addr + 1)) & (0xFF);
+        a3 = (*(addr + 2)) & (0xFF);
+        a4 = (*(addr + 3)) & (0xFF);
         ImGui::Text("Byte: %X %X %X %X", a1, a2, a3, a4);
       }
-      ImGui::Text("uInt: %u", *(uint32_t*)addr);
-      ImGui::Text("Hex: 0x%X", *(uint32_t*)addr);
-      ImGui::Text("Float: %f", *(float*)addr);
+      ImGui::Text("uInt: %u", *(uint32_t *)addr);
+      ImGui::Text("Hex: 0x%X", *(uint32_t *)addr);
+      ImGui::Text("Float: %f", *(float *)addr);
       ImGui::Separator();
     }
     ImGui::EndTabItem();
@@ -1084,11 +1131,15 @@ void drawSelectedEntityTab() {
 }
 
 void drawGlobalStateTab() {
-  ImGui::InputScalar("screen_state", ImGuiDataType_U32, &gGlobalState->screen_state);
-  ImGui::InputScalar("play_state", ImGuiDataType_U32, &gGlobalState->play_state);
-  ImGui::InputScalar("flag_player", ImGuiDataType_U32, &gGlobalState->flag_player);
+  ImGui::InputScalar("screen_state", ImGuiDataType_U32,
+                     &gGlobalState->screen_state);
+  ImGui::InputScalar("play_state", ImGuiDataType_U32,
+                     &gGlobalState->play_state);
+  ImGui::InputScalar("flag_player", ImGuiDataType_U32,
+                     &gGlobalState->flag_player);
   ImGui::InputScalar("level", ImGuiDataType_U32, &gGlobalState->level);
-  ImGui::InputScalar("level_track", ImGuiDataType_U32, &gGlobalState->level_track);
+  ImGui::InputScalar("level_track", ImGuiDataType_U32,
+                     &gGlobalState->level_track);
   if (ImGui::CollapsingHeader("GlobalState Flags")) {
     drawCharBool("dark_level", gGlobalState->dark_level);
     drawCharBool("altar_spawned", gGlobalState->altar_spawned);
@@ -1110,11 +1161,14 @@ void drawGlobalStateTab() {
     drawCharBool("dead_are_restless", gGlobalState->dead_are_restless);
     drawCharBool("rushing_water", gGlobalState->rushing_water);
     drawCharBool("is_haunted_castle", gGlobalState->is_haunted_castle);
-    drawCharBool("at_haunted_castle_exit", gGlobalState->at_haunted_castle_exit);
+    drawCharBool("at_haunted_castle_exit",
+                 gGlobalState->at_haunted_castle_exit);
     drawCharBool("tiki_village", gGlobalState->tiki_village);
-    drawCharBool("spawned_black_market_entrance", gGlobalState->spawned_black_market_entrance);
+    drawCharBool("spawned_black_market_entrance",
+                 gGlobalState->spawned_black_market_entrance);
     drawCharBool("unused_flag2", gGlobalState->unused_flag2);
-    drawCharBool("spawned_haunted_castle_entrance", gGlobalState->spawned_haunted_castle_entrance);
+    drawCharBool("spawned_haunted_castle_entrance",
+                 gGlobalState->spawned_haunted_castle_entrance);
     drawCharBool("mothership_spawned", gGlobalState->mothership_spawned);
     drawCharBool("moai_spawned", gGlobalState->moai_spawned);
     drawCharBool("is_blackmarket", gGlobalState->is_blackmarket);
@@ -1194,6 +1248,10 @@ void specsOnFrame() {
       reinterpret_cast<CameraState *>(*((DWORD *)(gBaseAddress + 0x154510)));
   gGlobalState =
       reinterpret_cast<GlobalState *>(*((DWORD *)(gBaseAddress + 0x15446C)));
+
+  gWindowedMode = static_cast<int>(*((DWORD *)(gBaseAddress + 0x15a52c)));
+  gDisplayWidth = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a8c)));
+  gDisplayHeight = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a90)));
 
   gGlobalState->N00001004 = 0; // 440629
 

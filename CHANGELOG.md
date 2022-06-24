@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- ID/Hitbox/etc alignments now work in borderless window mode
+
 ## [0.0.4] - 2022-06-23
 
 Welcome Specs HD's second contributor Estebanfer! Thanks!
