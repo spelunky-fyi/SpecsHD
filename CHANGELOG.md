@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - ID/Hitbox/etc alignments now work in borderless window mode
+- Fixed issue where overlay wouldn't be rendered in some scenarios
 
 ## [0.0.4] - 2022-06-23
 

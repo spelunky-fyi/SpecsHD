@@ -967,13 +967,6 @@ void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
   }
 }
 
-int FindExtraWindowHeight(HWND h) {
-  RECT w, c;
-  GetWindowRect(h, &w);
-  GetClientRect(h, &c);
-  return (w.bottom - w.top) - (c.bottom - c.top);
-}
-
 void drawDebugTab() {
   ImGuiIO &io = ImGui::GetIO();
 

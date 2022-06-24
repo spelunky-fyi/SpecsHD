@@ -40,22 +40,13 @@ void hooks::Destroy() noexcept {
 
 long __stdcall hooks::EndScene(IDirect3DDevice9 *device) noexcept {
 
-  static const auto returnAddress = _ReturnAddress();
-
-  const auto result = EndSceneOriginal(device, device);
-
-  // Stop endscene getting called twice
-  if (_ReturnAddress() == returnAddress) {
-    return result;
-  }
-
   if (!ui::setup) {
     ui::SetupMenu(device);
   }
 
   ui::Render();
 
-  return result;
+  return EndSceneOriginal(device, device);
 }
 
 HRESULT __stdcall hooks::Reset(IDirect3DDevice9 *device,
