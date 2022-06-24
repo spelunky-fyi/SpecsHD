@@ -364,9 +364,8 @@ void drawEntityHitbox(Entity *ent, ImU32 color = ImGui::GetColorU32({255.f, 0.0f
                             1.f);
 }
 
-bool drawEntityHitboxDefault(Entity *ent) {
+void drawEntityHitboxDefault(Entity *ent) {
   drawEntityHitbox(ent);
-  return false;
 }
 
 void drawPacifistOverlay() {
@@ -413,16 +412,15 @@ void drawTileBorders() {
   }
 }
 
-bool drawEntityId(Entity* ent) {
+void drawEntityId(Entity* ent) {
   auto screen = gameToScreen({ent->x, ent->y});
   auto out = std::format("{}", ent->entity_type);
   gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 5,
                             ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                             out.c_str());
-  return false;
 }
 
-using EntityCallback = std::function<bool (Entity* e)>;
+using EntityCallback = std::function<void (Entity* e)>;
 void forEntities(std::unordered_set<uint32_t> excludedEntities, EntityCallback callback, Entity **entities, size_t count) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
@@ -438,40 +436,36 @@ void forEntities(std::unordered_set<uint32_t> excludedEntities, EntityCallback c
   }
 }
 
-bool forEntities(EntityCallback callback, Entity **entities, size_t count) {
+bool findEntityArray(Entity* searchEnt, Entity **entities, size_t count) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
       continue;
     }
 
-    if (callback(ent)) return true;
+    if (searchEnt == ent) return true;
   }
   return false;
 }
 
-bool forAllEntities(EntityCallback callback) {
-  // Active
-  if (forEntities(callback, gGlobalState->entities->entities_active,
-                gGlobalState->entities->entities_active_count)) return true;
-  // 1400
-  if (forEntities(callback, gGlobalState->entities->array_1400,
-                gGlobalState->entities->array_1400_count)) return true;
-  // Foreground
-  if (forEntities(callback, gGlobalState->entities->entities_foreground,
-                gGlobalState->entities->array_entities_foreground_count)) return true;
-  // Light Emitting
-  if (forEntities(callback, gGlobalState->entities->entities_light_emitting,
-                gGlobalState->entities->entities_light_emitting_count)) return true;
-  // Floors
-  if (forEntities(callback, gGlobalState->level_state->entity_floors, 4692)) return true;
-  if (forEntities(callback, gGlobalState->level_state->entity_floors_bg, 4692)) return true;
-  // Backgrounds
-  if (forEntities(callback, gGlobalState->level_state->entity_backgrounds,
-                gGlobalState->level_state->entity_backgrounds_count)) return true;
-  if (forEntities(callback, gGlobalState->_4cstruct->entities,
-                  160)) return true;
-  return false;
+bool findEntity(Entity *searchEnt) {
+  return (findEntityArray(searchEnt, gGlobalState->entities->entities_active,
+                          gGlobalState->entities->entities_active_count) ||
+          findEntityArray(searchEnt, gGlobalState->entities->array_1400,
+                          gGlobalState->entities->array_1400_count) ||
+          findEntityArray(searchEnt, gGlobalState->entities->entities_foreground,
+                          gGlobalState->entities->array_entities_foreground_count) ||
+          findEntityArray(searchEnt, gGlobalState->entities->entities_foreground,
+                          gGlobalState->entities->array_entities_foreground_count) ||
+          findEntityArray(searchEnt, gGlobalState->entities->entities_light_emitting,
+                          gGlobalState->entities->entities_light_emitting_count) ||
+          findEntityArray(searchEnt, gGlobalState->level_state->entity_floors, 4692) ||
+
+          findEntityArray(searchEnt, gGlobalState->level_state->entity_floors_bg, 4692) ||
+
+          findEntityArray(searchEnt, gGlobalState->level_state->entity_backgrounds,
+                          gGlobalState->level_state->entity_backgrounds_count) ||
+          findEntityArray(searchEnt, gGlobalState->_4cstruct->entities, 160));
 }
 
 void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback) {
@@ -538,15 +532,9 @@ void drawOverlayWindow() {
           ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
   gOverlayDrawList = ImGui::GetWindowDrawList();
 
-  {//check if selected entity exists
-    bool entityFound = false;
-    forAllEntities([&](Entity *e) -> bool {
-      entityFound = e == gSelectedEntity;
-      return entityFound;
-    });
-    if (!entityFound) {
-      gSelectedEntity = NULL;
-    }
+  //check if selected entity exists
+  if (!findEntity(gSelectedEntity)) {
+    gSelectedEntity = NULL;
   }
 
   Entity* closestEnt = NULL;
@@ -572,13 +560,12 @@ void drawOverlayWindow() {
     if (gDebugState.DrawClosestEntHitbox || gDebugState.DrawClosestEntId || io.MouseClicked[2]) {
       auto gamePos = screenToGame(io.MousePos);
       float closestEntDist = 2.5;
-      EntityCallback getClosestEnt = [&](Entity* e) -> bool {
+      EntityCallback getClosestEnt = [&](Entity* e) {
         auto eDist = dist(gamePos, ImVec2(e->x, e->y));
         if (eDist < closestEntDist) {
           closestEnt = e;
           closestEntDist = eDist;
         }
-        return false;
       };
       forEnabledEntities(gDebugState.Selection, getClosestEnt);
       if (closestEnt && io.MouseClicked[2]) {
