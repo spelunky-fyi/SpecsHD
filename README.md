@@ -29,25 +29,6 @@ cmake -A Win32 -S . -B "build"
 cmake --build build --config Release
 ```
 
-# Injector
-
-You should be able to use any injector however an injector is provided for local development / testing.
-
-## Run Injector
-
-```
-cd injector
-cargo --release -- ..\specs\build\Release\specs.dll
-```
-
-## Build Injector
-
-If you want to build the injector your can run
-
-```
-cargo build --release
-```
-
 # Troubleshooting
 
 ### Seeing a link error when building the DLL

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.4] - 2022-06-23
+
+Welcome Specs HD's second contributor Estebanfer! Thanks!
+
+### Added
+
+- Global State Tab that includes various flags and details from Global State
+- Selected Tab that displays details about a selected entity
+- UI Entities added to Debug
+
+### Changed
+
+- Debug tab now has collapsable menus to help with organization for hitbox/id/selection config
+
 ## [0.0.3] - 2022-06-21
 
 ### Changed
