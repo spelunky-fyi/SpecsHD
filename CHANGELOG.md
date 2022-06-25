@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Level Map view in the Level Tab
+
 ## [0.0.6] - 2022-06-25
 
 ### Fixed

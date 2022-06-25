@@ -669,6 +669,23 @@ void warpToLevel(uint32_t level) {
   gGlobalState->screen_state = 3;
 }
 
+void RectFilled(ImVec2 &size, ImU32 col = IM_COL32_WHITE, float rounding = 0.f,
+                ImDrawFlags flags = 0) {
+
+  ImGui::Dummy(size);
+
+  if (!ImGui::IsItemVisible()) {
+    return;
+  }
+
+  auto p0 = ImGui::GetItemRectMin();
+  auto p1 = ImGui::GetItemRectMax();
+  ImDrawList *draw_list = ImGui::GetWindowDrawList();
+  draw_list->PushClipRect(p0, p1, true);
+  draw_list->AddRectFilled(p0, p1, col, rounding, flags);
+  draw_list->PopClipRect();
+}
+
 void drawLevelTab() {
 
   auto isDisabled =
@@ -765,6 +782,44 @@ void drawLevelTab() {
 
   if (isDisabled) {
     ImGui::EndDisabled();
+  }
+
+  ImVec2 size = {5.f, 5.f};
+  ImGui::Separator();
+  if (ImGui::CollapsingHeader("Level Map")) {
+    for (auto idx = 0; idx < 4692; idx++) {
+      auto ent = gGlobalState->level_state->entity_floors[idx];
+
+      auto col = IM_COL32(183, 183, 183, 255);
+      // Empty
+      if (ent == NULL) {
+        col = IM_COL32(0, 0, 0, 0);
+      } else if (ent->entity_type == 3 || ent->entity_type == 2) {
+        // Doors
+        col = IM_COL32(59, 196, 0, 255);
+      } else if (ent->entity_type == 4 || ent->entity_type == 5) {
+        // Ladders
+        col = IM_COL32(133, 133, 133, 100);
+      } else if (ent->entity_type == 25) {
+        // Bedrock
+        col = IM_COL32(90, 90, 90, 255);
+      } else if (ent->entity_type == 27) {
+        // Water
+        col = IM_COL32(43, 114, 214, 100);
+      } else if (ent->entity_type == 36) {
+        // Lava
+        col = IM_COL32(214, 54, 43, 100);
+      } else if (ent->entity_type == 91) {
+        // Acid
+        col = IM_COL32(43, 214, 77, 100);
+      }
+
+      if (idx % 46 > 0) {
+
+        ImGui::SameLine(0.f, 4.f);
+      }
+      RectFilled(size, col);
+    }
   }
 }
 
