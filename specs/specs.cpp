@@ -582,10 +582,11 @@ void drawOverlayWindow() {
       }
     }
 
+    auto gamePos = screenToGame(io.MousePos);
     if (gDebugState.DrawClosestEntHitbox || gDebugState.DrawClosestEntId ||
         io.MouseClicked[2]) {
-      auto gamePos = screenToGame(io.MousePos);
-      float closestEntDist = 2.5;
+      float closestEntDist = 1;
+      gSelectedEntity = NULL;
       EntityCallback getClosestEnt = [&](Entity *e) {
         auto eDist = dist(gamePos, ImVec2(e->x, e->y));
         if (eDist < closestEntDist) {
@@ -597,6 +598,12 @@ void drawOverlayWindow() {
       if (closestEnt && io.MouseClicked[2]) {
         gSelectedEntity = closestEnt;
       }
+    }
+
+    if (gSelectedEntity != NULL && io.MouseDown[2] &&
+        io.MouseDownDuration[2] > 0.2f) {
+      gSelectedEntity->x = std::lerp(gSelectedEntity->x, gamePos.x, 1.f);
+      gSelectedEntity->y = std::lerp(gSelectedEntity->y, gamePos.y, 1.f);
     }
   }
 
@@ -952,7 +959,7 @@ void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
 
   ImGui::InputInt(std::format("Exclude Entity {}", preText).c_str(),
                   &enabledEnts.excludeEntityInput);
-  if (ImGui::Button("Exclude")) {
+  if (ImGui::Button(std::format("Exclude##Debug{}", preText).c_str())) {
     if (enabledEnts.excludeEntityInput >= 0) {
       enabledEnts.excluded.insert(enabledEnts.excludeEntityInput);
       enabledEnts.excludeEntityInput = 0;
@@ -1099,24 +1106,48 @@ void drawSelectedEntityTab() {
     }
   }
   if (ImGui::CollapsingHeader("Raw Entity Values")) {
-    for (size_t i = 0; i < sizeofEntityKind(gSelectedEntity->entity_kind);
-         i += 4) {
-      char *addr = ((char *)gSelectedEntity) + i;
-      ImGui::Text("Addr offset: 0x%X", i);
-      {
-        uint32_t a1, a2, a3, a4;
-        a1 = (*(addr)) & (0xFF);
-        a2 = (*(addr + 1)) & (0xFF);
-        a3 = (*(addr + 2)) & (0xFF);
-        a4 = (*(addr + 3)) & (0xFF);
-        ImGui::Text("Byte: %X %X %X %X", a1, a2, a3, a4);
+    if (ImGui::BeginTable("Raw Bytes", 6)) {
+
+      ImGui::TableSetupColumn("Offset");
+      ImGui::TableSetupColumn("Bytes");
+      ImGui::TableSetupColumn("Signed");
+      ImGui::TableSetupColumn("Unsigned");
+      ImGui::TableSetupColumn("Hex");
+      ImGui::TableSetupColumn("Float");
+      ImGui::TableHeadersRow();
+
+      for (size_t i = 0; i < sizeofEntityKind(gSelectedEntity->entity_kind);
+           i += 4) {
+
+        ImGui::TableNextRow();
+
+        char *addr = ((char *)gSelectedEntity) + i;
+        ImGui::TableNextColumn();
+        ImGui::Text("0x%X", i);
+        {
+          uint32_t a1, a2, a3, a4;
+          a1 = (*(addr)) & (0xFF);
+          a2 = (*(addr + 1)) & (0xFF);
+          a3 = (*(addr + 2)) & (0xFF);
+          a4 = (*(addr + 3)) & (0xFF);
+          ImGui::TableNextColumn();
+          ImGui::Text("%X %X %X %X", a1, a2, a3, a4);
+        }
+        ImGui::TableNextColumn();
+        ImGui::Text("%d", *(int32_t *)addr);
+
+        ImGui::TableNextColumn();
+        ImGui::Text("%u", *(uint32_t *)addr);
+
+        ImGui::TableNextColumn();
+        ImGui::Text("0x%X", *(uint32_t *)addr);
+
+        ImGui::TableNextColumn();
+        ImGui::Text("%f", *(float *)addr);
       }
-      ImGui::Text("uInt: %u", *(uint32_t *)addr);
-      ImGui::Text("Hex: 0x%X", *(uint32_t *)addr);
-      ImGui::Text("Float: %f", *(float *)addr);
-      ImGui::Separator();
+
+      ImGui::EndTable();
     }
-    ImGui::EndTabItem();
   }
   if (gSelectedEntity->flag_deletion == 1) {
     gSelectedEntity = NULL;

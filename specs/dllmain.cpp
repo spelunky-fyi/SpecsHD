@@ -18,7 +18,7 @@ void WINAPI MainThread(const HMODULE instance) {
   }
 
 #ifdef DEV
-  while (!GetAsyncKeyState(VK_END) & 1) {
+  while (!GetAsyncKeyState(VK_END)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
   }
 #else
