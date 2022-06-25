@@ -462,6 +462,9 @@ bool findEntityArray(Entity *searchEnt, Entity **entities, size_t count) {
 }
 
 bool findEntity(Entity *searchEnt) {
+  if (searchEnt == NULL) {
+    return false;
+  }
   return (
       findEntityArray(searchEnt, gGlobalState->entities->entities_active,
                       gGlobalState->entities->entities_active_count) ||
@@ -586,7 +589,9 @@ void drawOverlayWindow() {
     if (gDebugState.DrawClosestEntHitbox || gDebugState.DrawClosestEntId ||
         io.MouseClicked[2]) {
       float closestEntDist = 1;
-      gSelectedEntity = NULL;
+      if (io.MouseClicked[2]) {
+        gSelectedEntity = NULL;
+      }
       EntityCallback getClosestEnt = [&](Entity *e) {
         auto eDist = dist(gamePos, ImVec2(e->x, e->y));
         if (eDist < closestEntDist) {
@@ -604,6 +609,11 @@ void drawOverlayWindow() {
         io.MouseDownDuration[2] > 0.2f) {
       gSelectedEntity->x = std::lerp(gSelectedEntity->x, gamePos.x, 1.f);
       gSelectedEntity->y = std::lerp(gSelectedEntity->y, gamePos.y, 1.f);
+      if ((int)gSelectedEntity->entity_kind > 0 &&
+          (int)gSelectedEntity->entity_kind < 5) {
+        auto ent = (EntityActive *)gSelectedEntity;
+        ent->time_in_air = 0.f;
+      }
     }
   }
 
@@ -967,7 +977,7 @@ void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
   }
   ImGui::Separator();
   for (auto ent_type : enabledEnts.excluded) {
-    auto label = std::format("Remove {}", ent_type);
+    auto label = std::format("Remove {}##Debug{}", ent_type, preText);
     if (ImGui::Button(label.c_str())) {
       enabledEnts.excluded.erase(ent_type);
     }

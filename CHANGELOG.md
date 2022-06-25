@@ -7,19 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.6] - 2022-06-25
+
+### Fixed
+
+- Remove button not working for some exclusions
+- Don't search for entity if null
+- Dragging fixed when Clostest hitbox/id is used
+- Player won't take fall damage when released from dragging
+
 ## [0.0.5] - 2022-06-24
 
-## Added
+### Added
 
 - Support for dragging selectable entities is now supported just hold middle click to enable dragging.
 
-## Changed
+### Changed
 
 - Reduced select distance from 2.5 to 1 as selection was happening from a pretty unintuitive distance.
 - Selecting in a place with no selectable entity now clears the selection
 - Raw Bytes in the Selection view now uses a table for easier visibility
 
-### Fixed
+#### Fixed
 
 - ID/Hitbox/etc alignments now work in borderless window mode
 - Fixed issue where overlay wouldn't be rendered in some scenarios
