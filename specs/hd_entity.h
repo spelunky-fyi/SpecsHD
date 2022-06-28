@@ -87,11 +87,11 @@ public:
   char flag_24;
   class TextureInfo *texture_info;
   int field63_0xb4;
-  int field64_0xb8;
-  int field65_0xbc;
-  int field66_0xc0;
-  int field67_0xc4;
-  int field68_0xc8;
+  class Entity *deco_over;
+  class Entity *deco_top;
+  class Entity *deco_bottom;
+  class Entity *deco_left;
+  class Entity *deco_right;
   short field69_0xcc;
   char unused_maybe[94];
   int field71_0x12c;

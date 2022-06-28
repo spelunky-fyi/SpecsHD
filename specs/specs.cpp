@@ -3,11 +3,15 @@
 #include <algorithm>
 #include <format>
 #include <functional>
+#include <map>
 #include <unordered_set>
 
 #include "3rdparty/imgui/imgui.h"
+#include "3rdparty/imgui/misc/cpp/imgui_stdlib.h"
 
+#include "entities.h"
 #include "hd.h"
+#include "sounds.h"
 #include "ui.h"
 
 // Global States
@@ -18,243 +22,13 @@ CameraState *gCameraState = NULL;
 GlobalState *gGlobalState = NULL;
 Entity *gSelectedEntity = NULL;
 
+bool gPaused = false;
+int gPauseAt = 0;
+int gFrame = 0;
+
 int gWindowedMode = 0;
 int gDisplayWidth = 0;
 int gDisplayHeight = 0;
-
-const size_t gNumAudioNames = 230;
-const char *gAudioNames[gNumAudioNames] = {
-    "alien_jump.wav",
-    "alienexplosion.wav",
-    "angry_kali.wav",
-    "ani_squeak.wav",
-    "ankhbreak.wav",
-    "ankhflash.wav",
-    "ankhflashback.wav",
-    "anubisII_appear.wav",
-    "anubisII_summons.wav",
-    "armor_break.wav",
-    "arrowhitwall.wav",
-    "arrowshot.wav",
-    "batflap.wav",
-    "batoneflap.wav",
-    "bee.wav",
-    "bee2.wav",
-    "bee3.wav",
-    "blockfall.wav",
-    "blocksmash.wav",
-    "bomb_glue.wav",
-    "bomb_timer.wav",
-    "bone_shatter.wav",
-    "boomerang_loop.wav",
-    "bouldercoming.wav",
-    "boulderhit.wav",
-    "boulderhit2.wav",
-    "boulderhit3.wav",
-    "boulderhit4.wav",
-    "bounce.wav",
-    "bounce_light.wav",
-    "camera.wav",
-    "cape.wav",
-    "catch_boomerang.wav",
-    "chaching.wav",
-    "char_unlock.wav",
-    "chestopen.wav",
-    "chime.wav",
-    "chime3.wav",
-    "chimp_attack.wav",
-    "chimp_bounce.wav",
-    "chute.wav",
-    "coinsdrop.wav",
-    "collect.wav",
-    "crateopen.wav",
-    "cricket.wav",
-    "crushhit.wav",
-    "crysknife.wav",
-    "damsel_dog.wav",
-    "damsel_female.wav",
-    "damsel_male.wav",
-    "damsel_sloth.wav",
-    "damsel_water.wav",
-    "demon.wav",
-    "deposit.wav",
-    "dm_go.wav",
-    "dm_jump.wav",
-    "dm_point.wav",
-    "dm_ready.wav",
-    "dm_winner.wav",
-    "doorcrack.wav",
-    "doorcrack2.wav",
-    "doorglow.wav",
-    "down.wav",
-    "eggplant.wav",
-    "end_chest.wav",
-    "eruption.wav",
-    "eyeblink.wav",
-    "fadein.wav",
-    "fadeout.wav",
-    "fly_loop.wav",
-    "forcefield.wav",
-    "freezeray.wav",
-    "frog1.wav",
-    "frog2.wav",
-    "frog3.wav",
-    "frog_big_land.wav",
-    "frog_bomb_charge.wav",
-    "frog_mini.wav",
-    "frozen.wav",
-    "fwboom.wav",
-    "fwshot.wav",
-    "gem1.wav",
-    "gem2.wav",
-    "gem3.wav",
-    "gem4.wav",
-    "gem5.wav",
-    "ghostloop.wav",
-    "gold_poop.wav",
-    "grab.wav",
-    "grunt01.wav",
-    "grunt02.wav",
-    "grunt03.wav",
-    "grunt04.wav",
-    "grunt05.wav",
-    "grunt06.wav",
-    "heartbeat.wav",
-    "hit.wav",
-    "homing1.wav",
-    "homing2.wav",
-    "horsehead.wav",
-    "ice_crack1.wav",
-    "ice_crack2.wav",
-    "ice_crack3.wav",
-    "idol_get6.wav",
-    "ihear_water.wav",
-    "immortal_bounce.wav",
-    "imp_flap.wav",
-    "intodoor.wav",
-    "item_drop.wav",
-    "itemsplash.wav",
-    "jelly_get.wav",
-    "jetpack_loop.wav",
-    "jump.wav",
-    "kaboom.wav",
-    "kaboombass.wav",
-    "kiss.wav",
-    "knifeattack.wav",
-    "knifepickup.wav",
-    "land.wav",
-    "lasergun.wav",
-    "lava_splash.wav",
-    "lavastream.wav",
-    "lick.wav",
-    "lobbydrum.wav",
-    "maindooropen.wav",
-    "mantrapbite.wav",
-    "match.wav",
-    "menu_enter.wav",
-    "menu_hor_l.wav",
-    "menu_hor_r.wav",
-    "menu_ret.wav",
-    "menu_selection.wav",
-    "menu_selection2.wav",
-    "menu_swipe.wav",
-    "menu_ver.wav",
-    "metal_clank.wav",
-    "mine_timer.wav",
-    "mm_amb.wav",
-    "mm_click.wav",
-    "mm_door1.wav",
-    "mm_door2.wav",
-    "mm_door3.wav",
-    "monkey_stealing.wav",
-    "msgup.wav",
-    "newshatter.wav",
-    "oxface.wav",
-    "pageget.wav",
-    "pageturn.wav",
-    "pause_in.wav",
-    "pause_out.wav",
-    "penguin.wav",
-    "pickup.wav",
-    "pushblock.wav",
-    "queenblast.wav",
-    "ropecatch.wav",
-    "ropetoss.wav",
-    "rubble.wav",
-    "rubble2.wav",
-    "rubble3.wav",
-    "rubble_bone1.wav",
-    "rubble_bone2.wav",
-    "rubble_bone3.wav",
-    "rubble_ice1.wav",
-    "rubble_ice2.wav",
-    "rubble_ice3.wav",
-    "rubble_metal1.wav",
-    "rubble_metal2.wav",
-    "rubble_metal3.wav",
-    "rubble_vase1.wav",
-    "rubble_vase2.wav",
-    "rubble_vase3.wav",
-    "sacrifice.wav",
-    "scarab_get.wav",
-    "scorpion.wav",
-    "scrollhit.wav",
-    "secret.wav",
-    "shatter.wav",
-    "shop_bells.wav",
-    "shopwheel.wav",
-    "shotgun.wav",
-    "shotgunpump.wav",
-    "skeleton_arise.wav",
-    "snail_bubble.wav",
-    "snail_bubble_burst.wav",
-    "snakebite.wav",
-    "snowball.wav",
-    "spider_jump.wav",
-    "spidershot.wav",
-    "spike_hit.wav",
-    "splash.wav",
-    "splat.wav",
-    "spring.wav",
-    "squish.wav",
-    "sr_frogburp.wav",
-    "succubus.wav",
-    "talkbutton.wav",
-    "tank.wav",
-    "teleport.wav",
-    "throw_item.wav",
-    "tikifire.wav",
-    "tikispike.wav",
-    "torchgust.wav",
-    "torchlight.wav",
-    "torchlightshort.wav",
-    "turretlaser.wav",
-    "ufo_loop.wav",
-    "ufo_shot.wav",
-    "uhoh.wav",
-    "up.wav",
-    "vanish.wav",
-    "volcanoshot.wav",
-    "vomitflies.wav",
-    "vsnake_sizzle.wav",
-    "waterstream.wav",
-    "webshot.wav",
-    "whip.wav",
-    "worm_block_destroy.wav",
-    "worm_block_regen.wav",
-    "worm_contact.wav",
-    "worm_contact2.wav",
-    "worm_contact3.wav",
-    "worm_eats.wav",
-    "worm_tounge_wiggle.wav",
-    "yama_faceoff.wav",
-    "yama_slam.wav",
-    "yamaspew.wav",
-    "yeti_roar.wav",
-    "yeti_toss.wav",
-    "zap.wav",
-    "zombie_jump.wav",
-};
 
 struct EnabledEntities {
   bool activeEntities = false;
@@ -282,12 +56,17 @@ struct DebugState {
   bool DrawSelectedEntHitbox = false;
   bool DrawClosestEntHitbox = false;
   bool DrawClosestEntId = false;
+
+  bool IncludeFloorDecos = false;
 };
 DebugState gDebugState = {};
 
 struct SpawnState {
   int SpawnEntityInput = 0;
+  std::string EntityListFilter;
+  ImVec2 ClickedAt = {0, 0};
   bool ClickToSpawn = false;
+  bool AddToActive = true;
 };
 SpawnState gSpawnState = {};
 
@@ -433,7 +212,8 @@ void drawEntityId(Entity *ent) {
 
 using EntityCallback = std::function<void(Entity *e)>;
 void forEntities(std::unordered_set<uint32_t> excludedEntities,
-                 EntityCallback callback, Entity **entities, size_t count) {
+                 EntityCallback callback, Entity **entities, size_t count,
+                 bool decos = false) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
@@ -444,15 +224,62 @@ void forEntities(std::unordered_set<uint32_t> excludedEntities,
       continue;
     }
 
+    if (decos) {
+      if (ent->deco_over) {
+        callback(ent->deco_over);
+      }
+      if (ent->deco_top) {
+        callback(ent->deco_top);
+      }
+      if (ent->deco_bottom) {
+        callback(ent->deco_bottom);
+      }
+      if (ent->deco_left) {
+        callback(ent->deco_left);
+      }
+      if (ent->deco_right) {
+        callback(ent->deco_right);
+      }
+    }
+
     callback(ent);
   }
 }
 
-bool findEntityArray(Entity *searchEnt, Entity **entities, size_t count) {
+bool findEntityArray(Entity *searchEnt, Entity **entities, size_t count,
+                     bool decos = false) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
       continue;
+    }
+
+    if (decos) {
+      if (ent->deco_over) {
+        if (searchEnt == ent->deco_over) {
+          return true;
+        }
+      }
+      if (ent->deco_top) {
+        if (searchEnt == ent->deco_top) {
+          return true;
+        }
+      }
+      if (ent->deco_bottom) {
+        if (searchEnt == ent->deco_bottom) {
+          return true;
+        }
+      }
+      if (ent->deco_left) {
+        if (searchEnt == ent->deco_left) {
+          return true;
+        }
+      }
+      if (ent->deco_right) {
+        if (searchEnt == ent->deco_right) {
+          return true;
+        }
+      }
     }
 
     if (searchEnt == ent)
@@ -479,13 +306,16 @@ bool findEntity(Entity *searchEnt) {
       findEntityArray(searchEnt,
                       gGlobalState->entities->entities_light_emitting,
                       gGlobalState->entities->entities_light_emitting_count) ||
-      findEntityArray(searchEnt, gGlobalState->level_state->entity_floors,
+      findEntityArray(searchEnt,
+                      (Entity **)gGlobalState->level_state->entity_floors, 4692,
+                      gDebugState.IncludeFloorDecos) ||
+
+      findEntityArray(searchEnt,
+                      (Entity **)gGlobalState->level_state->entity_floors_bg,
                       4692) ||
 
-      findEntityArray(searchEnt, gGlobalState->level_state->entity_floors_bg,
-                      4692) ||
-
-      findEntityArray(searchEnt, gGlobalState->level_state->entity_backgrounds,
+      findEntityArray(searchEnt,
+                      (Entity **)gGlobalState->level_state->entity_backgrounds,
                       gGlobalState->level_state->entity_backgrounds_count) ||
       findEntityArray(searchEnt, gGlobalState->_4cstruct->entities, 160));
 }
@@ -522,17 +352,18 @@ void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback) {
   // Floors
   if (enabledEnts.floorEntities) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->level_state->entity_floors, 4692);
+                (Entity **)gGlobalState->level_state->entity_floors, 4692,
+                gDebugState.IncludeFloorDecos);
   }
   if (enabledEnts.floorBgEntities) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->level_state->entity_floors_bg, 4692);
+                (Entity **)gGlobalState->level_state->entity_floors_bg, 4692);
   }
 
   // Backgrounds
   if (enabledEnts.backgroundEntities) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->level_state->entity_backgrounds,
+                (Entity **)gGlobalState->level_state->entity_backgrounds,
                 gGlobalState->level_state->entity_backgrounds_count);
   }
 
@@ -578,10 +409,37 @@ void drawOverlayWindow() {
     }
 
     if (gSpawnState.ClickToSpawn && io.MouseClicked[0]) {
-      auto gamePos = screenToGame(io.MousePos);
+      gSpawnState.ClickedAt = io.MousePos;
+    }
+    if (gSpawnState.ClickToSpawn && io.MouseDown[0]) {
+      gOverlayDrawList->AddLine(gSpawnState.ClickedAt, io.MousePos,
+                                ImGui::GetColorU32({0.0f, 1.0f, .5f, .9f}));
+    }
+    if (gSpawnState.ClickToSpawn && io.MouseReleased[0]) {
       if (gSpawnState.SpawnEntityInput > 0) {
-        gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
-                                  gSpawnState.SpawnEntityInput, true);
+        if (io.MouseDownDurationPrev[0] > 0.1f) {
+          auto gamePos = screenToGame(gSpawnState.ClickedAt);
+          auto ent = gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
+                                               gSpawnState.SpawnEntityInput,
+                                               gSpawnState.AddToActive);
+          if ((uint32_t)ent->entity_kind > 0 &&
+              (uint32_t)ent->entity_kind < 5) {
+
+            auto activeEnt = (EntityActive *)ent;
+            if (ent->entity_type != 108) {
+              activeEnt->velocity_x =
+                  (io.MousePos.x - gSpawnState.ClickedAt.x) * 0.01f;
+            }
+            activeEnt->velocity_y =
+                -((io.MousePos.y - gSpawnState.ClickedAt.y) * 0.01f);
+          }
+
+        } else {
+          auto gamePos = screenToGame(io.MousePos);
+          gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
+                                    gSpawnState.SpawnEntityInput,
+                                    gSpawnState.AddToActive);
+        }
       }
     }
 
@@ -652,15 +510,52 @@ void drawOverlayWindow() {
 }
 
 void drawSpawnTab() {
-  ImGui::InputInt("Spawn Entity", &gSpawnState.SpawnEntityInput);
-  ImGui::Checkbox("Click to spawn", &gSpawnState.ClickToSpawn);
-
+  auto scrollLock = true;
+  if (ImGui::InputInt("Entity ID", &gSpawnState.SpawnEntityInput)) {
+    scrollLock = false;
+  };
+  ImGui::SameLine();
   if (ImGui::Button("Spawn")) {
     if (gSpawnState.SpawnEntityInput > 0) {
-      gGlobalState->SpawnEntity(gGlobalState->player1->x,
-                                gGlobalState->player1->y,
-                                gSpawnState.SpawnEntityInput, true);
+      gGlobalState->SpawnEntity(
+          gGlobalState->player1->x, gGlobalState->player1->y,
+          gSpawnState.SpawnEntityInput, gSpawnState.AddToActive);
     }
+  }
+  ImGui::Checkbox("Click to spawn", &gSpawnState.ClickToSpawn);
+  ImGui::Checkbox("Add to Active List", &gSpawnState.AddToActive);
+
+  ImGui::Separator();
+  if (ImGui::InputText("Filter", &gSpawnState.EntityListFilter)) {
+    std::transform(gSpawnState.EntityListFilter.begin(),
+                   gSpawnState.EntityListFilter.end(),
+                   gSpawnState.EntityListFilter.begin(), ::tolower);
+  }
+
+  if (ImGui::BeginListBox("##", {-1, -1})) {
+    for (auto const &[name, entity_type] : gEntities) {
+
+      std::string lowerName = name;
+      std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(),
+                     ::tolower);
+      if (!gSpawnState.EntityListFilter.empty() &&
+          lowerName.find(gSpawnState.EntityListFilter) == std::string::npos) {
+        continue;
+      }
+      auto label = std::format("{:4}: {}", entity_type, name);
+      const bool is_selected = (entity_type == gSpawnState.SpawnEntityInput);
+      if (ImGui::Selectable(label.c_str(), is_selected)) {
+        gSpawnState.SpawnEntityInput = entity_type;
+      }
+
+      if (is_selected) {
+        ImGui::SetItemDefaultFocus();
+        if (!scrollLock) {
+          ImGui::SetScrollHereY();
+        }
+      }
+    }
+    ImGui::EndListBox();
   }
 }
 
@@ -683,6 +578,27 @@ void RectFilled(ImVec2 &size, ImU32 col = IM_COL32_WHITE, float rounding = 0.f,
   ImDrawList *draw_list = ImGui::GetWindowDrawList();
   draw_list->PushClipRect(p0, p1, true);
   draw_list->AddRectFilled(p0, p1, col, rounding, flags);
+  draw_list->PopClipRect();
+}
+
+void Rect(const char *label, ImVec2 &size, ImU32 col = IM_COL32_WHITE,
+          float rounding = 0.f, ImDrawFlags flags = 0, float thickness = 1.0f) {
+
+  ImGui::Dummy(size);
+
+  if (!ImGui::IsItemVisible()) {
+    return;
+  }
+
+  auto p0 = ImGui::GetItemRectMin();
+  auto p1 = ImGui::GetItemRectMax();
+  auto textSize = ImGui::CalcTextSize(label);
+  ImDrawList *draw_list = ImGui::GetWindowDrawList();
+  draw_list->PushClipRect(p0, p1, true);
+  draw_list->AddRect(p0, p1, col, rounding, flags, thickness);
+  draw_list->AddText({p0.x + ((p1.x - p0.x) / 2) - (textSize.x / 2),
+                      p0.y + ((p1.y - p0.y) / 2) - (textSize.y / 2)},
+                     col, label);
   draw_list->PopClipRect();
 }
 
@@ -821,6 +737,37 @@ void drawLevelTab() {
       RectFilled(size, col);
     }
   }
+
+  ImVec2 roomTypeSize = {40.f, 40.f};
+  ImGui::Separator();
+  if (ImGui::CollapsingHeader("Room Types")) {
+    for (auto idx = 0; idx < 48; idx++) {
+      auto column = idx % 4;
+      if (gGlobalState->is_worm) {
+        if (column > 1) {
+          continue;
+        }
+      } else {
+        if (idx >= 4 * 4) {
+          break;
+        }
+      }
+
+      auto type = gGlobalState->level_state->room_types[idx];
+
+      auto col = IM_COL32(183, 183, 183, 255);
+      if (type >= 1 && type <= 3) {
+        // Path
+        col = IM_COL32(59, 196, 0, 255);
+      }
+      if (column > 0) {
+
+        ImGui::SameLine(0.f, 4.f);
+      }
+      auto label = std::format("{}", type);
+      Rect(label.c_str(), roomTypeSize, col);
+    }
+  }
 }
 
 void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
@@ -928,7 +875,8 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   ImGui::Checkbox("Jetpack", &data.has_jetpack);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Jetpack")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 522, true);
+    gGlobalState->SpawnEntity(player->x, player->y, 522,
+                              gSpawnState.AddToActive);
   }
 
   ImGui::Checkbox("Climbing Gloves", &data.has_climbing_gloves);
@@ -946,13 +894,15 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   ImGui::Checkbox("Cape", &data.has_cape);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Cape")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 521, true);
+    gGlobalState->SpawnEntity(player->x, player->y, 521,
+                              gSpawnState.AddToActive);
   }
 
   ImGui::Checkbox("Vlad's Cape", &data.has_vlads_cape);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##VladsCape")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 532, true);
+    gGlobalState->SpawnEntity(player->x, player->y, 532,
+                              gSpawnState.AddToActive);
   }
 
   ImGui::Checkbox("Crysknife", &data.has_crysknife);
@@ -996,10 +946,13 @@ void drawAudioTab() {
     return;
   }
 
-  for (auto idx = 0; idx < gNumAudioNames; idx++) {
-    if (ImGui::Button(gAudioNames[idx])) {
-      player->PlaySound(gAudioNames[idx]);
+  if (ImGui::BeginListBox("##", {-1, -1})) {
+    for (size_t idx = 0; idx < gAudioNames.size(); idx++) {
+      if (ImGui::Selectable(gAudioNames[idx], false)) {
+        player->PlaySound(gAudioNames[idx]);
+      }
     }
+    ImGui::EndListBox();
   }
 }
 
@@ -1053,6 +1006,7 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
+  ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
 
   if (ImGui::CollapsingHeader("Draw Hitboxes")) {
     drawToggleEntityTab("Show", gDebugState.Hitboxes);
@@ -1281,7 +1235,7 @@ void drawToolWindow() {
   ImGui::SetNextWindowSize(ImVec2{400.f, 500.f}, ImGuiCond_FirstUseEver);
   ImGui::Begin("Specs HD");
 
-  if (ImGui::IsWindowHovered()) {
+  if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows)) {
     io.MouseDrawCursor = true;
     io.WantCaptureMouse = true;
   } else {
@@ -1343,6 +1297,25 @@ void specsOnFrame() {
   gDisplayHeight = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a90)));
 
   gGlobalState->N00001004 = 0; // 440629
+  gFrame++;
+
+  if (ImGui::IsKeyPressed(ImGuiKey_Space, false) &&
+      ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) {
+    gPaused = !gPaused;
+    gPauseAt = gFrame;
+  }
+
+  if (gPaused && gFrame > gPauseAt) {
+    if (ImGui::IsKeyPressed(ImGuiKey_Space) &&
+        ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
+      gGlobalState->pause_update = 0;
+      gPauseAt = gFrame + 1;
+    } else {
+      gGlobalState->pause_update = 1;
+    }
+  } else {
+    gGlobalState->pause_update = 0;
+  }
 
   ensureLockedAmounts();
 

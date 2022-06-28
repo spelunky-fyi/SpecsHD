@@ -7,9 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.7] - 2022-06-27
+
 ### Added
 
 - Level Map view in the Level Tab
+- Room Type view in the Level Tab
+- Support for floor decorations (over, top, bottom, left, right) in Debug
+- Populated more fields for LevelState
+- Spawn Tab
+  - Selectable Entity List
+  - Filter for Entity List
+  - Toggle for spawning Entity into Active Entity array (parameter of spawn_entity)
+  - Click and Drag to spawn with velocity
+- Added missing sound effects to Audio Tab
+- Frame Advance
+  - `Ctrl` + `Space` - Pause Game Engine
+  - `Shift` + `Space` - Advance Frame (Can be held for repeated advancement)
+
+### Changed
+
+- Audio tab now uses a list box instead of a bunch of different sized buttons which looks nicer
 
 ## [0.0.6] - 2022-06-25
 
