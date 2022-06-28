@@ -15,6 +15,7 @@ add_library(
     ui.h ui.cpp
     hooks.h hooks.cpp
     hd.h hd.cpp
+    inputs.h inputs.cpp
     hd_entity.h
     sounds.h
     entities.h

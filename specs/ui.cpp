@@ -179,10 +179,6 @@ void ui::Render() noexcept {
 LRESULT CALLBACK WindowProcess(HWND window, UINT message, WPARAM wideParam,
                                LPARAM longParam) {
 
-  if (GetAsyncKeyState(VK_INSERT) & 1) {
-    ui::open = !ui::open;
-  }
-
   if (ImGui_ImplWin32_WndProcHandler(window, message, wideParam, longParam)) {
     return 1L;
   }

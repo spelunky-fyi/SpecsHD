@@ -9,8 +9,10 @@
 #include "3rdparty/imgui/imgui.h"
 #include "3rdparty/imgui/misc/cpp/imgui_stdlib.h"
 
+#include "config.h"
 #include "entities.h"
 #include "hd.h"
+#include "inputs.h"
 #include "sounds.h"
 #include "ui.h"
 
@@ -20,7 +22,8 @@ ImDrawList *gOverlayDrawList = NULL;
 
 CameraState *gCameraState = NULL;
 GlobalState *gGlobalState = NULL;
-Entity *gSelectedEntity = NULL;
+
+Specs::Config gConfig = {};
 
 bool gPaused = false;
 int gPauseAt = 0;
@@ -67,8 +70,16 @@ struct SpawnState {
   ImVec2 ClickedAt = {0, 0};
   bool ClickToSpawn = false;
   bool AddToActive = true;
+  bool Clicking = false;
 };
 SpawnState gSpawnState = {};
+
+struct SelectedEntityState {
+
+  bool Clicking = false;
+  Entity *Entity = NULL;
+};
+SelectedEntityState gSelectedEntityState = {};
 
 void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
   DWORD oldrights;
@@ -393,13 +404,15 @@ void drawOverlayWindow() {
   gOverlayDrawList = ImGui::GetWindowDrawList();
 
   // check if selected entity exists
-  if (!findEntity(gSelectedEntity)) {
-    gSelectedEntity = NULL;
+  if (!findEntity(gSelectedEntityState.Entity)) {
+    gSelectedEntityState.Entity = NULL;
   }
 
   Entity *closestEnt = NULL;
   if (ImGui::IsWindowHovered()) {
-    if (io.MouseClicked[1]) {
+
+    // Teleport Player
+    if (Specs::IsMouseClicked(gConfig.buttons[Specs::MouseFeatures_Teleport])) {
       auto player = gGlobalState->player1;
       if (player) {
         auto pos = screenToGame(io.MousePos);
@@ -408,16 +421,24 @@ void drawOverlayWindow() {
       }
     }
 
-    if (gSpawnState.ClickToSpawn && io.MouseClicked[0]) {
+    // Spawn Entity
+    auto spawnMouseConfig = gConfig.buttons[Specs::MouseFeatures_SpawnEntity];
+    if (gSpawnState.ClickToSpawn && Specs::IsMouseClicked(spawnMouseConfig)) {
       gSpawnState.ClickedAt = io.MousePos;
+      gSpawnState.Clicking = true;
     }
-    if (gSpawnState.ClickToSpawn && io.MouseDown[0]) {
+
+    if (gSpawnState.ClickToSpawn && gSpawnState.Clicking &&
+        io.MouseDown[spawnMouseConfig.Button]) {
       gOverlayDrawList->AddLine(gSpawnState.ClickedAt, io.MousePos,
                                 ImGui::GetColorU32({0.0f, 1.0f, .5f, .9f}));
     }
-    if (gSpawnState.ClickToSpawn && io.MouseReleased[0]) {
+    if (gSpawnState.ClickToSpawn && gSpawnState.Clicking &&
+        io.MouseReleased[spawnMouseConfig.Button]) {
+      gSpawnState.Clicking = false;
+
       if (gSpawnState.SpawnEntityInput > 0) {
-        if (io.MouseDownDurationPrev[0] > 0.1f) {
+        if (io.MouseDownDurationPrev[spawnMouseConfig.Button] > 0.1f) {
           auto gamePos = screenToGame(gSpawnState.ClickedAt);
           auto ent = gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
                                                gSpawnState.SpawnEntityInput,
@@ -443,12 +464,23 @@ void drawOverlayWindow() {
       }
     }
 
+    // Select Entity
+    auto selectEntMouseConfig =
+        gConfig.buttons[Specs::MouseFeatures_SelectEntity];
+    auto selectEntClicked = Specs::IsMouseClicked(selectEntMouseConfig);
+
+    if (gSelectedEntityState.Clicking &&
+        io.MouseReleased[selectEntMouseConfig.Button]) {
+      gSelectedEntityState.Clicking = false;
+    }
+
     auto gamePos = screenToGame(io.MousePos);
     if (gDebugState.DrawClosestEntHitbox || gDebugState.DrawClosestEntId ||
-        io.MouseClicked[2]) {
+        selectEntClicked) {
       float closestEntDist = 1;
-      if (io.MouseClicked[2]) {
-        gSelectedEntity = NULL;
+      if (selectEntClicked) {
+        gSelectedEntityState.Entity = NULL;
+        gSelectedEntityState.Clicking = true;
       }
       EntityCallback getClosestEnt = [&](Entity *e) {
         auto eDist = dist(gamePos, ImVec2(e->x, e->y));
@@ -458,18 +490,21 @@ void drawOverlayWindow() {
         }
       };
       forEnabledEntities(gDebugState.Selection, getClosestEnt);
-      if (closestEnt && io.MouseClicked[2]) {
-        gSelectedEntity = closestEnt;
+      if (closestEnt && selectEntClicked) {
+        gSelectedEntityState.Entity = closestEnt;
       }
     }
 
-    if (gSelectedEntity != NULL && io.MouseDown[2] &&
-        io.MouseDownDuration[2] > 0.2f) {
-      gSelectedEntity->x = std::lerp(gSelectedEntity->x, gamePos.x, 1.f);
-      gSelectedEntity->y = std::lerp(gSelectedEntity->y, gamePos.y, 1.f);
-      if ((int)gSelectedEntity->entity_kind > 0 &&
-          (int)gSelectedEntity->entity_kind < 5) {
-        auto ent = (EntityActive *)gSelectedEntity;
+    if (gSelectedEntityState.Entity != NULL && gSelectedEntityState.Clicking &&
+        io.MouseDown[selectEntMouseConfig.Button] &&
+        io.MouseDownDuration[selectEntMouseConfig.Button] > 0.2f) {
+      gSelectedEntityState.Entity->x =
+          std::lerp(gSelectedEntityState.Entity->x, gamePos.x, 1.f);
+      gSelectedEntityState.Entity->y =
+          std::lerp(gSelectedEntityState.Entity->y, gamePos.y, 1.f);
+      if ((int)gSelectedEntityState.Entity->entity_kind > 0 &&
+          (int)gSelectedEntityState.Entity->entity_kind < 5) {
+        auto ent = (EntityActive *)gSelectedEntityState.Entity;
         ent->time_in_air = 0.f;
       }
     }
@@ -495,8 +530,9 @@ void drawOverlayWindow() {
 
   forEnabledEntities(gDebugState.Ids, &drawEntityId);
 
-  if (gSelectedEntity != NULL && gDebugState.DrawSelectedEntHitbox) {
-    drawEntityHitbox(gSelectedEntity,
+  if (gSelectedEntityState.Entity != NULL &&
+      gDebugState.DrawSelectedEntHitbox) {
+    drawEntityHitbox(gSelectedEntityState.Entity,
                      ImGui::GetColorU32({1.0f, 1.0f, 1.0f, .9f}));
   }
   if (closestEnt) {
@@ -1062,64 +1098,72 @@ void drawCharBool(const char *label, uint8_t &flag) {
 
 void drawSelectedEntityTab() {
   ImGuiIO &io = ImGui::GetIO();
-  if (!gSelectedEntity) {
+  if (!gSelectedEntityState.Entity) {
     ImGui::Text("No selected entity");
     return;
   }
-  ImGui::Text("Address: 0x%X", (uint32_t)gSelectedEntity);
-  ImGui::Text("Entity ID: %d", gSelectedEntity->entity_type);
-  ImGui::Text("Entity kind: %d", gSelectedEntity->entity_kind);
+  ImGui::Text("Address: 0x%X", (uint32_t)gSelectedEntityState.Entity);
+  ImGui::Text("Entity ID: %d", gSelectedEntityState.Entity->entity_type);
+  ImGui::Text("Entity kind: %d", gSelectedEntityState.Entity->entity_kind);
 
   if (ImGui::CollapsingHeader("Position, hitbox, etc.")) {
-    ImGui::InputFloat("Entity x", &gSelectedEntity->x);
-    ImGui::InputFloat("Entity y", &gSelectedEntity->y);
-    ImGui::SliderFloat("width", &gSelectedEntity->width, 0.0, 10.0);
-    ImGui::SliderFloat("height", &gSelectedEntity->height, 0.0, 10.0);
-    ImGui::SliderFloat("current_z", &gSelectedEntity->current_z, 0.0, 50.0);
-    ImGui::SliderFloat("original_z", &gSelectedEntity->original_z, 0.0, 50.0);
-    ImGui::SliderFloat("alpha", &gSelectedEntity->alpha, 0.0, 1.0);
-    ImGui::SliderFloat("hitbox up", &gSelectedEntity->hitbox_up, 0.0, 5.0);
-    ImGui::SliderFloat("hitbox down", &gSelectedEntity->hitbox_down, 0.0, 5.0);
-    ImGui::SliderFloat("hitbox x", &gSelectedEntity->hitbox_x, 0.0, 5.0);
-    ImGui::SliderAngle("angle", &gSelectedEntity->angle);
+    ImGui::InputFloat("Entity x", &gSelectedEntityState.Entity->x);
+    ImGui::InputFloat("Entity y", &gSelectedEntityState.Entity->y);
+    ImGui::SliderFloat("width", &gSelectedEntityState.Entity->width, 0.0, 10.0);
+    ImGui::SliderFloat("height", &gSelectedEntityState.Entity->height, 0.0,
+                       10.0);
+    ImGui::SliderFloat("current_z", &gSelectedEntityState.Entity->current_z,
+                       0.0, 50.0);
+    ImGui::SliderFloat("original_z", &gSelectedEntityState.Entity->original_z,
+                       0.0, 50.0);
+    ImGui::SliderFloat("alpha", &gSelectedEntityState.Entity->alpha, 0.0, 1.0);
+    ImGui::SliderFloat("hitbox up", &gSelectedEntityState.Entity->hitbox_up,
+                       0.0, 5.0);
+    ImGui::SliderFloat("hitbox down", &gSelectedEntityState.Entity->hitbox_down,
+                       0.0, 5.0);
+    ImGui::SliderFloat("hitbox x", &gSelectedEntityState.Entity->hitbox_x, 0.0,
+                       5.0);
+    ImGui::SliderAngle("angle", &gSelectedEntityState.Entity->angle);
   }
   if (ImGui::CollapsingHeader("Flags1")) {
-    drawCharBool("flag_deletion", gSelectedEntity->flag_deletion);
-    drawCharBool("flag_horizontal_flip", gSelectedEntity->flag_horizontal_flip);
-    drawCharBool("flag_3", gSelectedEntity->flag_3);
-    drawCharBool("flag_4", gSelectedEntity->flag_4);
-    drawCharBool("flag_5", gSelectedEntity->flag_5);
-    drawCharBool("flag_6", gSelectedEntity->flag_6);
-    drawCharBool("flag_7", gSelectedEntity->flag_7);
-    drawCharBool("flag_8", gSelectedEntity->flag_8);
-    drawCharBool("flag_9", gSelectedEntity->flag_9);
-    drawCharBool("flag_10", gSelectedEntity->flag_10);
-    drawCharBool("flag_11", gSelectedEntity->flag_11);
-    drawCharBool("flag_12", gSelectedEntity->flag_12);
-    drawCharBool("flag_13", gSelectedEntity->flag_13);
-    drawCharBool("flag_14", gSelectedEntity->flag_14);
-    drawCharBool("flag_15", gSelectedEntity->flag_15);
-    drawCharBool("flag_16", gSelectedEntity->flag_16);
-    drawCharBool("flag_17", gSelectedEntity->flag_17);
-    drawCharBool("flag_18", gSelectedEntity->flag_18);
-    drawCharBool("flag_19", gSelectedEntity->flag_19);
-    drawCharBool("flag_20", gSelectedEntity->flag_20);
-    drawCharBool("flag_21", gSelectedEntity->flag_21);
-    drawCharBool("flag_22", gSelectedEntity->flag_22);
-    drawCharBool("flag_23", gSelectedEntity->flag_23);
-    drawCharBool("flag_24", gSelectedEntity->flag_24);
+    drawCharBool("flag_deletion", gSelectedEntityState.Entity->flag_deletion);
+    drawCharBool("flag_horizontal_flip",
+                 gSelectedEntityState.Entity->flag_horizontal_flip);
+    drawCharBool("flag_3", gSelectedEntityState.Entity->flag_3);
+    drawCharBool("flag_4", gSelectedEntityState.Entity->flag_4);
+    drawCharBool("flag_5", gSelectedEntityState.Entity->flag_5);
+    drawCharBool("flag_6", gSelectedEntityState.Entity->flag_6);
+    drawCharBool("flag_7", gSelectedEntityState.Entity->flag_7);
+    drawCharBool("flag_8", gSelectedEntityState.Entity->flag_8);
+    drawCharBool("flag_9", gSelectedEntityState.Entity->flag_9);
+    drawCharBool("flag_10", gSelectedEntityState.Entity->flag_10);
+    drawCharBool("flag_11", gSelectedEntityState.Entity->flag_11);
+    drawCharBool("flag_12", gSelectedEntityState.Entity->flag_12);
+    drawCharBool("flag_13", gSelectedEntityState.Entity->flag_13);
+    drawCharBool("flag_14", gSelectedEntityState.Entity->flag_14);
+    drawCharBool("flag_15", gSelectedEntityState.Entity->flag_15);
+    drawCharBool("flag_16", gSelectedEntityState.Entity->flag_16);
+    drawCharBool("flag_17", gSelectedEntityState.Entity->flag_17);
+    drawCharBool("flag_18", gSelectedEntityState.Entity->flag_18);
+    drawCharBool("flag_19", gSelectedEntityState.Entity->flag_19);
+    drawCharBool("flag_20", gSelectedEntityState.Entity->flag_20);
+    drawCharBool("flag_21", gSelectedEntityState.Entity->flag_21);
+    drawCharBool("flag_22", gSelectedEntityState.Entity->flag_22);
+    drawCharBool("flag_23", gSelectedEntityState.Entity->flag_23);
+    drawCharBool("flag_24", gSelectedEntityState.Entity->flag_24);
   }
-  if ((uint32_t)gSelectedEntity->entity_kind > 0 &&
-      (uint32_t)gSelectedEntity->entity_kind < 5 &&
+  if ((uint32_t)gSelectedEntityState.Entity->entity_kind > 0 &&
+      (uint32_t)gSelectedEntityState.Entity->entity_kind < 5 &&
       ImGui::CollapsingHeader("EntityActive Stuff")) {
-    auto entityActive = reinterpret_cast<EntityActive *>(gSelectedEntity);
+    auto entityActive =
+        reinterpret_cast<EntityActive *>(gSelectedEntityState.Entity);
     ImGui::InputInt("Health", &entityActive->health);
     ImGui::InputInt("Favor given", &entityActive->favor_given);
     ImGui::InputFloat("Velocity x", &entityActive->velocity_x);
     ImGui::InputFloat("Velocity y", &entityActive->velocity_y);
     if (ImGui::CollapsingHeader("Flags2")) {
       for (size_t i = 0x1f0; i <= 0x218; ++i) {
-        char *addr = ((char *)gSelectedEntity) + i;
+        char *addr = ((char *)gSelectedEntityState.Entity) + i;
         drawCharBool(std::format("Flag {:X}", i).c_str(), *addr);
       }
     }
@@ -1135,12 +1179,13 @@ void drawSelectedEntityTab() {
       ImGui::TableSetupColumn("Float");
       ImGui::TableHeadersRow();
 
-      for (size_t i = 0; i < sizeofEntityKind(gSelectedEntity->entity_kind);
+      for (size_t i = 0;
+           i < sizeofEntityKind(gSelectedEntityState.Entity->entity_kind);
            i += 4) {
 
         ImGui::TableNextRow();
 
-        char *addr = ((char *)gSelectedEntity) + i;
+        char *addr = ((char *)gSelectedEntityState.Entity) + i;
         ImGui::TableNextColumn();
         ImGui::Text("0x%X", i);
         {
@@ -1168,8 +1213,8 @@ void drawSelectedEntityTab() {
       ImGui::EndTable();
     }
   }
-  if (gSelectedEntity->flag_deletion == 1) {
-    gSelectedEntity = NULL;
+  if (gSelectedEntityState.Entity->flag_deletion == 1) {
+    gSelectedEntityState.Entity = NULL;
   }
 }
 
@@ -1285,6 +1330,31 @@ void drawToolWindow() {
   }
 }
 
+void handleKeyInput() {
+  auto keys = gConfig.keys;
+
+  if (Specs::IsKeyPressed(keys[Specs::KeyFeatures_Hide])) {
+    ui::open = !ui::open;
+  }
+
+  if (Specs::IsKeyPressed(keys[Specs::KeyFeatures_Engine_Pause])) {
+    gPaused = !gPaused;
+    gPauseAt = gFrame;
+  }
+
+  if (gPaused && gFrame > gPauseAt) {
+    if (Specs::IsKeyPressed(keys[Specs::KeyFeatures_Engine_Frame_Advance],
+                            true)) {
+      gGlobalState->pause_update = 0;
+      gPauseAt = gFrame + 1;
+    } else {
+      gGlobalState->pause_update = 1;
+    }
+  } else {
+    gGlobalState->pause_update = 0;
+  }
+}
+
 void specsOnFrame() {
 
   gCameraState =
@@ -1299,26 +1369,8 @@ void specsOnFrame() {
   gGlobalState->N00001004 = 0; // 440629
   gFrame++;
 
-  if (ImGui::IsKeyPressed(ImGuiKey_Space, false) &&
-      ImGui::IsKeyDown(ImGuiKey_LeftCtrl)) {
-    gPaused = !gPaused;
-    gPauseAt = gFrame;
-  }
-
-  if (gPaused && gFrame > gPauseAt) {
-    if (ImGui::IsKeyPressed(ImGuiKey_Space) &&
-        ImGui::IsKeyDown(ImGuiKey_LeftShift)) {
-      gGlobalState->pause_update = 0;
-      gPauseAt = gFrame + 1;
-    } else {
-      gGlobalState->pause_update = 1;
-    }
-  } else {
-    gGlobalState->pause_update = 0;
-  }
-
+  handleKeyInput();
   ensureLockedAmounts();
-
   drawOverlayWindow();
   drawToolWindow();
 }

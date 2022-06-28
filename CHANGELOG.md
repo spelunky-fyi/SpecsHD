@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- All Key/Mouse inputs are handled through a central config to support user bindings
+
 ## [0.0.7] - 2022-06-27
 
 ### Added
