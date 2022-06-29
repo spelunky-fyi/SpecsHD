@@ -43,7 +43,7 @@ These values and be bitwise or'd together to combine multiple modifier keys. For
 
 ##### Keys
 
-`Keys` are an ID that map to a specific key on the keyboard. The list of available keys and their IDs is available at https://github.com/spelunky-fyi/SpecsHD/blob/main/keycodes.txt
+`Keys` are an ID that map to a specific key on the keyboard. The list of available keys and their IDs is available at `https://github.com/spelunky-fyi/SpecsHD/blob/main/keycodes.txt`
 
 ##### Mouse Buttons
 
