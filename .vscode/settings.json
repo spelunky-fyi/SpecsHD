@@ -69,6 +69,10 @@
     "sstream": "cpp",
     "stop_token": "cpp",
     "unordered_map": "cpp",
-    "filesystem": "cpp"
+    "filesystem": "cpp",
+    "deque": "cpp",
+    "fstream": "cpp",
+    "numeric": "cpp",
+    "set": "cpp"
   }
 }

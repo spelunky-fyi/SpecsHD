@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "3rdparty/imgui/imgui.h"
 
 namespace Specs {
@@ -25,11 +28,15 @@ enum MouseFeatures_ {
 struct KeyConfig {
   ImGuiModFlags KeyMods;
   ImGuiKey Key;
+
+  std::string dbg();
 };
 
 struct MouseConfig {
   ImGuiModFlags KeyMods;
   ImGuiMouseButton Button;
+
+  std::string dbg();
 };
 
 const char *GetKeyFeatureName(KeyFeatures_ key);

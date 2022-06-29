@@ -7,10 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.8] - 2022-06-29
+
+### Added
+
+- Settings tab that displays current key bindings so far
+
 ### Changed
 
 - All Key/Mouse inputs are handled through a central config to support user bindings
 - Moved GlobalState views into Debug tab to make room on tab bar
+- Changed default bind of `Frame Advance` to `PageDown`
 
 ## [0.0.7] - 2022-06-27
 

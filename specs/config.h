@@ -2,6 +2,7 @@
 
 #include <map>
 
+#define TOML11_PRESERVE_COMMENTS_BY_DEFAULT
 #include "3rdparty/toml11/toml.hpp"
 
 #include "inputs.h"

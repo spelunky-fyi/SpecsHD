@@ -1,5 +1,7 @@
 #include "3rdparty/imgui/imgui.h"
 
+#include <numeric>
+
 #include "inputs.h"
 
 static const char *const _KeyFeatureNames[] = {
@@ -35,7 +37,7 @@ const char *Specs::GetMouseFeatureName(Specs::MouseFeatures_ button) {
 }
 
 static const char *const _MouseButtons[] = {
-    "Left", "Right", "Middle", "4", "5",
+    "Left Button", "Right Button", "Middle Button", "Button 4", "Button 5",
 
 };
 static_assert(ImGuiMouseButton_COUNT ==
@@ -79,4 +81,44 @@ bool Specs::IsMouseClicked(Specs::MouseConfig mouseConfig, bool repeat) {
     return false;
   }
   return ImGui::IsMouseClicked(mouseConfig.Button, repeat);
+}
+
+std::vector<std::string> getConfiguredKeyMods(ImGuiModFlags mods) {
+
+  std::vector<std::string> configuredMods = {};
+
+  if (mods & ImGuiModFlags_Ctrl) {
+    configuredMods.push_back("Ctrl");
+  }
+  if (mods & ImGuiModFlags_Alt) {
+    configuredMods.push_back("Alt");
+  }
+  if (mods & ImGuiModFlags_Super) {
+    configuredMods.push_back("Super");
+  }
+  if (mods & ImGuiModFlags_Shift) {
+    configuredMods.push_back("Shift");
+  }
+
+  return configuredMods;
+}
+
+std::string Specs::MouseConfig::dbg() {
+  auto out = getConfiguredKeyMods(this->KeyMods);
+  out.push_back(GetMouseButtonName(this->Button));
+
+  return std::accumulate(out.begin(), out.end(), std::string{},
+                         [](const std::string &ss, const std::string &s) {
+                           return ss.empty() ? s : ss + " + " + s;
+                         });
+}
+
+std::string Specs::KeyConfig::dbg() {
+
+  auto out = getConfiguredKeyMods(this->KeyMods);
+  out.push_back(ImGui::GetKeyName(this->Key));
+  return std::accumulate(out.begin(), out.end(), std::string{},
+                         [](const std::string &ss, const std::string &s) {
+                           return ss.empty() ? s : ss + " + " + s;
+                         });
 }

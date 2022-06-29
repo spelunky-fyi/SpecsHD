@@ -1,7 +1,5 @@
 #pragma once
 
-#include "3rdparty/toml11/toml.hpp"
-
 #include "config.h"
 
 const std::string gConfigFilename = "specs-hd.toml";
@@ -31,8 +29,8 @@ Specs::Config *Specs::Config::load() {
         }
 
         auto featureIdx = (KeyFeatures_)keyConfig[0].as_integer();
-        auto key = (ImGuiKey)keyConfig[1].as_integer();
-        auto keyMods = (ImGuiModFlags)keyConfig[2].as_integer();
+        auto keyMods = (ImGuiModFlags)keyConfig[1].as_integer();
+        auto key = (ImGuiKey)keyConfig[2].as_integer();
 
         config->keys[featureIdx] = {keyMods, key};
       }
@@ -56,8 +54,8 @@ Specs::Config *Specs::Config::load() {
         }
 
         auto featureIdx = (MouseFeatures_)mouseConfig[0].as_integer();
-        auto button = (ImGuiMouseButton)mouseConfig[1].as_integer();
-        auto keyMods = (ImGuiModFlags)mouseConfig[2].as_integer();
+        auto keyMods = (ImGuiModFlags)mouseConfig[1].as_integer();
+        auto button = (ImGuiMouseButton)mouseConfig[2].as_integer();
 
         config->buttons[featureIdx] = {keyMods, button};
       }
@@ -65,8 +63,6 @@ Specs::Config *Specs::Config::load() {
   } catch (std::exception &) {
     goto SAVE_AND_RETURN;
   }
-
-  return config;
 
 SAVE_AND_RETURN:
   config->save();
@@ -82,6 +78,8 @@ void Specs::Config::save() {
     auto key = toml::integer(keyConfig.Key);
     auto keyMods = toml::integer(keyConfig.KeyMods);
     auto keyData = toml::value{{featureIdx, keyMods, key}};
+    keyData.comments().push_back(GetKeyFeatureName((KeyFeatures_)idx));
+
     keys.push_back(keyData);
   }
   data["keys"] = keys;
@@ -93,6 +91,7 @@ void Specs::Config::save() {
     auto button = toml::integer(mouseConfig.Button);
     auto keyMods = toml::integer(mouseConfig.KeyMods);
     auto mouseData = toml::value{{featureIdx, keyMods, button}};
+    mouseData.comments().push_back(GetMouseFeatureName((MouseFeatures_)idx));
     buttons.push_back(mouseData);
   }
   data["mouse"] = buttons;
