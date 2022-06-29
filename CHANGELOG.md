@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - All Key/Mouse inputs are handled through a central config to support user bindings
+- Moved GlobalState views into Debug tab to make room on tab bar
 
 ## [0.0.7] - 2022-06-27
 

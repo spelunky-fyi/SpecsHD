@@ -16,10 +16,11 @@ add_library(
     hooks.h hooks.cpp
     hd.h hd.cpp
     inputs.h inputs.cpp
+    config.h config.cpp
     hd_entity.h
     sounds.h
     entities.h
     specs.h specs.cpp
     dllmain.cpp
 )
-target_link_libraries(specs PUBLIC imgui minhook)
+target_link_libraries(specs PUBLIC imgui minhook toml11)

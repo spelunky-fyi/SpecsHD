@@ -4,3 +4,6 @@
 [submodule "specs/3rdparty/minhook"]
 	path = specs/3rdparty/minhook
 	url = https://github.com/TsudaKageyu/minhook.git
+[submodule "specs/3rdparty/toml11"]
+	path = specs/3rdparty/toml11
+	url = https://github.com/ToruNiina/toml11.git

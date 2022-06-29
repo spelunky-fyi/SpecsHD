@@ -2,6 +2,8 @@
 
 #include <map>
 
+#include "3rdparty/toml11/toml.hpp"
+
 #include "inputs.h"
 
 namespace Specs {
@@ -23,5 +25,8 @@ public:
       {Specs::MouseFeatures_Teleport,
        {ImGuiModFlags_None, ImGuiMouseButton_Right}},
   };
+
+  static Config *load();
+  void save();
 };
 } // namespace Specs

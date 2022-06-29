@@ -16,5 +16,5 @@ set(imgui_sources
 add_library(imgui STATIC ${imgui_sources})
 target_include_directories(imgui PUBLIC imgui)
 
-# MinHook
 add_subdirectory(minhook)
+add_subdirectory(toml11)

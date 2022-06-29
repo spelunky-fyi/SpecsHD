@@ -23,7 +23,7 @@ ImDrawList *gOverlayDrawList = NULL;
 CameraState *gCameraState = NULL;
 GlobalState *gGlobalState = NULL;
 
-Specs::Config gConfig = {};
+Specs::Config *gConfig = NULL;
 
 bool gPaused = false;
 int gPauseAt = 0;
@@ -91,6 +91,9 @@ void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
 }
 
 void specsOnInit() {
+
+  gConfig = Specs::Config::load();
+
   gBaseAddress = (size_t)GetModuleHandleA(NULL);
   setupOffsets(gBaseAddress);
 
@@ -412,7 +415,8 @@ void drawOverlayWindow() {
   if (ImGui::IsWindowHovered()) {
 
     // Teleport Player
-    if (Specs::IsMouseClicked(gConfig.buttons[Specs::MouseFeatures_Teleport])) {
+    if (Specs::IsMouseClicked(
+            gConfig->buttons[Specs::MouseFeatures_Teleport])) {
       auto player = gGlobalState->player1;
       if (player) {
         auto pos = screenToGame(io.MousePos);
@@ -422,7 +426,7 @@ void drawOverlayWindow() {
     }
 
     // Spawn Entity
-    auto spawnMouseConfig = gConfig.buttons[Specs::MouseFeatures_SpawnEntity];
+    auto spawnMouseConfig = gConfig->buttons[Specs::MouseFeatures_SpawnEntity];
     if (gSpawnState.ClickToSpawn && Specs::IsMouseClicked(spawnMouseConfig)) {
       gSpawnState.ClickedAt = io.MousePos;
       gSpawnState.Clicking = true;
@@ -466,7 +470,7 @@ void drawOverlayWindow() {
 
     // Select Entity
     auto selectEntMouseConfig =
-        gConfig.buttons[Specs::MouseFeatures_SelectEntity];
+        gConfig->buttons[Specs::MouseFeatures_SelectEntity];
     auto selectEntClicked = Specs::IsMouseClicked(selectEntMouseConfig);
 
     if (gSelectedEntityState.Clicking &&
@@ -1028,6 +1032,18 @@ void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
   }
 }
 
+void drawCharBool(const char *label, char &flag) {
+  bool bflag = flag ? 1 : 0;
+  ImGui::Checkbox(label, &bflag);
+  bflag ? flag = 1 : flag = 0;
+}
+
+void drawCharBool(const char *label, uint8_t &flag) {
+  bool bflag = flag ? 1 : 0;
+  ImGui::Checkbox(label, &bflag);
+  bflag ? flag = 1 : flag = 0;
+}
+
 void drawDebugTab() {
   ImGuiIO &io = ImGui::GetIO();
 
@@ -1059,6 +1075,60 @@ void drawDebugTab() {
     ImGui::Separator();
     drawToggleEntityTab("Enable", gDebugState.Selection);
   }
+
+  if (ImGui::CollapsingHeader("Global State")) {
+
+    ImGui::InputScalar("screen_state", ImGuiDataType_U32,
+                       &gGlobalState->screen_state);
+    ImGui::InputScalar("play_state", ImGuiDataType_U32,
+                       &gGlobalState->play_state);
+    ImGui::InputScalar("flag_player", ImGuiDataType_U32,
+                       &gGlobalState->flag_player);
+    ImGui::InputScalar("level", ImGuiDataType_U32, &gGlobalState->level);
+    ImGui::InputScalar("level_track", ImGuiDataType_U32,
+                       &gGlobalState->level_track);
+    if (ImGui::CollapsingHeader("GlobalState Flags")) {
+      drawCharBool("dark_level", gGlobalState->dark_level);
+      drawCharBool("altar_spawned", gGlobalState->altar_spawned);
+      drawCharBool("idol_spawned", gGlobalState->idol_spawned);
+      drawCharBool("damsel_spawned", gGlobalState->damsel_spawned);
+      drawCharBool("unknown_flag", gGlobalState->unknown_flag);
+      drawCharBool("moai_unopened", gGlobalState->moai_unopened);
+      drawCharBool("moai_broke_in", gGlobalState->moai_broke_in);
+      drawCharBool("ghost_spawned", gGlobalState->ghost_spawned);
+      drawCharBool("rescued_damsel", gGlobalState->rescued_damsel);
+      drawCharBool("shopkeeper_triggered", gGlobalState->shopkeeper_triggered);
+      drawCharBool("area_had_dark_level", gGlobalState->area_had_dark_level);
+      drawCharBool("level_has_udjat", gGlobalState->level_has_udjat);
+      drawCharBool("has_spawned_udjat", gGlobalState->has_spawned_udjat);
+      drawCharBool("unused_flag", gGlobalState->unused_flag);
+      drawCharBool("vault_spawned_in_area",
+                   gGlobalState->vault_spawned_in_area);
+      drawCharBool("flooded_mines", gGlobalState->flooded_mines);
+      drawCharBool("skin_is_crawling", gGlobalState->skin_is_crawling);
+      drawCharBool("dead_are_restless", gGlobalState->dead_are_restless);
+      drawCharBool("rushing_water", gGlobalState->rushing_water);
+      drawCharBool("is_haunted_castle", gGlobalState->is_haunted_castle);
+      drawCharBool("at_haunted_castle_exit",
+                   gGlobalState->at_haunted_castle_exit);
+      drawCharBool("tiki_village", gGlobalState->tiki_village);
+      drawCharBool("spawned_black_market_entrance",
+                   gGlobalState->spawned_black_market_entrance);
+      drawCharBool("unused_flag2", gGlobalState->unused_flag2);
+      drawCharBool("spawned_haunted_castle_entrance",
+                   gGlobalState->spawned_haunted_castle_entrance);
+      drawCharBool("mothership_spawned", gGlobalState->mothership_spawned);
+      drawCharBool("moai_spawned", gGlobalState->moai_spawned);
+      drawCharBool("is_blackmarket", gGlobalState->is_blackmarket);
+      drawCharBool("at_blackmarket_exit", gGlobalState->at_blackmarket_exit);
+      drawCharBool("is_wet_fur", gGlobalState->is_wet_fur);
+      drawCharBool("is_mothership", gGlobalState->is_mothership);
+      drawCharBool("at_mothership_exit", gGlobalState->at_mothership_exit);
+      drawCharBool("is_city_of_gold", gGlobalState->is_city_of_gold);
+      drawCharBool("at_city_of_gold_exit", gGlobalState->at_city_of_gold_exit);
+      drawCharBool("is_worm", gGlobalState->is_worm);
+    }
+  }
 }
 
 size_t sizeofEntityKind(EntityKind entityKind) {
@@ -1082,18 +1152,6 @@ size_t sizeofEntityKind(EntityKind entityKind) {
   default:
     return 0;
   }
-}
-
-void drawCharBool(const char *label, char &flag) {
-  bool bflag = flag ? 1 : 0;
-  ImGui::Checkbox(label, &bflag);
-  bflag ? flag = 1 : flag = 0;
-}
-
-void drawCharBool(const char *label, uint8_t &flag) {
-  bool bflag = flag ? 1 : 0;
-  ImGui::Checkbox(label, &bflag);
-  bflag ? flag = 1 : flag = 0;
 }
 
 void drawSelectedEntityTab() {
@@ -1218,57 +1276,7 @@ void drawSelectedEntityTab() {
   }
 }
 
-void drawGlobalStateTab() {
-  ImGui::InputScalar("screen_state", ImGuiDataType_U32,
-                     &gGlobalState->screen_state);
-  ImGui::InputScalar("play_state", ImGuiDataType_U32,
-                     &gGlobalState->play_state);
-  ImGui::InputScalar("flag_player", ImGuiDataType_U32,
-                     &gGlobalState->flag_player);
-  ImGui::InputScalar("level", ImGuiDataType_U32, &gGlobalState->level);
-  ImGui::InputScalar("level_track", ImGuiDataType_U32,
-                     &gGlobalState->level_track);
-  if (ImGui::CollapsingHeader("GlobalState Flags")) {
-    drawCharBool("dark_level", gGlobalState->dark_level);
-    drawCharBool("altar_spawned", gGlobalState->altar_spawned);
-    drawCharBool("idol_spawned", gGlobalState->idol_spawned);
-    drawCharBool("damsel_spawned", gGlobalState->damsel_spawned);
-    drawCharBool("unknown_flag", gGlobalState->unknown_flag);
-    drawCharBool("moai_unopened", gGlobalState->moai_unopened);
-    drawCharBool("moai_broke_in", gGlobalState->moai_broke_in);
-    drawCharBool("ghost_spawned", gGlobalState->ghost_spawned);
-    drawCharBool("rescued_damsel", gGlobalState->rescued_damsel);
-    drawCharBool("shopkeeper_triggered", gGlobalState->shopkeeper_triggered);
-    drawCharBool("area_had_dark_level", gGlobalState->area_had_dark_level);
-    drawCharBool("level_has_udjat", gGlobalState->level_has_udjat);
-    drawCharBool("has_spawned_udjat", gGlobalState->has_spawned_udjat);
-    drawCharBool("unused_flag", gGlobalState->unused_flag);
-    drawCharBool("vault_spawned_in_area", gGlobalState->vault_spawned_in_area);
-    drawCharBool("flooded_mines", gGlobalState->flooded_mines);
-    drawCharBool("skin_is_crawling", gGlobalState->skin_is_crawling);
-    drawCharBool("dead_are_restless", gGlobalState->dead_are_restless);
-    drawCharBool("rushing_water", gGlobalState->rushing_water);
-    drawCharBool("is_haunted_castle", gGlobalState->is_haunted_castle);
-    drawCharBool("at_haunted_castle_exit",
-                 gGlobalState->at_haunted_castle_exit);
-    drawCharBool("tiki_village", gGlobalState->tiki_village);
-    drawCharBool("spawned_black_market_entrance",
-                 gGlobalState->spawned_black_market_entrance);
-    drawCharBool("unused_flag2", gGlobalState->unused_flag2);
-    drawCharBool("spawned_haunted_castle_entrance",
-                 gGlobalState->spawned_haunted_castle_entrance);
-    drawCharBool("mothership_spawned", gGlobalState->mothership_spawned);
-    drawCharBool("moai_spawned", gGlobalState->moai_spawned);
-    drawCharBool("is_blackmarket", gGlobalState->is_blackmarket);
-    drawCharBool("at_blackmarket_exit", gGlobalState->at_blackmarket_exit);
-    drawCharBool("is_wet_fur", gGlobalState->is_wet_fur);
-    drawCharBool("is_mothership", gGlobalState->is_mothership);
-    drawCharBool("at_mothership_exit", gGlobalState->at_mothership_exit);
-    drawCharBool("is_city_of_gold", gGlobalState->is_city_of_gold);
-    drawCharBool("at_city_of_gold_exit", gGlobalState->at_city_of_gold_exit);
-    drawCharBool("is_worm", gGlobalState->is_worm);
-  }
-}
+void drawSettingsTab() {}
 
 void drawToolWindow() {
   if (!ui::open) {
@@ -1321,8 +1329,8 @@ void drawToolWindow() {
       ImGui::EndTabItem();
     }
 
-    if (ImGui::BeginTabItem("GlobalState")) {
-      drawGlobalStateTab();
+    if (ImGui::BeginTabItem("Settings")) {
+      drawSettingsTab();
       ImGui::EndTabItem();
     }
 
@@ -1331,7 +1339,7 @@ void drawToolWindow() {
 }
 
 void handleKeyInput() {
-  auto keys = gConfig.keys;
+  auto keys = gConfig->keys;
 
   if (Specs::IsKeyPressed(keys[Specs::KeyFeatures_Hide])) {
     ui::open = !ui::open;
