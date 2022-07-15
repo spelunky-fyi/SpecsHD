@@ -793,7 +793,7 @@ void drawLevelTab() {
         }
       }
 
-      auto type = gGlobalState->level_state->room_types[idx];
+      auto type = (uint32_t)gGlobalState->level_state->room_types[idx];
 
       auto col = IM_COL32(183, 183, 183, 255);
       if (type >= 1 && type <= 3) {

@@ -73,6 +73,7 @@
     "deque": "cpp",
     "fstream": "cpp",
     "numeric": "cpp",
-    "set": "cpp"
+    "set": "cpp",
+    "regex": "cpp"
   }
 }
