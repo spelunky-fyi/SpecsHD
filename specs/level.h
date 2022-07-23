@@ -15,6 +15,9 @@ const std::map<std::string, ROOM_TYPE> roomMap = { {
     {"idol", ROOM_TYPE::IDOL},
     {"altar", ROOM_TYPE::ALTAR},
     {"path_drop_notop", ROOM_TYPE::PATH_DROP_NOTOP},
+    {"shop", ROOM_TYPE::SHOP},
+    {"shop_prize", ROOM_TYPE::SHOP_PRIZE},
+    {"shop_ankh", ROOM_TYPE::SHOP_ANKH},
 
     {"side", ROOM_TYPE::SIDE},
     {"path", ROOM_TYPE::PATH},
@@ -129,7 +132,7 @@ const std::map<std::string, ROOM_TYPE> roomMap = { {
 } };
 
 const DWORD GETROOM_OFFSET = 0xd6690;
-const DWORD GETROOM_GET_ROOM_OFF = GETROOM_OFFSET + 0x29;
+const DWORD GETROOM_GET_ROOM_OFF = GETROOM_OFFSET + 0x2d;
 const DWORD GETROOM_SPAWN_ROOM_OFF = GETROOM_OFFSET + 0x174;
 const DWORD SPAWN_LEVEL_TILES_OFF = 0xdd760;
 

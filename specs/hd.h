@@ -59,7 +59,8 @@ enum class SHOP_TYPE {
   WEAPONS = 4,
   KISSING = 5,
   HIREDHAND = 6,
-  PRIZE_OR_ANKH = 7
+  PRIZE_OR_ANKH = 7,
+  TUTORIAL = 8 //only used in spawn_shop_item_tilecode when the current room > 1000 (used in tutorial shop)
 };
 
 enum class ROOM_TYPE {
@@ -68,9 +69,12 @@ enum class ROOM_TYPE {
   ENTRANCE_DROP = 1101,
   EXIT = 1102,
   EXIT_NOTOP = 1103,
+  SHOP, //use the same shop template for all shop types from 0-6
+  SHOP_PRIZE,
+  SHOP_ANKH,
   IDOL = 1200,
-  ALTAR = 1201,
-  PATH_DROP_NOTOP = 1202,
+  ALTAR,
+  PATH_DROP_NOTOP,
   TIKIVILLAGE_PATH,
   TIKIVILLAGE_DROP,
   TIKIVILLAGE_NOTOP,

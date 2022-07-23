@@ -90,7 +90,7 @@ bool __stdcall customRoomGet(int doorRoomType, int roomIndex, char* roomOut, Lev
         }
     }
     else if (doorRoomType == 2) {
-        if (aboveRoom == ROOM_TYPE::PATH_DROP) {
+        if (aboveRoom == ROOM_TYPE::PATH_DROP) { // maybe add also if is coffin_drop or beehive_down
             return trySetRoom(ROOM_TYPE::EXIT_NOTOP, roomOut);
         }
         else {
@@ -121,13 +121,44 @@ bool __stdcall customRoomGet(int doorRoomType, int roomIndex, char* roomOut, Lev
         else if (roomType == ROOM_TYPE::SHOP_LEFT_FACING ||
                  roomType == ROOM_TYPE::SHOP_RIGHT_FACING)
         {
-            //todo: more than 1 hh shop
-            //use SHOP_SIDE_FACING if is a normal item shop, use the others if not
-            int sum = (roomType == ROOM_TYPE::SHOP_LEFT_FACING) ? 100 : 10100;
-            return trySetRoom((int)levelState->shop_type < (int)SHOP_TYPE::KISSING
-                                ? roomType
-                                : (ROOM_TYPE)((int)levelState->shop_type + sum),
-                              roomOut);
+            //the roomType is SHOP_LEFT_FACING or SHOP_RIGHT_FACING at this part of the generation, it's changed later
+            //int sum = (roomType == ROOM_TYPE::SHOP_LEFT_FACING) ? 100 : 10100;
+            //roomType = (ROOM_TYPE)((int)levelState->shop_type + sum);
+
+            auto shop_type = levelState->shop_type;
+            bool foundRoom;
+            if (shop_type != SHOP_TYPE::PRIZE_OR_ANKH) {
+                if (foundRoom = trySetRoom(ROOM_TYPE::SHOP, roomOut)) {
+                    char* shopTile = strchr(roomOut, 'S');
+                    if (shopTile != NULL) {
+                        if (roomType == ROOM_TYPE::SHOP_LEFT_FACING && (int)shop_type < (int)SHOP_TYPE::KISSING) {
+                            *shopTile = '0';
+                            shopTile[3] = 'S';
+                        } else if (shop_type == SHOP_TYPE::KISSING) {
+                            *shopTile = '0';
+                            shopTile[2] = 'S';
+                        } else if (shop_type == SHOP_TYPE::HIREDHAND) {
+                            //three hh, two hh, one hh
+                            auto replaceTiles = rand() % 100 == 0 ? "0SSS" : rand() % 20 == 0 ? "0S0S" : "00S0";
+                            strncpy(shopTile, replaceTiles, 4);
+                        }
+                    }
+                }
+            } else {
+                if (globalState->is_blackmarket && roomIndex == 11) {
+                    foundRoom = trySetRoom(ROOM_TYPE::SHOP_ANKH, roomOut);
+                } else {
+                    foundRoom = trySetRoom(ROOM_TYPE::SHOP_PRIZE, roomOut);
+                }
+            }
+            if (foundRoom && roomType == ROOM_TYPE::SHOP_LEFT_FACING) {
+                for (size_t i = 0; i < 80; i+=10)
+                {
+                    std::reverse(roomOut+i, roomOut+i+9);
+                }
+            }
+            return foundRoom;
+            //return trySetRoom(roomType, roomOut);
         }
         else {
             return trySetRoom(roomType, roomOut);
@@ -153,6 +184,7 @@ void __declspec(naked) spawnLevelTilesHook() {
         push esi
         mov esi, dword ptr ss : [ebp + 0x1715C]
         push edi
+        mov dword ptr ss : [esp + 0x30], eax
         ;//}
         lea edi, dword ptr ss : [esp + 0x74] //room_dest
         push eax
