@@ -1,13 +1,14 @@
-#include <Windows.h>
-#include <iostream>
-#include <regex>
-#include <fstream>
-#include <string>
-#include <map>
-#include <vector>
 #include "hd.h"
+#include <Windows.h>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <regex>
+#include <string>
+#include <vector>
 
-const std::map<std::string, ROOM_TYPE> roomMap = { {
+
+const std::map<std::string, ROOM_TYPE> roomMap = {{
     {"entrance", ROOM_TYPE::ENTRANCE},
     {"entrance_drop", ROOM_TYPE::ENTRANCE_DROP},
     {"exit", ROOM_TYPE::EXIT},
@@ -41,7 +42,9 @@ const std::map<std::string, ROOM_TYPE> roomMap = { {
     {"vlads_tower_top", ROOM_TYPE::VLADS_TOWER_TOP},
     {"vlads_tower_middle", ROOM_TYPE::VLADS_TOWER_MIDDLE},
     {"vlads_tower_bottom", ROOM_TYPE::VLADS_TOWER_BOTTOM},
-    {"beehive_sides_open", ROOM_TYPE::BEEHIVE_SIDES_OPEN},//{"beehive_left_right_open", ROOM_TYPE::BEEHIVE_LEFT_RIGHT_OPEN},
+    {"beehive_sides_open",
+     ROOM_TYPE::BEEHIVE_SIDES_OPEN}, //{"beehive_left_right_open",
+                                     //ROOM_TYPE::BEEHIVE_LEFT_RIGHT_OPEN},
     {"beehive_sides_down_open", ROOM_TYPE::BEEHIVE_SIDES_DOWN_OPEN},
     {"beehive_sides_up_open", ROOM_TYPE::BEEHIVE_SIDES_UP_OPEN},
     {"necronomicon_left", ROOM_TYPE::NECRONOMICON_LEFT},
@@ -129,30 +132,34 @@ const std::map<std::string, ROOM_TYPE> roomMap = { {
     {"shop_kissing_flipped", ROOM_TYPE::SHOP_KISSING_FLIPPED},
     {"shop_hiredhand_flipped", ROOM_TYPE::SHOP_HIREDHAND_FLIPPED},
     {"shop_prize_or_ankh_flipped", ROOM_TYPE::SHOP_PRIZE_OR_ANKH_FLIPPED},
-} };
+}};
 
 const DWORD GETROOM_OFFSET = 0xd6690;
 const DWORD GETROOM_GET_ROOM_OFF = GETROOM_OFFSET + 0x2d;
 const DWORD GETROOM_SPAWN_ROOM_OFF = GETROOM_OFFSET + 0x174;
 const DWORD SPAWN_LEVEL_TILES_OFF = 0xdd760;
 
-using spawnLevelTilesFn = void(__stdcall *)(LevelState* levelState);
+using spawnLevelTilesFn = void(__stdcall *)(LevelState *levelState);
 using RoomList = std::map<ROOM_TYPE, std::vector<std::string>>;
 
 DWORD GetBaseAddress();
 
-//Spawn bordertiles, does other stuff and then calls spawnRoom
-//It's after the room types are decided and probably before spawning anything (spawn_rooms_bordertiles_etc in ghidra)
+// Spawn bordertiles, does other stuff and then calls spawnRoom
+// It's after the room types are decided and probably before spawning anything
+// (spawn_rooms_bordertiles_etc in ghidra)
 inline spawnLevelTilesFn spawnLevelTilesOriginal = nullptr;
-inline spawnLevelTilesFn spawnLevelTilesPtr{(spawnLevelTilesFn)(GetBaseAddress() + SPAWN_LEVEL_TILES_OFF)};
+inline spawnLevelTilesFn spawnLevelTilesPtr{
+    (spawnLevelTilesFn)(GetBaseAddress() + SPAWN_LEVEL_TILES_OFF)};
 
-//get room string and spawn tilecodes (tilecode_gen_and_spawning in ghidra)
-inline void* spawnRoomOriginal = nullptr;
-inline void* spawnRoomPtr{(void*)(GetBaseAddress() + GETROOM_OFFSET)};
+// get room string and spawn tilecodes (tilecode_gen_and_spawning in ghidra)
+inline void *spawnRoomOriginal = nullptr;
+inline void *spawnRoomPtr{(void *)(GetBaseAddress() + GETROOM_OFFSET)};
 
-void readFileLevel(std::string filename, RoomList& ret);
-bool trySetRoom(ROOM_TYPE roomType, char* roomOut);
-bool __stdcall customRoomGet(int doorRoomType, int roomIndex, char* roomOut, LevelState* levelState);
-bool __stdcall customRoomGet2(int doorRoomType, int roomIndex, char* roomOut, LevelState* levelState);
+void readFileLevel(std::string filename, RoomList &ret);
+bool trySetRoom(ROOM_TYPE roomType, char *roomOut);
+bool __stdcall customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
+                             LevelState *levelState);
+bool __stdcall customRoomGet2(int doorRoomType, int roomIndex, char *roomOut,
+                              LevelState *levelState);
 void __stdcall preSpawnRoomsHook(LevelState *levelState);
 void __declspec() spawnLevelTilesHook();

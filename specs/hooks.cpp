@@ -26,7 +26,7 @@ void hooks::Setup() {
                     reinterpret_cast<void **>(&ResetOriginal))) {
     throw std::runtime_error("Unable to hook Reset");
   }
-  
+
   if (MH_CreateHook(spawnRoomPtr, spawnLevelTilesHook,
                     reinterpret_cast<void **>(&spawnRoomOriginal))) {
     throw std::runtime_error("Unable to hook spawnRoom");

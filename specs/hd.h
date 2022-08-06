@@ -60,16 +60,17 @@ enum class SHOP_TYPE {
   KISSING = 5,
   HIREDHAND = 6,
   PRIZE_OR_ANKH = 7,
-  TUTORIAL = 8 //only used in spawn_shop_item_tilecode when the current room > 1000 (used in tutorial shop)
+  TUTORIAL = 8 // only used in spawn_shop_item_tilecode when the current room >
+               // 1000 (used in tutorial shop)
 };
 
 enum class ROOM_TYPE {
-  //Custom rooms
+  // Custom rooms
   ENTRANCE = 1100,
   ENTRANCE_DROP = 1101,
   EXIT = 1102,
   EXIT_NOTOP = 1103,
-  SHOP, //use the same shop template for all shop types from 0-6
+  SHOP, // use the same shop template for all shop types from 0-6
   SHOP_PRIZE,
   SHOP_ANKH,
   IDOL = 1200,
@@ -79,47 +80,51 @@ enum class ROOM_TYPE {
   TIKIVILLAGE_DROP,
   TIKIVILLAGE_NOTOP,
   TIKIVILLAGE_DROP_NOTOP,
-  //H_<side> means that is open to the hive on that side, if not mentioned is closed, if mentioned is open to path or crystal skull
-	//LEFT/RIGHT Open {
-  HIVE_RIGHT_H_LEFT = 1300, //6
-  HIVE_LEFT_H_RIGHT = 1301, //7
-	HIVE_LEFT = 1302, //2
-	HIVE_SIDES = 1303, //3
-	HIVE_RIGHT = 1304, //5
-	//} SIDE/UP Open (Should always be connected to hive, if not, its unused I think) {
-	HIVE_UP = 1311, //1 unused?
-	HIVE_H_UP = 1312, //2
-	HIVE_UP_RIGHT_H_LEFT = 1313, //3
-	HIVE_UP_RIGHT = 1314, //4 unused?
-	HIVE_RIGHT_H_UP = 1315, //5
-	HIVE_UP_LEFT_H_RIGHT = 1316, //6
-	HIVE_UP_LEFT = 1317, //7 unused?
-	HIVE_LEFT_H_UP = 1318, //8
-	HIVE_UP_SIDES = 1319, // unused?
-	HIVE_SIDES_H_UP = 1320,
-	//} SIDE/VERTICAL Open {
-	HIVE_UP_DOWN_H_LEFT = 1321,
-	HIVE_UP_DOWN_H_RIGHT = 1322,
-	HIVE_UP_DOWN = 1323, //unused?
-	HIVE_UP_H_DOWN = 1324, //unused?
-	HIVE_UP_RIGHT_H_DOWN = 1325,
-	HIVE_UP_LEFT_H_DOWN = 1326,
-	//} SIDE/DOWN Open (There should always be a hive on sides or down, there can never be a hive up) {
-	HIVE_SIDES_DOWN_H_UP = 1331, //unused?
-	HIVE_SIDES_H_VERTICAL = 1332, //unused?
-	HIVE_DOWN = 1333, //unused?
-	HIVE_H_DOWN = 1334,
-	HIVE_RIGHT_DOWN_H_LEFT = 1335,
-	HIVE_RIGHT_DOWN = 1336, //unused?
-	HIVE_RIGHT_H_DOWN = 1337,
-	HIVE_DOWN_LEFT_H_RIGHT = 1338,
-	HIVE_DOWN_LEFT = 1339,
-	HIVE_LEFT_H_DOWN = 1340,
-	HIVE_SIDES_H_DOWN = 1341,
-	HIVE_SIDES_DOWN = 1342, //used on others when can't find a room (SIDES is the only I know where it can happen)
-	//}
+  // H_<side> means that is open to the hive on that side, if not mentioned is
+  // closed, if mentioned is open to path or crystal skull
+  // LEFT/RIGHT Open {
+  HIVE_RIGHT_H_LEFT = 1300, // 6
+  HIVE_LEFT_H_RIGHT = 1301, // 7
+  HIVE_LEFT = 1302,         // 2
+  HIVE_SIDES = 1303,        // 3
+  HIVE_RIGHT = 1304,        // 5
+  //} SIDE/UP Open (Should always be connected to hive, if not, its unused I
+  //think) {
+  HIVE_UP = 1311,              // 1 unused?
+  HIVE_H_UP = 1312,            // 2
+  HIVE_UP_RIGHT_H_LEFT = 1313, // 3
+  HIVE_UP_RIGHT = 1314,        // 4 unused?
+  HIVE_RIGHT_H_UP = 1315,      // 5
+  HIVE_UP_LEFT_H_RIGHT = 1316, // 6
+  HIVE_UP_LEFT = 1317,         // 7 unused?
+  HIVE_LEFT_H_UP = 1318,       // 8
+  HIVE_UP_SIDES = 1319,        // unused?
+  HIVE_SIDES_H_UP = 1320,
+  //} SIDE/VERTICAL Open {
+  HIVE_UP_DOWN_H_LEFT = 1321,
+  HIVE_UP_DOWN_H_RIGHT = 1322,
+  HIVE_UP_DOWN = 1323,   // unused?
+  HIVE_UP_H_DOWN = 1324, // unused?
+  HIVE_UP_RIGHT_H_DOWN = 1325,
+  HIVE_UP_LEFT_H_DOWN = 1326,
+  //} SIDE/DOWN Open (There should always be a hive on sides or down, there can
+  //never be a hive up) {
+  HIVE_SIDES_DOWN_H_UP = 1331,  // unused?
+  HIVE_SIDES_H_VERTICAL = 1332, // unused?
+  HIVE_DOWN = 1333,             // unused?
+  HIVE_H_DOWN = 1334,
+  HIVE_RIGHT_DOWN_H_LEFT = 1335,
+  HIVE_RIGHT_DOWN = 1336, // unused?
+  HIVE_RIGHT_H_DOWN = 1337,
+  HIVE_DOWN_LEFT_H_RIGHT = 1338,
+  HIVE_DOWN_LEFT = 1339,
+  HIVE_LEFT_H_DOWN = 1340,
+  HIVE_SIDES_H_DOWN = 1341,
+  HIVE_SIDES_DOWN = 1342, // used on others when can't find a room (SIDES is the
+                          // only I know where it can happen)
+  //}
 
-  //Original game rooms
+  // Original game rooms
   SIDE = 0x0,
   PATH = 0x1,
   PATH_DROP = 0x2,
@@ -142,9 +147,9 @@ enum class ROOM_TYPE {
   VLADS_TOWER_TOP = 0x13,
   VLADS_TOWER_MIDDLE = 0x14,
   VLADS_TOWER_BOTTOM = 0x15,
-  BEEHIVE_SIDES_OPEN = 0x16,//BEEHIVE_LEFT_RIGHT_OPEN = 0x16,
-  BEEHIVE_SIDES_DOWN_OPEN = 0x18,//BEEHIVE_LEFT_UP_OPEN = 0x18,
-  BEEHIVE_SIDES_UP_OPEN = 0x19,//BEEHIVE_LEFT_DOWN_OPEN = 0x19,
+  BEEHIVE_SIDES_OPEN = 0x16,      // BEEHIVE_LEFT_RIGHT_OPEN = 0x16,
+  BEEHIVE_SIDES_DOWN_OPEN = 0x18, // BEEHIVE_LEFT_UP_OPEN = 0x18,
+  BEEHIVE_SIDES_UP_OPEN = 0x19,   // BEEHIVE_LEFT_DOWN_OPEN = 0x19,
   NECRONOMICON_LEFT = 0x1a,
   NECRONOMICON_RIGHT = 0x1b,
   MOTHERSHIP_ENTRANCE_TOP = 0x1c,
