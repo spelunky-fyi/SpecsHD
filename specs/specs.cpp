@@ -64,12 +64,16 @@ struct DebugState {
 };
 DebugState gDebugState = {};
 
+struct SpawnEntityConfig {
+  int entityType;
+  bool activeEntity;
+};
+
 struct SpawnState {
-  int SpawnEntityInput = 0;
+  std::vector<SpawnEntityConfig> SpawnEntityInputs;
   std::string EntityListFilter;
   ImVec2 ClickedAt = {0, 0};
   bool ClickToSpawn = false;
-  bool AddToActive = true;
   bool Clicking = false;
 };
 SpawnState gSpawnState = {};
@@ -441,29 +445,31 @@ void drawOverlayWindow() {
         io.MouseReleased[spawnMouseConfig.Button]) {
       gSpawnState.Clicking = false;
 
-      if (gSpawnState.SpawnEntityInput > 0) {
-        if (io.MouseDownDurationPrev[spawnMouseConfig.Button] > 0.1f) {
-          auto gamePos = screenToGame(gSpawnState.ClickedAt);
-          auto ent = gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
-                                               gSpawnState.SpawnEntityInput,
-                                               gSpawnState.AddToActive);
-          if ((uint32_t)ent->entity_kind > 0 &&
-              (uint32_t)ent->entity_kind < 5) {
+      for (auto const &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
+        if (spawnEntityConfig.entityType > 0) {
+          if (io.MouseDownDurationPrev[spawnMouseConfig.Button] > 0.1f) {
+            auto gamePos = screenToGame(gSpawnState.ClickedAt);
+            auto ent = gGlobalState->SpawnEntity(
+                gamePos.x, gamePos.y, spawnEntityConfig.entityType,
+                spawnEntityConfig.activeEntity);
+            if ((uint32_t)ent->entity_kind > 0 &&
+                (uint32_t)ent->entity_kind < 5) {
 
-            auto activeEnt = (EntityActive *)ent;
-            if (ent->entity_type != 108) {
-              activeEnt->velocity_x =
-                  (io.MousePos.x - gSpawnState.ClickedAt.x) * 0.01f;
+              auto activeEnt = (EntityActive *)ent;
+              if (ent->entity_type != 108) {
+                activeEnt->velocity_x =
+                    (io.MousePos.x - gSpawnState.ClickedAt.x) * 0.01f;
+              }
+              activeEnt->velocity_y =
+                  -((io.MousePos.y - gSpawnState.ClickedAt.y) * 0.01f);
             }
-            activeEnt->velocity_y =
-                -((io.MousePos.y - gSpawnState.ClickedAt.y) * 0.01f);
-          }
 
-        } else {
-          auto gamePos = screenToGame(io.MousePos);
-          gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
-                                    gSpawnState.SpawnEntityInput,
-                                    gSpawnState.AddToActive);
+          } else {
+            auto gamePos = screenToGame(io.MousePos);
+            gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
+                                      spawnEntityConfig.entityType,
+                                      spawnEntityConfig.activeEntity);
+          }
         }
       }
     }
@@ -551,19 +557,56 @@ void drawOverlayWindow() {
 
 void drawSpawnTab() {
   auto scrollLock = true;
-  if (ImGui::InputInt("Entity ID", &gSpawnState.SpawnEntityInput)) {
-    scrollLock = false;
-  };
-  ImGui::SameLine();
+
+  if (gSpawnState.SpawnEntityInputs.empty()) {
+    gSpawnState.SpawnEntityInputs.push_back(SpawnEntityConfig{0, true});
+  }
+
+  for (auto idx = 0; auto &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
+
+    ImGui::PushItemWidth(200);
+
+    if (idx > 0) {
+      if (ImGui::Button(std::format("-##SpawnEntityInput-{}", idx).c_str())) {
+        gSpawnState.SpawnEntityInputs.erase(
+            gSpawnState.SpawnEntityInputs.begin() + idx);
+      }
+    } else {
+      ImGui::InvisibleButton(std::format("##SpawnEntityInput-{}", idx).c_str(),
+                             ImVec2{15.0f, 0.0f});
+    }
+
+    ImGui::SameLine();
+    if (ImGui::InputInt(
+            std::format("Entity ID##SpawnEntityInputId-{}", idx).c_str(),
+            &spawnEntityConfig.entityType)) {
+      scrollLock = false;
+    };
+    ImGui::SameLine();
+    ImGui::Checkbox(std::format("Active##SpawnEntityInputId-{}", idx).c_str(),
+                    &spawnEntityConfig.activeEntity);
+
+    idx++;
+  }
+
+  if (ImGui::Button("Add Additional Entity")) {
+    gSpawnState.SpawnEntityInputs.push_back(SpawnEntityConfig{0, true});
+  }
+
+  ImGui::Separator();
+
   if (ImGui::Button("Spawn")) {
-    if (gSpawnState.SpawnEntityInput > 0) {
-      gGlobalState->SpawnEntity(
-          gGlobalState->player1->x, gGlobalState->player1->y,
-          gSpawnState.SpawnEntityInput, gSpawnState.AddToActive);
+    for (auto const &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
+
+      if (spawnEntityConfig.entityType > 0) {
+        gGlobalState->SpawnEntity(
+            gGlobalState->player1->x, gGlobalState->player1->y,
+            spawnEntityConfig.entityType, spawnEntityConfig.activeEntity);
+      }
     }
   }
+  ImGui::SameLine();
   ImGui::Checkbox("Click to spawn", &gSpawnState.ClickToSpawn);
-  ImGui::Checkbox("Add to Active List", &gSpawnState.AddToActive);
 
   ImGui::Separator();
   if (ImGui::InputText("Filter", &gSpawnState.EntityListFilter)) {
@@ -573,6 +616,7 @@ void drawSpawnTab() {
   }
 
   if (ImGui::BeginListBox("##", {-1, -1})) {
+    auto spawnEntityConfig = &gSpawnState.SpawnEntityInputs.back();
     for (auto const &[name, entity_type] : gEntities) {
 
       std::string lowerName = name;
@@ -583,9 +627,9 @@ void drawSpawnTab() {
         continue;
       }
       auto label = std::format("{:4}: {}", entity_type, name);
-      const bool is_selected = (entity_type == gSpawnState.SpawnEntityInput);
+      const bool is_selected = (entity_type == spawnEntityConfig->entityType);
       if (ImGui::Selectable(label.c_str(), is_selected)) {
-        gSpawnState.SpawnEntityInput = entity_type;
+        spawnEntityConfig->entityType = entity_type;
       }
 
       if (is_selected) {
@@ -927,8 +971,7 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   ImGui::Checkbox("Jetpack", &data.has_jetpack);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Jetpack")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 522,
-                              gSpawnState.AddToActive);
+    gGlobalState->SpawnEntity(player->x, player->y, 522, true);
   }
 
   ImGui::Checkbox("Climbing Gloves", &data.has_climbing_gloves);
@@ -946,15 +989,13 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   ImGui::Checkbox("Cape", &data.has_cape);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Cape")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 521,
-                              gSpawnState.AddToActive);
+    gGlobalState->SpawnEntity(player->x, player->y, 521, true);
   }
 
   ImGui::Checkbox("Vlad's Cape", &data.has_vlads_cape);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##VladsCape")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 532,
-                              gSpawnState.AddToActive);
+    gGlobalState->SpawnEntity(player->x, player->y, 532, true);
   }
 
   ImGui::Checkbox("Crysknife", &data.has_crysknife);
