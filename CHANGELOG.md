@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.9] - 2022-09-28
+
+### Added
+
+- Support for setting Respawn Level
+- Warping between levels now reset the level timer
+- Ability to spawn multiple entities at once
+
 ## [0.0.8] - 2022-06-29
 
 ### Added
