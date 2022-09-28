@@ -740,6 +740,15 @@ void drawLevelTab() {
     ImGui::EndDisabled();
   }
 
+  ImGui::Separator();
+  ImGui::PushItemWidth(100);
+  ImGui::InputInt("Respawn Level Skip", (int *)&gGlobalState->respawn_level);
+  ImGui::SameLine();
+  if (ImGui::Button("Set Current Level")) {
+    gGlobalState->respawn_level =
+        std::clamp((int)gGlobalState->level - 1, 0, (int)gGlobalState->level);
+  }
+
   ImVec2 size = {5.f, 5.f};
   ImGui::Separator();
   if (ImGui::CollapsingHeader("Level Map")) {
@@ -1161,8 +1170,10 @@ void drawSelectedEntityTab() {
     return;
   }
   ImGui::Text("Address: 0x%X", (uint32_t)gSelectedEntityState.Entity);
-  ImGui::Text("Entity ID: %d", gSelectedEntityState.Entity->entity_type);
-  ImGui::Text("Entity kind: %d", gSelectedEntityState.Entity->entity_kind);
+  ImGui::InputInt("Entity ID",
+                  (int *)&gSelectedEntityState.Entity->entity_type);
+  ImGui::InputInt("Entity kind",
+                  (int *)&gSelectedEntityState.Entity->entity_kind);
 
   if (ImGui::CollapsingHeader("Position, hitbox, etc.")) {
     ImGui::InputFloat("Entity x", &gSelectedEntityState.Entity->x);
