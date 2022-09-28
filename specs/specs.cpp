@@ -600,6 +600,9 @@ void drawSpawnTab() {
 }
 
 void warpToLevel(uint32_t level) {
+  gGlobalState->level_minutes = 0;
+  gGlobalState->level_seconds = 0;
+  gGlobalState->level_ms = 0;
   gGlobalState->level = level;
   gGlobalState->screen_state = 3;
 }
