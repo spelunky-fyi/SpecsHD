@@ -463,7 +463,6 @@ void drawOverlayWindow() {
               activeEnt->velocity_y =
                   -((io.MousePos.y - gSpawnState.ClickedAt.y) * 0.01f);
             }
-
           } else {
             auto gamePos = screenToGame(io.MousePos);
             gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
@@ -556,6 +555,8 @@ void drawOverlayWindow() {
 }
 
 void drawSpawnTab() {
+  ImGuiIO &io = ImGui::GetIO();
+
   auto scrollLock = true;
 
   if (gSpawnState.SpawnEntityInputs.empty()) {
@@ -564,7 +565,7 @@ void drawSpawnTab() {
 
   for (auto idx = 0; auto &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
 
-    ImGui::PushItemWidth(200);
+    ImGui::PushItemWidth(200 * io.FontGlobalScale);
 
     if (idx > 0) {
       if (ImGui::Button(std::format("-##SpawnEntityInput-{}", idx).c_str())) {
@@ -572,9 +573,12 @@ void drawSpawnTab() {
             gSpawnState.SpawnEntityInputs.begin() + idx);
       }
     } else {
-      ImGui::InvisibleButton(std::format("##SpawnEntityInput-{}", idx).c_str(),
-                             ImVec2{15.0f, 0.0f});
+      auto size = ImGui::CalcTextSize("-");
+      size.x += 8.0f;
+      ImGui::InvisibleButton(std::format("-##SpawnEntityInput-{}", idx).c_str(),
+                             size);
     }
+    ImGui::PopItemWidth();
 
     ImGui::SameLine();
     if (ImGui::InputInt(
@@ -691,6 +695,7 @@ void Rect(const char *label, ImVec2 &size, ImU32 col = IM_COL32_WHITE,
 
 void drawLevelTab() {
 
+  ImGuiIO &io = ImGui::GetIO();
   auto isDisabled =
       gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
 
@@ -698,13 +703,13 @@ void drawLevelTab() {
     ImGui::BeginDisabled();
   }
   ImGui::Text("");
-  ImGui::SameLine(100.0f);
+  ImGui::SameLine(100.0f * io.FontGlobalScale);
   if (ImGui::Button("Next Level")) {
     warpToLevel(gGlobalState->level);
   }
 
   ImGui::Text("Mines");
-  ImGui::SameLine(100.0f);
+  ImGui::SameLine(100.0f * io.FontGlobalScale);
   if (ImGui::Button("1-1"))
     warpToLevel(0);
   ImGui::SameLine();
@@ -720,7 +725,7 @@ void drawLevelTab() {
   }
 
   ImGui::Text("Jungle");
-  ImGui::SameLine(100.0f);
+  ImGui::SameLine(100.0f * io.FontGlobalScale);
   if (ImGui::Button("2-1"))
     warpToLevel(4);
   ImGui::SameLine();
@@ -736,7 +741,7 @@ void drawLevelTab() {
   }
 
   ImGui::Text("Ice Caves");
-  ImGui::SameLine(100.0f);
+  ImGui::SameLine(100.0f * io.FontGlobalScale);
   if (ImGui::Button("3-1"))
     warpToLevel(8);
   ImGui::SameLine();
@@ -752,7 +757,7 @@ void drawLevelTab() {
   }
 
   ImGui::Text("Temple");
-  ImGui::SameLine(100.0f);
+  ImGui::SameLine(100.0f * io.FontGlobalScale);
   if (ImGui::Button("4-1"))
     warpToLevel(12);
   ImGui::SameLine();
@@ -768,7 +773,7 @@ void drawLevelTab() {
   }
 
   ImGui::Text("Hell");
-  ImGui::SameLine(100.0f);
+  ImGui::SameLine(100.0f * io.FontGlobalScale);
   if (ImGui::Button("5-1"))
     warpToLevel(16);
   ImGui::SameLine();
@@ -788,7 +793,7 @@ void drawLevelTab() {
   }
 
   ImGui::Separator();
-  ImGui::PushItemWidth(100);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
   ImGui::InputInt("Respawn Level Skip", (int *)&gGlobalState->respawn_level);
   ImGui::SameLine();
   if (ImGui::Button("Set Current Level")) {
@@ -828,7 +833,7 @@ void drawLevelTab() {
 
       if (idx % 46 > 0) {
 
-        ImGui::SameLine(0.f, 4.f);
+        ImGui::SameLine(0.f * io.FontGlobalScale, 4.f * io.FontGlobalScale);
       }
       RectFilled(size, col);
     }
@@ -858,7 +863,7 @@ void drawLevelTab() {
       }
       if (column > 0) {
 
-        ImGui::SameLine(0.f, 4.f);
+        ImGui::SameLine(0.f * io.FontGlobalScale, 4.f * io.FontGlobalScale);
       }
       auto label = std::format("{}", type);
       Rect(label.c_str(), roomTypeSize, col);
@@ -907,6 +912,8 @@ void ensureLockedAmounts() {
 }
 
 void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
+  ImGuiIO &io = ImGui::GetIO();
+
   if (!player) {
     ImGui::Text("No Player Entity");
     return;
@@ -922,7 +929,7 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   }
 
   ImGui::Text("Locked?");
-  ImGui::SameLine(80.0f);
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
   ImGui::Text("Amount");
 
   if (ImGui::Checkbox("##LockHealth", &state->LockHealth)) {
@@ -930,8 +937,8 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
       state->LockedHealthAmount = player->health;
     }
   };
-  ImGui::SameLine(80.0f);
-  ImGui::PushItemWidth(100);
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
   if (ImGui::InputInt("Health", &player->health)) {
     player->health = std::clamp(player->health, 0, 99);
     state->LockedHealthAmount = player->health;
@@ -943,8 +950,8 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
       state->LockedBombsAmount = data.bombs;
     }
   }
-  ImGui::SameLine(80.0f);
-  ImGui::PushItemWidth(100);
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
   if (ImGui::InputInt("Bombs", &data.bombs)) {
     data.bombs = std::clamp(data.bombs, 0, 99);
     state->LockedBombsAmount = data.bombs;
@@ -956,8 +963,8 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
       state->LockedRopesAmount = data.ropes;
     }
   }
-  ImGui::SameLine(80.0f);
-  ImGui::PushItemWidth(100);
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
   if (ImGui::InputInt("Ropes", &data.ropes)) {
     data.ropes = std::clamp(data.ropes, 0, 99);
     state->LockedRopesAmount = data.ropes;
@@ -1332,6 +1339,9 @@ void drawSelectedEntityTab() {
 }
 
 void drawSettingsTab() {
+
+  ImGuiIO &io = ImGui::GetIO();
+
   if (ImGui::CollapsingHeader("Mouse Controls")) {
 
     if (ImGui::BeginTable("Mouse Controls", 2)) {
@@ -1383,6 +1393,8 @@ void drawSettingsTab() {
       ImGui::EndTable();
     }
   }
+
+  ImGui::DragFloat("Scale##StyleScale", &io.FontGlobalScale, 0.01f, 0.2f, 2.0f);
 }
 
 void drawToolWindow() {
