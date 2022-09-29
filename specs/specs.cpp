@@ -126,6 +126,63 @@ struct PlayerState {
 
   bool LockRopes = false;
   int LockedRopesAmount = 0;
+
+  bool LockCompass = false;
+  bool LockedCompassValue = false;
+
+  bool LockParachute = false;
+  bool LockedParachuteValue = false;
+
+  bool LockJetpack = false;
+  bool LockedJetpackValue = false;
+
+  bool LockClimbingGloves = false;
+  bool LockedClimbingGlovesValue = false;
+
+  bool LockPitchersMitt = false;
+  bool LockedPitchersMittValue = false;
+
+  bool LockSpringShoes = false;
+  bool LockedSpringShoesValue = false;
+
+  bool LockSpikeShoes = false;
+  bool LockedSpikeShoesValue = false;
+
+  bool LockSpectacles = false;
+  bool LockedSpectaclesValue = false;
+
+  bool LockKapala = false;
+  bool LockedKapalaValue = false;
+
+  bool LockHedjet = false;
+  bool LockedHedjetValue = false;
+
+  bool LockUdjatEye = false;
+  bool LockedUdjatEyeValue = false;
+
+  bool LockBookOfTheDead = false;
+  bool LockedBookOfTheDeadValue = false;
+
+  bool LockAnkh = false;
+  bool LockedAnkhValue = false;
+
+  bool LockPaste = false;
+  bool LockedPasteValue = false;
+
+  bool LockCape = false;
+  bool LockedCapeValue = false;
+
+  bool LockVladsCape = false;
+  bool LockedVladsCapeValue = false;
+
+  bool LockCrysknife = false;
+  bool LockedCrysknifeValue = false;
+
+  bool LockVladsAmulet = false;
+  bool LockedVladsAmuletValue = false;
+
+  bool LockWhiteFlag = false;
+  bool LockedWhiteFlagValue = false;
 };
 PlayerState gPlayersState[4] = {{}, {}, {}, {}};
 
@@ -887,6 +944,82 @@ void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
   if (state->LockRopes) {
     data.ropes = state->LockedRopesAmount;
   }
+
+  if (state->LockCompass) {
+    data.has_compass = state->LockedCompassValue;
+  }
+
+  if (state->LockParachute) {
+    data.has_parachute = state->LockedParachuteValue;
+  }
+
+  if (state->LockJetpack) {
+    data.has_jetpack = state->LockedJetpackValue;
+  }
+
+  if (state->LockClimbingGloves) {
+    data.has_climbing_gloves = state->LockedClimbingGlovesValue;
+  }
+
+  if (state->LockPitchersMitt) {
+    data.has_pitchers_mitt = state->LockedPitchersMittValue;
+  }
+
+  if (state->LockSpringShoes) {
+    data.has_spring_shoes = state->LockedSpringShoesValue;
+  }
+
+  if (state->LockSpikeShoes) {
+    data.has_spike_shoes = state->LockedSpikeShoesValue;
+  }
+
+  if (state->LockSpectacles) {
+    data.has_spectacles = state->LockedSpectaclesValue;
+  }
+
+  if (state->LockKapala) {
+    data.has_kapala = state->LockedKapalaValue;
+  }
+
+  if (state->LockHedjet) {
+    data.has_hedjet = state->LockedHedjetValue;
+  }
+
+  if (state->LockUdjatEye) {
+    data.has_udjat = state->LockedUdjatEyeValue;
+  }
+
+  if (state->LockBookOfTheDead) {
+    data.has_book_of_dead = state->LockedBookOfTheDeadValue;
+  }
+
+  if (state->LockAnkh) {
+    data.has_ankh = state->LockedAnkhValue;
+  }
+
+  if (state->LockPaste) {
+    data.has_paste = state->LockedPasteValue;
+  }
+
+  if (state->LockCape) {
+    data.has_cape = state->LockedCapeValue;
+  }
+
+  if (state->LockVladsCape) {
+    data.has_vlads_cape = state->LockedVladsCapeValue;
+  }
+
+  if (state->LockCrysknife) {
+    data.has_crysknife = state->LockedCrysknifeValue;
+  }
+
+  if (state->LockVladsAmulet) {
+    data.has_vlads_amulet = state->LockedVladsAmuletValue;
+  }
+
+  if (state->LockWhiteFlag) {
+    data.has_white_flag = state->LockedWhiteFlagValue;
+  }
 }
 
 void ensureLockedAmounts() {
@@ -908,6 +1041,21 @@ void ensureLockedAmounts() {
   if (gGlobalState->player4) {
     ensureLockedAmountsForPlayer(gGlobalState->player4,
                                  gGlobalState->player4_data, &gPlayersState[3]);
+  }
+}
+
+void drawLockedPlayerDataCheckbox(std::string title, bool &val, bool &lockVar,
+                                  bool &lockedVal) {
+  ImGuiIO &io = ImGui::GetIO();
+
+  if (ImGui::Checkbox(std::format("##Lock{}", title).c_str(), &lockVar)) {
+    if (lockVar) {
+      lockedVal = val;
+    }
+  }
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  if (ImGui::Checkbox(title.c_str(), &val)) {
+    lockedVal = val;
   }
 }
 
@@ -972,42 +1120,85 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   ImGui::PopItemWidth();
   ImGui::Separator();
 
-  ImGui::Checkbox("Compass", &data.has_compass);
-  ImGui::Checkbox("Parachute", &data.has_parachute);
+  drawLockedPlayerDataCheckbox("Compass", data.has_compass, state->LockCompass,
+                               state->LockedCompassValue);
 
-  ImGui::Checkbox("Jetpack", &data.has_jetpack);
+  drawLockedPlayerDataCheckbox("Parachute", data.has_parachute,
+                               state->LockParachute,
+                               state->LockedParachuteValue);
+
+  drawLockedPlayerDataCheckbox("Jetpack", data.has_jetpack, state->LockJetpack,
+                               state->LockedJetpackValue);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Jetpack")) {
     gGlobalState->SpawnEntity(player->x, player->y, 522, true);
   }
 
-  ImGui::Checkbox("Climbing Gloves", &data.has_climbing_gloves);
-  ImGui::Checkbox("Pitcher's Mitt", &data.has_pitchers_mitt);
-  ImGui::Checkbox("Spring Shoes", &data.has_spring_shoes);
-  ImGui::Checkbox("Spike Shoes", &data.has_spike_shoes);
-  ImGui::Checkbox("Spectacles", &data.has_spectacles);
-  ImGui::Checkbox("Kapala", &data.has_kapala);
-  ImGui::Checkbox("Hedjet", &data.has_hedjet);
-  ImGui::Checkbox("Udjat Eye", &data.has_udjat);
-  ImGui::Checkbox("Book of the Dead", &data.has_book_of_dead);
-  ImGui::Checkbox("Ankh", &data.has_ankh);
-  ImGui::Checkbox("Paste", &data.has_paste);
+  drawLockedPlayerDataCheckbox("Climbing Gloves", data.has_climbing_gloves,
+                               state->LockClimbingGloves,
+                               state->LockedClimbingGlovesValue);
 
-  ImGui::Checkbox("Cape", &data.has_cape);
+  drawLockedPlayerDataCheckbox("Pitcher's Mitt", data.has_pitchers_mitt,
+                               state->LockPitchersMitt,
+                               state->LockedPitchersMittValue);
+
+  drawLockedPlayerDataCheckbox("Spring Shoes", data.has_spring_shoes,
+                               state->LockSpringShoes,
+                               state->LockedSpringShoesValue);
+
+  drawLockedPlayerDataCheckbox("Spike Shoes", data.has_spike_shoes,
+                               state->LockSpikeShoes,
+                               state->LockedSpikeShoesValue);
+
+  drawLockedPlayerDataCheckbox("Spectacles", data.has_spectacles,
+                               state->LockSpectacles,
+                               state->LockedSpectaclesValue);
+
+  drawLockedPlayerDataCheckbox("Kapala", data.has_kapala, state->LockKapala,
+                               state->LockedKapalaValue);
+
+  drawLockedPlayerDataCheckbox("Hedjet", data.has_hedjet, state->LockHedjet,
+                               state->LockedHedjetValue);
+
+  drawLockedPlayerDataCheckbox("Udjat Eye", data.has_udjat, state->LockUdjatEye,
+                               state->LockedUdjatEyeValue);
+
+  drawLockedPlayerDataCheckbox("Book of the Dead", data.has_book_of_dead,
+                               state->LockBookOfTheDead,
+                               state->LockedBookOfTheDeadValue);
+
+  drawLockedPlayerDataCheckbox("Ankh", data.has_ankh, state->LockAnkh,
+                               state->LockedAnkhValue);
+
+  drawLockedPlayerDataCheckbox("Paste", data.has_paste, state->LockPaste,
+                               state->LockedPasteValue);
+
+  drawLockedPlayerDataCheckbox("Cape", data.has_cape, state->LockCape,
+                               state->LockedCapeValue);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Cape")) {
     gGlobalState->SpawnEntity(player->x, player->y, 521, true);
   }
 
-  ImGui::Checkbox("Vlad's Cape", &data.has_vlads_cape);
+  drawLockedPlayerDataCheckbox("Vlad's Cape", data.has_vlads_cape,
+                               state->LockVladsCape,
+                               state->LockedVladsCapeValue);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##VladsCape")) {
     gGlobalState->SpawnEntity(player->x, player->y, 532, true);
   }
 
-  ImGui::Checkbox("Crysknife", &data.has_crysknife);
-  ImGui::Checkbox("Vlad's Amulet", &data.has_vlads_amulet);
-  ImGui::Checkbox("White Flag", &data.has_white_flag);
+  drawLockedPlayerDataCheckbox("Crysknife", data.has_crysknife,
+                               state->LockCrysknife,
+                               state->LockedCrysknifeValue);
+
+  drawLockedPlayerDataCheckbox("Vlad's Amulet", data.has_vlads_amulet,
+                               state->LockVladsAmulet,
+                               state->LockedVladsAmuletValue);
+
+  drawLockedPlayerDataCheckbox("White Flag", data.has_white_flag,
+                               state->LockWhiteFlag,
+                               state->LockedWhiteFlagValue);
 }
 
 void drawPlayersTab() {
