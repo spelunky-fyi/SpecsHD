@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.10] - 2022-09-29
+
+### Added
+
+- Support for scaling the UI in the Settings tab (persisting this will come later)
+- Support for locking Player Data passives
+  - Note: Locked ankh will result in end adventure procing the ankh
+  - Note: Back Items will be re-persisted across level transitions
+
 ## [0.0.9] - 2022-09-28
 
 ### Added
