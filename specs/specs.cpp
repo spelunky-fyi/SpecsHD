@@ -61,6 +61,8 @@ struct DebugState {
   bool DrawClosestEntId = false;
 
   bool IncludeFloorDecos = false;
+
+  bool DisableOlmecSpawns = false;
 };
 DebugState gDebugState = {};
 
@@ -1310,6 +1312,21 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
+  if (ImGui::Checkbox("Disable Olmec Spawns",
+                      &gDebugState.DisableOlmecSpawns)) {
+    auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                   PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                   PROCESS_CREATE_THREAD,
+                               0, GetCurrentProcessId());
+    if (gDebugState.DisableOlmecSpawns) {
+      BYTE patch[] = {0x83, 0xfa, 0x08};
+      patchReadOnlyCode(process, gBaseAddress + 0x3121c, patch, 3);
+    } else {
+      BYTE patch[] = {0x83, 0xfa, 0x01};
+      patchReadOnlyCode(process, gBaseAddress + 0x3121c, patch, 3);
+    }
+    CloseHandle(process);
+  }
 
   if (ImGui::CollapsingHeader("Draw Hitboxes")) {
     drawToggleEntityTab("Show", gDebugState.Hitboxes);

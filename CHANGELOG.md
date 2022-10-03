@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.11] - 2022-10-03
+
+### Added
+
+- Ability to disable Olmec spawns from Debug tab
+
 ## [0.0.10] - 2022-09-29
 
 ### Added
