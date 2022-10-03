@@ -1435,8 +1435,10 @@ void drawSelectedEntityTab() {
                   (int *)&gSelectedEntityState.Entity->entity_kind);
 
   if (ImGui::CollapsingHeader("Position, hitbox, etc.")) {
-    ImGui::InputFloat("Entity x", &gSelectedEntityState.Entity->x);
-    ImGui::InputFloat("Entity y", &gSelectedEntityState.Entity->y);
+    ImGui::InputFloat("Entity x", &gSelectedEntityState.Entity->x, 0.0F, 0.0F,
+                      "%.6f");
+    ImGui::InputFloat("Entity y", &gSelectedEntityState.Entity->y, 0.0F, 0.0F,
+                      "%.6f");
     ImGui::SliderFloat("width", &gSelectedEntityState.Entity->width, 0.0, 10.0);
     ImGui::SliderFloat("height", &gSelectedEntityState.Entity->height, 0.0,
                        10.0);
