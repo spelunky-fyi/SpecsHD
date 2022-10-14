@@ -63,6 +63,7 @@ struct DebugState {
   bool IncludeFloorDecos = false;
 
   bool DisableOlmecSpawns = false;
+  bool ShowOlmecCrushProbes = false;
 };
 DebugState gDebugState = {};
 
@@ -214,6 +215,21 @@ ImVec2 gameToScreen(ImVec2 game) {
   auto y = (game.y - gCameraState->camera_y) / -(20 / (float)gDisplayWidth) +
            ((float)gDisplayHeight / 2);
   return {x, y};
+}
+
+void drawPointAtCoord(ImVec2 coord,
+                      ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 0.0f,
+                                                        0.9f})) {
+  auto topLeft = gameToScreen(coord);
+  topLeft.x -= 1;
+  topLeft.y += 1;
+
+  ImVec2 topRight = {topLeft.x + 2, topLeft.y};
+  ImVec2 bottomRight = {topLeft.x + 2, topLeft.y - 2};
+  ImVec2 bottomLeft = {topLeft.x, topLeft.y - 2};
+
+  gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft, color,
+                            1.f);
 }
 
 void drawEntityHitbox(Entity *ent,
@@ -597,6 +613,27 @@ void drawOverlayWindow() {
   forEnabledEntities(gDebugState.Hitboxes, &drawEntityHitboxDefault);
 
   forEnabledEntities(gDebugState.Ids, &drawEntityId);
+
+  if (gDebugState.ShowOlmecCrushProbes) {
+    for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+         idx++) {
+      auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+
+      if (!ent || ent->entity_type != 1055) {
+        continue;
+      }
+
+      auto probe_idx = 0.0f;
+      do {
+        auto x = ent->x - ent->hitbox_x + probe_idx * 0.5f;
+        auto y = ent->y - ent->hitbox_down - 0.5f;
+
+        drawPointAtCoord({x, y});
+
+        probe_idx++;
+      } while (probe_idx < 8);
+    }
+  }
 
   if (gSelectedEntityState.Entity != NULL &&
       gDebugState.DrawSelectedEntHitbox) {
@@ -1327,6 +1364,7 @@ void drawDebugTab() {
     }
     CloseHandle(process);
   }
+  ImGui::Checkbox("Show Olmec Crush Probes", &gDebugState.ShowOlmecCrushProbes);
 
   if (ImGui::CollapsingHeader("Draw Hitboxes")) {
     drawToggleEntityTab("Show", gDebugState.Hitboxes);
@@ -1484,7 +1522,7 @@ void drawSelectedEntityTab() {
   }
   if ((uint32_t)gSelectedEntityState.Entity->entity_kind > 0 &&
       (uint32_t)gSelectedEntityState.Entity->entity_kind < 5 &&
-      ImGui::CollapsingHeader("EntityActive Stuff")) {
+      ImGui::CollapsingHeader("EntityActive")) {
     auto entityActive =
         reinterpret_cast<EntityActive *>(gSelectedEntityState.Entity);
     ImGui::InputInt("Health", &entityActive->health);
@@ -1498,6 +1536,14 @@ void drawSelectedEntityTab() {
       }
     }
   }
+  if ((uint32_t)gSelectedEntityState.Entity->entity_kind == 0 &&
+      ImGui::CollapsingHeader("EntityFloor")) {
+    auto entityFloor =
+        reinterpret_cast<EntityFloor *>(gSelectedEntityState.Entity);
+
+    drawCharBool("Make Door onDestroy", entityFloor->field8_0x143);
+  }
+
   if (ImGui::CollapsingHeader("Raw Entity Values")) {
     if (ImGui::BeginTable("Raw Bytes", 6)) {
 

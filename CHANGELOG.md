@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Debug Option to see Olmec's Crush Probes
+- EntityFloor menu when selecting floors that shows flag for creating door
+
 ## [0.0.12] - 2022-10-03
 
 ### Updated
