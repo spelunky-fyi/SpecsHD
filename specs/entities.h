@@ -1,9 +1,9 @@
 #include <string>
 #include <vector>
 
-
 const std::vector<std::pair<std::string, int>> gEntities = {
     {"None", 0},
+    {"Landmine", 92},
     {"Chest", 100},
     {"Crate", 101},
     {"Gold Bar", 102},

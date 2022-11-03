@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.13] - 2022-11-03
+
 ### Added
 
+- Landmine to Entity List
 - Debug Option to see Olmec's Crush Probes
 - EntityFloor menu when selecting floors that shows flag for creating door
 
