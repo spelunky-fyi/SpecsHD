@@ -63,6 +63,7 @@ struct DebugState {
   bool IncludeFloorDecos = false;
 
   bool DisableOlmecSpawns = false;
+  bool DisableOlmecGaps = false;
   bool ShowOlmecCrushProbes = false;
 };
 DebugState gDebugState = {};
@@ -1361,6 +1362,20 @@ void drawDebugTab() {
     } else {
       BYTE patch[] = {0x83, 0xfa, 0x01};
       patchReadOnlyCode(process, gBaseAddress + 0x3121c, patch, 3);
+    }
+    CloseHandle(process);
+  }
+  if (ImGui::Checkbox("Disable Olmec Gaps", &gDebugState.DisableOlmecGaps)) {
+    auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                   PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                   PROCESS_CREATE_THREAD,
+                               0, GetCurrentProcessId());
+    if (gDebugState.DisableOlmecGaps) {
+      BYTE patch[] = {0xb9, 0x01, 0x00, 0x00, 0x00};
+      patchReadOnlyCode(process, gBaseAddress + 0x0d5b71, patch, 5);
+    } else {
+      BYTE patch[] = {0xb9, 0x06, 0x00, 0x00, 0x00};
+      patchReadOnlyCode(process, gBaseAddress + 0x0d5b71, patch, 5);
     }
     CloseHandle(process);
   }
