@@ -312,6 +312,8 @@ public:
   char pad_447350[504];         // 0x447350
 
   Entity *SpawnEntity(float x, float y, uint32_t entity_type, bool active);
+  void PlayOlmecMusic(const char *audioName);
+
 }; // Size: 0x447548
 static_assert(sizeof(GlobalState) == 0x447548);
 

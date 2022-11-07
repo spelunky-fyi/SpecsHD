@@ -64,6 +64,7 @@ struct DebugState {
 
   bool DisableOlmecSpawns = false;
   bool DisableOlmecGaps = false;
+  bool DisableOlmecCutscene = false;
   bool ShowOlmecCrushProbes = false;
 };
 DebugState gDebugState = {};
@@ -1339,12 +1340,14 @@ void drawDebugTab() {
   ImGuiIO &io = ImGui::GetIO();
 
   auto gameMouse = screenToGame(io.MousePos);
-  ImGui::Text("Mouse: %f %f", io.MousePos.x, io.MousePos.y);
+  ImGui::Text("Mouse (Screen): %f %f", io.MousePos.x, io.MousePos.y);
   ImGui::Text("Mouse (Game): %f %f", gameMouse.x, gameMouse.y);
   if (gGlobalState->player1) {
     auto screenPlayer =
         gameToScreen({gGlobalState->player1->x, gGlobalState->player1->y});
     ImGui::Text("Player (Screen): %f %f", screenPlayer.x, screenPlayer.y);
+    ImGui::Text("Player (Game): %f %f", gGlobalState->player1->x,
+                gGlobalState->player1->y);
   }
   ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
@@ -1376,6 +1379,23 @@ void drawDebugTab() {
     } else {
       BYTE patch[] = {0xb9, 0x06, 0x00, 0x00, 0x00};
       patchReadOnlyCode(process, gBaseAddress + 0x0d5b71, patch, 5);
+    }
+    CloseHandle(process);
+  }
+  if (ImGui::Checkbox("Disable Olmec Cutscene",
+                      &gDebugState.DisableOlmecCutscene)) {
+    auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                   PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                   PROCESS_CREATE_THREAD,
+                               0, GetCurrentProcessId());
+    if (gDebugState.DisableOlmecCutscene) {
+
+      BYTE patch[] = {0x83, 0xb9, 0xd4, 0x05, 0x44, 0x00, 0x99};
+      patchReadOnlyCode(process, gBaseAddress + 0x0be66d, patch, 7);
+    } else {
+
+      BYTE patch[] = {0x83, 0xb9, 0xd4, 0x05, 0x44, 0x00, 0x10};
+      patchReadOnlyCode(process, gBaseAddress + 0x0be66d, patch, 7);
     }
     CloseHandle(process);
   }
@@ -1448,6 +1468,72 @@ void drawDebugTab() {
       drawCharBool("is_city_of_gold", gGlobalState->is_city_of_gold);
       drawCharBool("at_city_of_gold_exit", gGlobalState->at_city_of_gold_exit);
       drawCharBool("is_worm", gGlobalState->is_worm);
+    }
+  }
+
+  if (ImGui::CollapsingHeader("Camera State")) {
+
+    ImGui::InputScalar("camera_x", ImGuiDataType_Float,
+                       &gCameraState->camera_x);
+    ImGui::InputScalar("camera_x", ImGuiDataType_Float,
+                       &gCameraState->camera_y);
+    ImGui::InputScalar("following_x", ImGuiDataType_Float,
+                       &gCameraState->following_x);
+    ImGui::InputScalar("following_y", ImGuiDataType_Float,
+                       &gCameraState->following_y);
+    ImGui::InputScalar("camera_max_left", ImGuiDataType_Float,
+                       &gCameraState->camera_max_left);
+    ImGui::InputScalar("camera_max_right", ImGuiDataType_Float,
+                       &gCameraState->camera_max_right);
+    ImGui::InputScalar("camera_max_up", ImGuiDataType_Float,
+                       &gCameraState->camera_max_up);
+    ImGui::InputScalar("camera_max_down", ImGuiDataType_Float,
+                       &gCameraState->camera_max_down);
+    ImGui::InputScalar("camera_speed", ImGuiDataType_Float,
+                       &gCameraState->camera_speed);
+
+    if (ImGui::CollapsingHeader("Camera Raw")) {
+      if (ImGui::BeginTable("Raw Bytes##CameraState", 6)) {
+
+        ImGui::TableSetupColumn("Offset");
+        ImGui::TableSetupColumn("Bytes");
+        ImGui::TableSetupColumn("Signed");
+        ImGui::TableSetupColumn("Unsigned");
+        ImGui::TableSetupColumn("Hex");
+        ImGui::TableSetupColumn("Float");
+        ImGui::TableHeadersRow();
+
+        for (size_t i = 0; i < 92; i += 4) {
+
+          ImGui::TableNextRow();
+
+          char *addr = ((char *)gCameraState) + i;
+          ImGui::TableNextColumn();
+          ImGui::Text("0x%X", i);
+          {
+            uint32_t a1, a2, a3, a4;
+            a1 = (*(addr)) & (0xFF);
+            a2 = (*(addr + 1)) & (0xFF);
+            a3 = (*(addr + 2)) & (0xFF);
+            a4 = (*(addr + 3)) & (0xFF);
+            ImGui::TableNextColumn();
+            ImGui::Text("%X %X %X %X", a1, a2, a3, a4);
+          }
+          ImGui::TableNextColumn();
+          ImGui::Text("%d", *(int32_t *)addr);
+
+          ImGui::TableNextColumn();
+          ImGui::Text("%u", *(uint32_t *)addr);
+
+          ImGui::TableNextColumn();
+          ImGui::Text("0x%X", *(uint32_t *)addr);
+
+          ImGui::TableNextColumn();
+          ImGui::Text("%f", *(float *)addr);
+        }
+
+        ImGui::EndTable();
+      }
     }
   }
 }
@@ -1560,6 +1646,16 @@ void drawSelectedEntityTab() {
   }
 
   if (ImGui::CollapsingHeader("Raw Entity Values")) {
+    if (ImGui::Button("Copy to Clipboard")) {
+      ImGui::LogToClipboard();
+      for (size_t i = 0;
+           i < sizeofEntityKind(gSelectedEntityState.Entity->entity_kind);
+           i += 4) {
+        char *addr = ((char *)gSelectedEntityState.Entity) + i;
+        ImGui::LogText("0x%X: %f 0x%X\n", i, *(float *)addr, *(uint32_t *)addr);
+      }
+      ImGui::LogFinish();
+    }
     if (ImGui::BeginTable("Raw Bytes", 6)) {
 
       ImGui::TableSetupColumn("Offset");
@@ -1753,6 +1849,119 @@ void handleKeyInput() {
   }
 }
 
+void onLevelStart() {
+  // Olmec
+  if (gGlobalState->level == 16) {
+    if (gDebugState.DisableOlmecCutscene) {
+
+      auto player = gGlobalState->player1;
+      player->field1_0x130 = 1;
+      player->field2_0x134 = 1;
+      player->field3_0x138 = 1;
+      player->field48_0x1ec = 1;
+      player->field55_0x1f3 = 0;
+      player->field7_0x271 = 0;
+
+      // Destroy Floor
+      EntityCallback cb = [&](Entity *e) {
+        if (e->y == 75 && e->x >= 21 && e->x <= 25) {
+          e->flag_deletion = 1;
+        }
+      };
+      forEntities({}, cb, gGlobalState->entities->entities_active,
+                  gGlobalState->entities->entities_active_count);
+      forEntities({}, cb, (Entity **)gGlobalState->level_state->entity_floors,
+                  4692);
+
+      gCameraState->camera_speed = 0.2f;
+      auto hawkman = (EntityMonster *)gGlobalState->SpawnEntity(
+          18.019993f, 76.0f, 1011, true);
+      hawkman->flag_horizontal_flip = 1;
+      hawkman->field8_0x14c = 0xA;
+      hawkman->field15_0x168 = 0x5A;
+      hawkman->field21_0x180 = 0xFF;
+      hawkman->field24_0x18c = 0xFF;
+      hawkman->field81_0x20d = 1;
+
+      // Spawn Olmec
+      auto olmec = (EntityItem *)gGlobalState->SpawnEntity(23.109999f, 76.5f,
+                                                           1055, true);
+      olmec->flag_horizontal_flip = 1;
+
+      olmec->field8_0x14c = 0;
+      olmec->field9_0x150 = 0;
+      olmec->field10_0x154 = 0;
+      olmec->field11_0x158 = 2;
+      // stomping
+      // olmec->field8_0x14c = 0;
+      olmec->field37_0x1c0 = 0.015000f;
+      olmec->field48_0x1ec = 1;
+      olmec->field68_0x200 = 1;
+      olmec->field82_0x20e = 1;
+
+      gGlobalState->PlayOlmecMusic("A04_boss.ogg");
+      gGlobalState->total_seconds += 11;
+      gGlobalState->total_ms += 33.50;
+      gGlobalState->level_seconds = 11;
+      gGlobalState->level_ms = 33.50;
+    }
+  }
+}
+
+// bool gGotStats = false;
+// void getStats() {
+//   if ((gGlobalState->screen_state != 0 && gGlobalState->screen_state != 4) ||
+//       (gGlobalState->play_state != 0 && gGlobalState->play_state != 27 &&
+//        gGlobalState->play_state != 28)) {
+//     gGotStats = false;
+//   }
+//   if (!gGotStats && gGlobalState->level == 16 &&
+//       gGlobalState->play_state == 0 && gGlobalState->screen_state == 0) {
+
+//     gGotStats = true;
+//     ImGui::LogToClipboard();
+//     ImGui::LogText("%d\n", gGlobalState->total_seconds);
+//     ImGui::LogText("%lf\n", gGlobalState->total_ms);
+
+//     // EntityCallback cb = [&](Entity *e) {
+//     //   bool found = false;
+//     //   if (e->entity_kind == EntityKind::KIND_PLAYER) {
+//     //     found = true;
+//     //   } else if (e->entity_type == 1011) {
+//     //     found = true;
+//     //   } else if (e->entity_type == 1055) {
+//     //     found = true;
+//     //   }
+
+//     //   if (!found) {
+//     //     return;
+//     //   }
+
+//     //   ImGui::LogText("\nFound: %d: %d\n====================\n",
+//     //   e->entity_kind,
+//     //                  e->entity_type);
+//     //   for (size_t i = 0; i < sizeofEntityKind(e->entity_kind); i += 4) {
+//     //     char *addr = ((char *)e) + i;
+
+//     //     auto a1 = (*(addr)) & (0xFF);
+//     //     auto a2 = (*(addr + 1)) & (0xFF);
+//     //     auto a3 = (*(addr + 2)) & (0xFF);
+//     //     auto a4 = (*(addr + 3)) & (0xFF);
+
+//     //     ImGui::LogText("0x%X: %02X %02X %02X %02X 0x%08X %d %u %f\n", i,
+//     //     a1, a2,
+//     //                    a3, a4, *(uint32_t *)addr, *(int32_t *)addr,
+//     //                    *(uint32_t *)addr, *(float *)addr);
+//     //   }
+//     // };
+//     // forEntities({}, cb, gGlobalState->entities->entities_active,
+//     //             gGlobalState->entities->entities_active_count);
+
+//     ImGui::LogFinish();
+//   }
+// }
+
+uint32_t gScreenStatePrevious = 0;
 void specsOnFrame() {
 
   gCameraState =
@@ -1767,8 +1976,15 @@ void specsOnFrame() {
   gGlobalState->N00001004 = 0; // 440629
   gFrame++;
 
+  if (gGlobalState->screen_state == 0 && gScreenStatePrevious == 2) {
+    onLevelStart();
+  }
+
+  // getStats();
   handleKeyInput();
   ensureLockedAmounts();
   drawOverlayWindow();
   drawToolWindow();
+
+  gScreenStatePrevious = gGlobalState->screen_state;
 }

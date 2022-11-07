@@ -28,8 +28,28 @@ void Entity::PlaySound(const char *audioName) {
   PlaySound((DWORD)this, audioName);
 }
 
+DWORD gPlayMusic;
+
+void GlobalState::PlayOlmecMusic(const char *audioName) {
+  __asm {
+        pushad
+
+        mov ebx, dword ptr [ecx + 0x44]
+        push 0x0
+        push 0x1
+        push 0x0
+        push audioName
+        xor eax,eax
+        call gPlayMusic
+
+        popad
+  }
+}
+
 void setupOffsets(DWORD baseAddress) {
   gSpawnEntityOffset = baseAddress + 0x70AB0;
 
   gEntityPlaySoundOffset = baseAddress + 0x16A95;
+
+  gPlayMusic = baseAddress + 0x9920;
 }

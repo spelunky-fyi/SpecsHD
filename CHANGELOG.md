@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.15] - 2022-11-07
+
+### Added
+
+- Camera State
+- Attach Camera to Selected Entity
+- Added ability to skip Olmec Cutscene
+- Added ability to copy entity bytes to clipboard
+
 ## [0.0.14] - 2022-11-05
 
 ### Added
