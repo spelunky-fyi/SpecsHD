@@ -32,7 +32,17 @@ Specs::Config *Specs::Config::load() {
         auto keyMods = (ImGuiModFlags)keyConfig[1].as_integer();
         auto key = (ImGuiKey)keyConfig[2].as_integer();
 
-        config->keys[featureIdx] = {keyMods, key};
+        auto actualKeyMods = 0;
+        if (keyMods & 1)
+          actualKeyMods |= ImGuiMod_Ctrl;
+        if (keyMods & 2)
+          actualKeyMods |= ImGuiMod_Shift;
+        if (keyMods & 4)
+          actualKeyMods |= ImGuiMod_Alt;
+        if (keyMods & 8)
+          actualKeyMods |= ImGuiMod_Super;
+
+        config->keys[featureIdx] = {actualKeyMods, key};
       }
     }
   } catch (std::exception &) {
@@ -57,7 +67,17 @@ Specs::Config *Specs::Config::load() {
         auto keyMods = (ImGuiModFlags)mouseConfig[1].as_integer();
         auto button = (ImGuiMouseButton)mouseConfig[2].as_integer();
 
-        config->buttons[featureIdx] = {keyMods, button};
+        auto actualKeyMods = 0;
+        if (keyMods & 1)
+          actualKeyMods |= ImGuiMod_Ctrl;
+        if (keyMods & 2)
+          actualKeyMods |= ImGuiMod_Shift;
+        if (keyMods & 4)
+          actualKeyMods |= ImGuiMod_Alt;
+        if (keyMods & 8)
+          actualKeyMods |= ImGuiMod_Super;
+
+        config->buttons[featureIdx] = {actualKeyMods, button};
       }
     }
   } catch (std::exception &) {
@@ -76,7 +96,18 @@ void Specs::Config::save() {
     auto keyConfig = this->keys[(KeyFeatures_)idx];
     auto featureIdx = toml::integer(idx);
     auto key = toml::integer(keyConfig.Key);
-    auto keyMods = toml::integer(keyConfig.KeyMods);
+
+    auto savedKeyMods = 0;
+    if (keyConfig.KeyMods & ImGuiMod_Ctrl)
+      savedKeyMods |= 1;
+    if (keyConfig.KeyMods & ImGuiMod_Shift)
+      savedKeyMods |= 2;
+    if (keyConfig.KeyMods & ImGuiMod_Alt)
+      savedKeyMods |= 4;
+    if (keyConfig.KeyMods & ImGuiMod_Super)
+      savedKeyMods |= 8;
+
+    auto keyMods = toml::integer(savedKeyMods);
     auto keyData = toml::value{{featureIdx, keyMods, key}};
     keyData.comments().push_back(GetKeyFeatureName((KeyFeatures_)idx));
 
@@ -89,7 +120,18 @@ void Specs::Config::save() {
     auto mouseConfig = this->buttons[(MouseFeatures_)idx];
     auto featureIdx = toml::integer(idx);
     auto button = toml::integer(mouseConfig.Button);
-    auto keyMods = toml::integer(mouseConfig.KeyMods);
+
+    auto savedKeyMods = 0;
+    if (mouseConfig.KeyMods & ImGuiMod_Ctrl)
+      savedKeyMods |= 1;
+    if (mouseConfig.KeyMods & ImGuiMod_Shift)
+      savedKeyMods |= 2;
+    if (mouseConfig.KeyMods & ImGuiMod_Alt)
+      savedKeyMods |= 4;
+    if (mouseConfig.KeyMods & ImGuiMod_Super)
+      savedKeyMods |= 8;
+
+    auto keyMods = toml::integer(savedKeyMods);
     auto mouseData = toml::value{{featureIdx, keyMods, button}};
     mouseData.comments().push_back(GetMouseFeatureName((MouseFeatures_)idx));
     buttons.push_back(mouseData);
