@@ -191,6 +191,36 @@ struct PlayerState {
 };
 PlayerState gPlayersState[4] = {{}, {}, {}, {}};
 
+struct LockableU8 {
+  bool IsLocked = false;
+  uint8_t LockedValue = 0;
+};
+
+struct LevelsState {
+  LockableU8 FloodedMines = {};
+  LockableU8 SkinIsCrawling = {};
+
+  LockableU8 DeadAreRestless = {};
+  LockableU8 RushingWater = {};
+  LockableU8 HauntedCastle = {};
+  LockableU8 TikiVillage = {};
+  LockableU8 BlackMarket = {};
+
+  LockableU8 WetFur = {};
+  LockableU8 MotherShip = {};
+  LockableU8 Worm = {};
+
+  LockableU8 CityOfGold = {};
+
+  LockableU8 AltarSpawned = {};
+  LockableU8 IdolSpawned = {};
+  LockableU8 DamselSpawned = {};
+  LockableU8 GhostSpawned = {};
+  LockableU8 VaultSpawnedInArea = {};
+};
+
+LevelsState gLevelsState = {};
+
 // If we want to normalize the screen position to 0,0 at the top-left
 // if (gWindowedMode == 2) {
 //   RECT windowRect;
@@ -249,6 +279,20 @@ void drawEntityHitbox(Entity *ent,
 
   gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft, color,
                             1.f);
+}
+
+bool drawCharBool(const char *label, char &flag) {
+  bool bflag = flag ? 1 : 0;
+  bool res = ImGui::Checkbox(label, &bflag);
+  bflag ? flag = 1 : flag = 0;
+  return res;
+}
+
+bool drawCharBool(const char *label, uint8_t &flag) {
+  bool bflag = flag ? 1 : 0;
+  bool res = ImGui::Checkbox(label, &bflag);
+  bflag ? flag = 1 : flag = 0;
+  return res;
 }
 
 void drawEntityHitboxDefault(Entity *ent) { drawEntityHitbox(ent); }
@@ -791,6 +835,22 @@ void Rect(const char *label, ImVec2 &size, ImU32 col = IM_COL32_WHITE,
   draw_list->PopClipRect();
 }
 
+void drawLockedLevelFlag(std::string title, uint8_t &val,
+                         LockableU8 *lockable) {
+  ImGuiIO &io = ImGui::GetIO();
+
+  if (ImGui::Checkbox(std::format("##LevelLock{}", title).c_str(),
+                      &lockable->IsLocked)) {
+    if (lockable->IsLocked) {
+      lockable->LockedValue = val;
+    }
+  }
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  if (drawCharBool(title.c_str(), val)) {
+    lockable->LockedValue = val;
+  }
+}
+
 void drawLevelTab() {
 
   ImGuiIO &io = ImGui::GetIO();
@@ -897,6 +957,56 @@ void drawLevelTab() {
   if (ImGui::Button("Set Current Level")) {
     gGlobalState->respawn_level =
         std::clamp((int)gGlobalState->level - 1, 0, (int)gGlobalState->level);
+  }
+
+  if (ImGui::CollapsingHeader("Level Flags")) {
+    ImGui::Text("Locked?");
+    ImGui::SameLine(80.0f * io.FontGlobalScale);
+    ImGui::Text("Value");
+    ImGui::Separator();
+
+    ImGui::Separator();
+
+    drawLockedLevelFlag("Flooded Mines", gGlobalState->flooded_mines,
+                        &gLevelsState.FloodedMines);
+    drawLockedLevelFlag("Skin is Crawling", gGlobalState->skin_is_crawling,
+                        &gLevelsState.SkinIsCrawling);
+
+    ImGui::Separator();
+    drawLockedLevelFlag("Dead are Restless", gGlobalState->dead_are_restless,
+                        &gLevelsState.DeadAreRestless);
+    drawLockedLevelFlag("Rushing Water", gGlobalState->rushing_water,
+                        &gLevelsState.RushingWater);
+    drawLockedLevelFlag("Haunted Castle", gGlobalState->is_haunted_castle,
+                        &gLevelsState.HauntedCastle);
+    drawLockedLevelFlag("Tiki Village", gGlobalState->tiki_village,
+                        &gLevelsState.TikiVillage);
+    drawLockedLevelFlag("Black Market", gGlobalState->is_blackmarket,
+                        &gLevelsState.BlackMarket);
+
+    ImGui::Separator();
+    drawLockedLevelFlag("Wet Fur", gGlobalState->is_wet_fur,
+                        &gLevelsState.WetFur);
+    drawLockedLevelFlag("Mothership", gGlobalState->is_mothership,
+                        &gLevelsState.MotherShip);
+    drawLockedLevelFlag("Worm", gGlobalState->is_worm, &gLevelsState.Worm);
+
+    ImGui::Separator();
+    drawLockedLevelFlag("City of Gold", gGlobalState->is_city_of_gold,
+                        &gLevelsState.CityOfGold);
+
+    ImGui::Separator();
+    drawLockedLevelFlag("Altar Spawned", gGlobalState->altar_spawned,
+                        &gLevelsState.AltarSpawned);
+    drawLockedLevelFlag("Idol Spawned", gGlobalState->idol_spawned,
+                        &gLevelsState.IdolSpawned);
+    drawLockedLevelFlag("Damsel Spawned", gGlobalState->damsel_spawned,
+                        &gLevelsState.DamselSpawned);
+    drawLockedLevelFlag("Ghost Spawned", gGlobalState->ghost_spawned,
+                        &gLevelsState.GhostSpawned);
+    drawLockedLevelFlag("Vault Spawned in Area",
+                        gGlobalState->vault_spawned_in_area,
+                        &gLevelsState.VaultSpawnedInArea);
   }
 
   ImVec2 size = {5.f, 5.f};
@@ -1063,6 +1173,37 @@ void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
   }
 }
 
+void ensureLockedU8(uint8_t &val, LockableU8 *lockable) {
+  if (lockable->IsLocked) {
+    val = lockable->LockedValue;
+  }
+}
+
+void ensureLockedLevelsState() {
+  ensureLockedU8(gGlobalState->flooded_mines, &gLevelsState.FloodedMines);
+  ensureLockedU8(gGlobalState->skin_is_crawling, &gLevelsState.SkinIsCrawling);
+
+  ensureLockedU8(gGlobalState->dead_are_restless,
+                 &gLevelsState.DeadAreRestless);
+  ensureLockedU8(gGlobalState->rushing_water, &gLevelsState.RushingWater);
+  ensureLockedU8(gGlobalState->is_haunted_castle, &gLevelsState.HauntedCastle);
+  ensureLockedU8(gGlobalState->tiki_village, &gLevelsState.TikiVillage);
+  ensureLockedU8(gGlobalState->is_blackmarket, &gLevelsState.BlackMarket);
+
+  ensureLockedU8(gGlobalState->is_wet_fur, &gLevelsState.WetFur);
+  ensureLockedU8(gGlobalState->is_mothership, &gLevelsState.MotherShip);
+  ensureLockedU8(gGlobalState->is_worm, &gLevelsState.Worm);
+
+  ensureLockedU8(gGlobalState->is_city_of_gold, &gLevelsState.CityOfGold);
+
+  ensureLockedU8(gGlobalState->altar_spawned, &gLevelsState.AltarSpawned);
+  ensureLockedU8(gGlobalState->idol_spawned, &gLevelsState.IdolSpawned);
+  ensureLockedU8(gGlobalState->damsel_spawned, &gLevelsState.DamselSpawned);
+  ensureLockedU8(gGlobalState->ghost_spawned, &gLevelsState.GhostSpawned);
+  ensureLockedU8(gGlobalState->vault_spawned_in_area,
+                 &gLevelsState.VaultSpawnedInArea);
+}
+
 void ensureLockedAmounts() {
   if (gGlobalState->player1) {
     ensureLockedAmountsForPlayer(gGlobalState->player1,
@@ -1083,6 +1224,8 @@ void ensureLockedAmounts() {
     ensureLockedAmountsForPlayer(gGlobalState->player4,
                                  gGlobalState->player4_data, &gPlayersState[3]);
   }
+
+  ensureLockedLevelsState();
 }
 
 void drawLockedPlayerDataCheckbox(std::string title, bool &val, bool &lockVar,
@@ -1322,18 +1465,6 @@ void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
       enabledEnts.excluded.erase(ent_type);
     }
   }
-}
-
-void drawCharBool(const char *label, char &flag) {
-  bool bflag = flag ? 1 : 0;
-  ImGui::Checkbox(label, &bflag);
-  bflag ? flag = 1 : flag = 0;
-}
-
-void drawCharBool(const char *label, uint8_t &flag) {
-  bool bflag = flag ? 1 : 0;
-  ImGui::Checkbox(label, &bflag);
-  bflag ? flag = 1 : flag = 0;
 }
 
 void drawDebugTab() {

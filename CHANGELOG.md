@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.17] - 2022-12-23
+
 ### Added
 
 - Insertion Point under Debug -> Global State
+- Lockable level flags on the Levels menu
 
 ## [0.0.16] - 2022-11-07
 
