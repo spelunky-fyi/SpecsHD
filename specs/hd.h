@@ -286,7 +286,9 @@ public:
   uint8_t N00001004;                                  // 0x440629
   uint8_t N0000100D;                                  // 0x44062A
   uint8_t N00001005;                                  // 0x44062B
-  char pad_44062C[88];                                // 0x44062C
+  char pad_44062C[52];                                // 0x44062C
+  float insertion_point;                              // 0x440660
+  char pad_440664[32];                                // 0x440664
   EntityPlayer *player1;                              // 0x440684
   EntityPlayer *player2;                              // 0x440688
   EntityPlayer *player3;                              // 0x44068C

@@ -1428,6 +1428,9 @@ void drawDebugTab() {
     ImGui::InputScalar("level", ImGuiDataType_U32, &gGlobalState->level);
     ImGui::InputScalar("level_track", ImGuiDataType_U32,
                        &gGlobalState->level_track);
+    ImGui::InputFloat("insertion_point", &gGlobalState->insertion_point,
+                      0.0001F, 0.0F, "%.4f");
+
     if (ImGui::CollapsingHeader("GlobalState Flags")) {
       drawCharBool("dark_level", gGlobalState->dark_level);
       drawCharBool("altar_spawned", gGlobalState->altar_spawned);

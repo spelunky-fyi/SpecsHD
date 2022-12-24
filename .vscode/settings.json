@@ -75,5 +75,6 @@
     "numeric": "cpp",
     "set": "cpp"
   },
-  "C_Cpp.default.cppStandard": "c++20"
+  "C_Cpp.default.cppStandard": "c++20",
+  "C_Cpp.default.intelliSenseMode": "windows-msvc-x86"
 }
