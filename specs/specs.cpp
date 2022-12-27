@@ -716,6 +716,60 @@ void drawOverlayWindow() {
                                               gameToScreen({ent->x, 0.f}).x,
                                           0, 6);
           gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
+        } else if (ent->entity_type == 1006) { // Shopkeeper
+          // Holding Item, Follow
+          drawEntityCircle(ent, 2.f, color);
+          // drawEntityCircle(ent, 6.f, color);
+
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.25f, ent->y - 36.0f}),
+              gameToScreen({ent->x + 5.25f, ent->y - 36.0f}), color);
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.25f, ent->y + 36.0f}),
+              gameToScreen({ent->x + 5.25f, ent->y + 36.0f}), color);
+
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
+              gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.25f, ent->y + 6.0f}),
+              gameToScreen({ent->x + 5.25f, ent->y + 6.0f}), color);
+          drawEntityCircle(ent, 10.f, color);
+        } else if (ent->entity_type == 1007 ||
+                   ent->entity_type == 1021) { // Blue / Orange Frog
+          drawEntityCircle(ent, 8.f, color);
+        } else if (ent->entity_type == 1010) { // UFO
+
+          gOverlayDrawList->AddLine(gameToScreen({ent->x - 8.0f, ent->y}),
+                                    gameToScreen({ent->x + 8.0f, ent->y}),
+                                    color);
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
+              gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
+          drawEntityCircle(ent, 8.f, color);
+          gOverlayDrawList->AddQuad(
+              gameToScreen({ent->x - 0.5f, ent->y}),
+              gameToScreen({ent->x + 0.5f, ent->y}),
+              gameToScreen({ent->x + 0.5f, ent->y - 8.0f}),
+              gameToScreen({ent->x - 0.5f, ent->y - 8.0f}), color);
+        } else if (ent->entity_type == 1012) { // Skeleton
+          gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y}),
+                                          gameToScreen({ent->x + 4.0f, 0.f}).x -
+                                              gameToScreen({ent->x, 0.f}).x,
+                                          0, 6);
+          gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
+        } else if (ent->entity_type == 1015) { // Monkey
+          // On vine
+          if (ent->field71_0x203 != 0) {
+            gOverlayDrawList->PathArcToFast(
+                gameToScreen({ent->x, ent->y}),
+                gameToScreen({ent->x + 4.0f, 0.f}).x -
+                    gameToScreen({ent->x, 0.f}).x,
+                0, 6);
+            gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
+          } else {
+            drawEntityCircle(ent, 4.f, color);
+          }
         } else if (ent->entity_type == 1020 ||
                    ent->entity_type == 1028) { // Vampire or Vlad
           if (entityRoom < 0x13 || entityRoom > 0x15) {
@@ -738,12 +792,18 @@ void drawOverlayWindow() {
               gameToScreen({ent->x + 1.0f, ent->y}),
               gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
               gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
+        } else if (ent->entity_type == 1025) { // Yeti King
+          drawEntityCircle(ent, 6.f, color);
         } else if (ent->entity_type == 1030) { // Imp
           gOverlayDrawList->AddQuad(
               gameToScreen({ent->x - 1.0f, ent->y}),
               gameToScreen({ent->x + 1.0f, ent->y}),
               gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
               gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
+        } else if (/*ent->entity_type == 1032 || ent->entity_type == 1034 ||*/
+                   ent->entity_type == 1038) { // Bee, Queen Bee, Giant Frog
+          drawEntityCircle(ent, 6.f, color);
+
         } else if (ent->entity_type == 1033) { // Anubis
           // Engage
           drawEntityCircle(ent, 11.f, color);
