@@ -51,6 +51,7 @@ struct DebugState {
   bool EnableTileBorders = false;
   bool EnableBinBorders = false;
   bool EnablePacifistOverlay = false;
+  bool DrawEnemyDetection = false;
 
   EnabledEntities Ids;
   EnabledEntities Hitboxes;
@@ -279,6 +280,15 @@ void drawEntityHitbox(Entity *ent,
 
   gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft, color,
                             1.f);
+}
+
+void drawEntityCircle(Entity *ent, float radius,
+                      ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 238.0f,
+                                                        0.7f})) {
+  auto screen = gameToScreen({ent->x, ent->y});
+  auto screenRadius = gameToScreen({ent->x + radius, 0}).x - screen.x;
+
+  gOverlayDrawList->AddCircle(screen, screenRadius, color, 0, 1.f);
 }
 
 bool drawCharBool(const char *label, char &flag) {
@@ -678,6 +688,71 @@ void drawOverlayWindow() {
 
         probe_idx++;
       } while (probe_idx < 8);
+    }
+  }
+
+  if (gDebugState.DrawEnemyDetection) {
+    auto color = ImGui::GetColorU32({0.0f, 1.0f, .5f, .9f});
+
+    if (gGlobalState->player1) {
+      drawPointAtCoord({gGlobalState->player1->x, gGlobalState->player1->y});
+    }
+    for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+         idx++) {
+      auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+
+      if (ent) {
+        auto entityRoom = gGlobalState->level_state
+                              ->room_types[GetRoomForPosition(ent->x, ent->y)];
+        if (ent->entity_type == 1002) { // Spider
+          gOverlayDrawList->AddQuad(
+              gameToScreen({ent->x - 0.4f, ent->y}),
+              gameToScreen({ent->x + 0.4f, ent->y}),
+              gameToScreen({ent->x + 0.4f, ent->y - 7.0f}),
+              gameToScreen({ent->x - 0.4f, ent->y - 7.0f}), color);
+        } else if (ent->entity_type == 1003) { // Bat
+          gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y - 0.2f}),
+                                          gameToScreen({ent->x + 6.0f, 0.f}).x -
+                                              gameToScreen({ent->x, 0.f}).x,
+                                          0, 6);
+          gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
+        } else if (ent->entity_type == 1020 ||
+                   ent->entity_type == 1028) { // Vampire or Vlad
+          if (entityRoom < 0x13 || entityRoom > 0x15) {
+            gOverlayDrawList->PathArcToFast(
+                gameToScreen({ent->x, ent->y - 0.2f}),
+                gameToScreen({ent->x + 6.0f, 0.f}).x -
+                    gameToScreen({ent->x, 0.f}).x,
+                0, 6);
+            gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
+          } else {
+            gOverlayDrawList->AddQuad(
+                gameToScreen({ent->x - 1.0f, ent->y - 0.2f}),
+                gameToScreen({ent->x + 1.0f, ent->y - 0.2f}),
+                gameToScreen({ent->x + 1.0f, ent->y - 6.0f}),
+                gameToScreen({ent->x - 1.0f, ent->y - 6.0f}), color);
+          }
+        } else if (ent->entity_type == 1018) { // Giant Spider
+          gOverlayDrawList->AddQuad(
+              gameToScreen({ent->x - 1.0f, ent->y}),
+              gameToScreen({ent->x + 1.0f, ent->y}),
+              gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
+              gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
+        } else if (ent->entity_type == 1030) { // Imp
+          gOverlayDrawList->AddQuad(
+              gameToScreen({ent->x - 1.0f, ent->y}),
+              gameToScreen({ent->x + 1.0f, ent->y}),
+              gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
+              gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
+        } else if (ent->entity_type == 1033) { // Anubis
+          // Engage
+          drawEntityCircle(ent, 11.f, color);
+          // Shoot
+          drawEntityCircle(ent, 8.f, color);
+          // Retreat
+          drawEntityCircle(ent, 4.f, color);
+        }
+      }
     }
   }
 
@@ -1483,6 +1558,7 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
+  ImGui::Checkbox("Draw Enemy Detection", &gDebugState.DrawEnemyDetection);
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
   if (ImGui::Checkbox("Disable Olmec Spawns",
                       &gDebugState.DisableOlmecSpawns)) {
@@ -1808,7 +1884,7 @@ void drawSelectedEntityTab() {
 
         char *addr = ((char *)gSelectedEntityState.Entity) + i;
         ImGui::TableNextColumn();
-        ImGui::Text("0x%X", i);
+        ImGui::Text("0x%X", i + 4); // Offset by 4 for virtual function table
         {
           uint32_t a1, a2, a3, a4;
           a1 = (*(addr)) & (0xFF);
