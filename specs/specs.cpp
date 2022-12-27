@@ -722,18 +722,12 @@ void drawOverlayWindow() {
           // drawEntityCircle(ent, 6.f, color);
 
           gOverlayDrawList->AddLine(
-              gameToScreen({ent->x - 5.25f, ent->y - 36.0f}),
-              gameToScreen({ent->x + 5.25f, ent->y - 36.0f}), color);
-          gOverlayDrawList->AddLine(
-              gameToScreen({ent->x - 5.25f, ent->y + 36.0f}),
-              gameToScreen({ent->x + 5.25f, ent->y + 36.0f}), color);
-
-          gOverlayDrawList->AddLine(
               gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
               gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
           gOverlayDrawList->AddLine(
               gameToScreen({ent->x - 5.25f, ent->y + 6.0f}),
               gameToScreen({ent->x + 5.25f, ent->y + 6.0f}), color);
+
           drawEntityCircle(ent, 10.f, color);
         } else if (ent->entity_type == 1007 ||
                    ent->entity_type == 1021) { // Blue / Orange Frog
