@@ -319,4 +319,6 @@ public:
 }; // Size: 0x447548
 static_assert(sizeof(GlobalState) == 0x447548);
 
+uint32_t GetRoomForPosition(float x, float y);
+
 void setupOffsets(DWORD baseAddress);

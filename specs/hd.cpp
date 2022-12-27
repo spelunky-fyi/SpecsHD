@@ -46,10 +46,20 @@ void GlobalState::PlayOlmecMusic(const char *audioName) {
   }
 }
 
+DWORD gGetRoomForPosition;
+uint32_t GetRoomForPosition(float x, float y) {
+  using GetRoomForPositionPtr = uint32_t(__stdcall *)(float x, float y);
+  GetRoomForPositionPtr GetRoomForPosition =
+      (GetRoomForPositionPtr)(gGetRoomForPosition);
+  return GetRoomForPosition(x, y);
+}
+
 void setupOffsets(DWORD baseAddress) {
   gSpawnEntityOffset = baseAddress + 0x70AB0;
 
   gEntityPlaySoundOffset = baseAddress + 0x16A95;
 
   gPlayMusic = baseAddress + 0x9920;
+
+  gGetRoomForPosition = baseAddress + 0x0CC760;
 }
