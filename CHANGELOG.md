@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.18] - 2022-12-28
+
+### Added
+
+- Detection Boxes setting to Debug tab that shows various boxes related to influencing enemy AI
+
 ## [0.0.17] - 2022-12-23
 
 ### Added
