@@ -305,6 +305,23 @@ bool drawCharBool(const char *label, uint8_t &flag) {
   return res;
 }
 
+void drawEntityDetectionRay(Entity *ent, float len, ImU32 color) {
+  if (ent->flag_horizontal_flip) {
+    gOverlayDrawList->AddQuad(
+        gameToScreen({ent->x + ent->hitbox_x - len, ent->y + ent->hitbox_up}),
+        gameToScreen({ent->x + ent->hitbox_x, ent->y + ent->hitbox_up}),
+        gameToScreen({ent->x + ent->hitbox_x, ent->y - ent->hitbox_down}),
+        gameToScreen({ent->x + ent->hitbox_x - len, ent->y - ent->hitbox_down}),
+        color);
+  } else {
+    gOverlayDrawList->AddQuad(
+        gameToScreen({ent->x - ent->hitbox_x + len, ent->y + ent->hitbox_up}),
+        gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up}),
+        gameToScreen({ent->x - ent->hitbox_x, ent->y - ent->hitbox_down}),
+        gameToScreen({ent->x - ent->hitbox_x + len, ent->y - ent->hitbox_down}),
+        color);
+  }
+}
 void drawEntityHitboxDefault(Entity *ent) { drawEntityHitbox(ent); }
 
 void drawPacifistOverlay() {
@@ -693,6 +710,8 @@ void drawOverlayWindow() {
 
   if (gDebugState.DrawEnemyDetection) {
     auto color = ImGui::GetColorU32({0.0f, 1.0f, .5f, .9f});
+    auto wallColor = ImGui::GetColorU32({0.9f, 0.9f, 0.0f, .9f});
+    auto waterColor = ImGui::GetColorU32({0.0f, 0.0f, 1.0f, .9f});
 
     if (gGlobalState->player1) {
       drawPointAtCoord({gGlobalState->player1->x, gGlobalState->player1->y});
@@ -716,19 +735,27 @@ void drawOverlayWindow() {
                                               gameToScreen({ent->x, 0.f}).x,
                                           0, 6);
           gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
+        } else if ( // Caveman / Hawk Man / Croc Man / Green Knight /
+                    // Scorpion / Tiki
+            ent->entity_type == 1004 || ent->entity_type == 1011 ||
+            ent->entity_type == 1044 || ent->entity_type == 1045 ||
+            ent->entity_type == 1029 || ent->entity_type == 1041) {
+          drawEntityDetectionRay(ent, 6.0f, wallColor);
+        } else if (ent->entity_type == 1042) { // Scorpion Fly
+          drawEntityDetectionRay(ent, 6.0f, wallColor);
+          drawEntityCircle(ent, 6.f, color);
         } else if (ent->entity_type == 1006) { // Shopkeeper
           // Holding Item, Follow
           drawEntityCircle(ent, 2.f, color);
           // drawEntityCircle(ent, 6.f, color);
+          // gOverlayDrawList->AddLine(
+          //     gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
+          //     gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
+          // gOverlayDrawList->AddLine(
+          //     gameToScreen({ent->x - 5.25f, ent->y + 6.0f}),
+          //     gameToScreen({ent->x + 5.25f, ent->y + 6.0f}), color);
 
-          gOverlayDrawList->AddLine(
-              gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
-              gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
-          gOverlayDrawList->AddLine(
-              gameToScreen({ent->x - 5.25f, ent->y + 6.0f}),
-              gameToScreen({ent->x + 5.25f, ent->y + 6.0f}), color);
-
-          drawEntityCircle(ent, 10.f, color);
+          // drawEntityCircle(ent, 10.f, color);
         } else if (ent->entity_type == 1007 ||
                    ent->entity_type == 1021) { // Blue / Orange Frog
           drawEntityCircle(ent, 8.f, color);
@@ -752,6 +779,18 @@ void drawOverlayWindow() {
                                               gameToScreen({ent->x, 0.f}).x,
                                           0, 6);
           gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
+        } else if (ent->entity_type == 1013) { // Piranha
+          drawEntityCircle(ent, 6.f, waterColor);
+        } else if (ent->entity_type == 1023) { // Old Bitey
+          drawEntityCircle(ent, 5.f, waterColor);
+        } else if (ent->entity_type == 1014) { // Mummy
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.2f, ent->y - 3.0f}),
+              gameToScreen({ent->x + 5.2f, ent->y - 3.0f}), color);
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.2f, ent->y + 3.0f}),
+              gameToScreen({ent->x + 5.2f, ent->y + 3.0f}), color);
+          drawEntityCircle(ent, 6.f, color);
         } else if (ent->entity_type == 1015) { // Monkey
           // On vine
           if (ent->field71_0x203 != 0) {
@@ -786,6 +825,18 @@ void drawOverlayWindow() {
               gameToScreen({ent->x + 1.0f, ent->y}),
               gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
               gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
+        } else if (ent->entity_type == 1019) { // Jiang Shi
+          drawEntityCircle(ent, 8.f, color);
+        } else if (ent->entity_type == 1024) { // Scarab
+          drawEntityCircle(ent, 6.f, color);
+          gOverlayDrawList->AddLine(
+              gameToScreen({ent->x - 5.95f, ent->y - 0.2f}),
+              gameToScreen({ent->x + 5.95f, ent->y - 0.2f}), color);
+        } else if (ent->entity_type == 1046) { // Worm Egg
+          drawEntityCircle(ent, 6.f, color);
+          gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.6f, ent->y + 2.f}),
+                                    gameToScreen({ent->x + 5.6f, ent->y + 2.f}),
+                                    color);
         } else if (ent->entity_type == 1025) { // Yeti King
           drawEntityCircle(ent, 6.f, color);
         } else if (ent->entity_type == 1030) { // Imp
@@ -797,7 +848,16 @@ void drawOverlayWindow() {
         } else if (/*ent->entity_type == 1032 || ent->entity_type == 1034 ||*/
                    ent->entity_type == 1038) { // Bee, Queen Bee, Giant Frog
           drawEntityCircle(ent, 6.f, color);
-
+        } else if (ent->entity_type == 1031) { // Blue Devil
+          drawEntityDetectionRay(ent, 6.0f, wallColor);
+          gOverlayDrawList->AddQuad(
+              gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up}),
+              gameToScreen(
+                  {ent->x - ent->hitbox_x, ent->y + ent->hitbox_up + 5.0f}),
+              gameToScreen(
+                  {ent->x + ent->hitbox_x, ent->y + ent->hitbox_up + 5.0f}),
+              gameToScreen({ent->x + ent->hitbox_x, ent->y + ent->hitbox_up}),
+              wallColor);
         } else if (ent->entity_type == 1033) { // Anubis
           // Engage
           drawEntityCircle(ent, 11.f, color);
@@ -805,6 +865,41 @@ void drawOverlayWindow() {
           drawEntityCircle(ent, 8.f, color);
           // Retreat
           drawEntityCircle(ent, 4.f, color);
+        } else if (ent->entity_type == 1040) { // Alien Tank
+          drawEntityCircle(ent, 6.f, color);
+
+          gOverlayDrawList->AddLine(gameToScreen({ent->x, ent->y - 2.0f}),
+                                    gameToScreen({ent->x, ent->y + 6.0f}),
+                                    color);
+
+          if (ent->flag_horizontal_flip) {
+            gOverlayDrawList->AddLine(
+                gameToScreen({ent->x - 5.6f, ent->y - 2.0f}),
+                gameToScreen({ent->x, ent->y - 2.0f}), color);
+          } else {
+            gOverlayDrawList->AddLine(
+                gameToScreen({ent->x, ent->y - 2.0f}),
+                gameToScreen({ent->x + 5.6f, ent->y - 2.0f}), color);
+          }
+        } else if (ent->entity_type == 1016) { // Alien Lord
+          drawEntityCircle(ent, 8.f, color);
+        } else if (ent->entity_type == 1048) { // Alien Queen
+          drawEntityCircle(ent, 12.f, color);
+        } else if (ent->entity_type == 1051) { // Succubus
+          drawEntityCircle(ent, 4.f, color);
+          drawEntityDetectionRay(ent, 6.0f, wallColor);
+        } else if (ent->entity_type == 1052 ||
+                   ent->entity_type == 1053) { // Horse Head / Ox Face
+          drawEntityCircle(ent, 4.f, color);
+        } else if (ent->entity_type == 1054) { // Anubis 2
+          drawEntityCircle(ent, 8.f, color);
+        } else if (ent->entity_type == 1055) { // Olmec
+          drawEntityCircle(ent, 10.f, color);
+        } else if (ent->entity_type == 1058) { // Turret
+          drawEntityCircle(ent, 6.f, color);
+          gOverlayDrawList->AddLine(gameToScreen({ent->x - 6.0f, ent->y}),
+                                    gameToScreen({ent->x + 6.0f, ent->y}),
+                                    color);
         }
       }
     }
@@ -1612,7 +1707,7 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
-  ImGui::Checkbox("Draw Enemy Detection", &gDebugState.DrawEnemyDetection);
+  ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
   if (ImGui::Checkbox("Disable Olmec Spawns",
                       &gDebugState.DisableOlmecSpawns)) {
