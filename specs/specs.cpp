@@ -33,6 +33,17 @@ int gWindowedMode = 0;
 int gDisplayWidth = 0;
 int gDisplayHeight = 0;
 
+enum DataType_ {
+  DataType_Byte,
+  DataType_Dword_Unsigned,
+  DataType_Dword_Signed,
+  DataType_Dword_Hex,
+  DataType_Float,
+
+  // End of list
+  DataType_COUNT,
+};
+
 struct EnabledEntities {
   bool activeEntities = false;
   bool floorEntities = false;
@@ -47,6 +58,16 @@ struct EnabledEntities {
   std::unordered_set<uint32_t> excluded = {171, 177};
 };
 
+EnabledEntities gAllEntities = {true, true, true, true, true,
+                                true, true, true, -1,   {}};
+
+// Hash function
+struct DrawEntityOffsetsValueHashFunction {
+  size_t operator()(const std::pair<DWORD, DataType_> &x) const {
+    return x.first ^ x.second;
+  }
+};
+
 struct DebugState {
   bool EnableTileBorders = false;
   bool EnableBinBorders = false;
@@ -56,6 +77,12 @@ struct DebugState {
   EnabledEntities Ids;
   EnabledEntities Hitboxes;
   EnabledEntities Selection;
+
+  // (EntityKind, entity type): [(offset, datatype),...]
+  std::map<std::pair<EntityKind, uint32_t>,
+           std::unordered_set<std::pair<DWORD, DataType_>,
+                              DrawEntityOffsetsValueHashFunction>>
+      DrawEntityOffsets;
 
   bool DrawSelectedEntHitbox = false;
   bool DrawClosestEntHitbox = false;
@@ -376,6 +403,48 @@ void drawEntityId(Entity *ent) {
                             out.c_str());
 }
 
+void drawEntityOffsetDebug(Entity *ent) {
+
+  auto entry =
+      gDebugState
+          .DrawEntityOffsets[std::pair{ent->entity_kind, ent->entity_type}];
+  if (entry.empty()) {
+    return;
+  }
+
+  auto idx = 0;
+  auto font = ImGui::GetFont();
+  auto fontSize = ImGui::GetFontSize() + 5;
+  auto screen = gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
+  screen.y -= fontSize + 8;
+
+  for (auto offset_pair : entry) {
+
+    auto offset = offset_pair.first;
+    auto dataType = offset_pair.second;
+
+    char *addr = ((char *)ent) + offset;
+    auto text = std::format("0x{:X}: ", offset);
+
+    if (dataType == DataType_Byte) {
+      text.append(std::format("{:02X}", *addr));
+    } else if (dataType == DataType_Dword_Unsigned) {
+      text.append(std::format("{:d}", *(uint32_t *)addr));
+    } else if (dataType == DataType_Dword_Signed) {
+      text.append(std::format("{:d}", *(int32_t *)addr));
+    } else if (dataType == DataType_Dword_Hex) {
+      text.append(std::format("0x{:08X}", *(uint32_t *)addr));
+    } else if (dataType == DataType_Float) {
+      text.append(std::format("{:f}", *(float *)addr));
+    }
+
+    gOverlayDrawList->AddText(
+        font, fontSize, ImVec2{screen.x, screen.y - (idx * (fontSize + 2))},
+        IM_COL32_WHITE, text.c_str());
+    idx++;
+  }
+}
+
 using EntityCallback = std::function<void(Entity *e)>;
 void forEntities(std::unordered_set<uint32_t> excludedEntities,
                  EntityCallback callback, Entity **entities, size_t count,
@@ -687,6 +756,10 @@ void drawOverlayWindow() {
 
   forEnabledEntities(gDebugState.Ids, &drawEntityId);
 
+  if (gDebugState.DrawEntityOffsets.size() > 0) {
+    forEnabledEntities(gAllEntities, &drawEntityOffsetDebug);
+  }
+
   if (gDebugState.ShowOlmecCrushProbes) {
     for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
          idx++) {
@@ -745,17 +818,45 @@ void drawOverlayWindow() {
           drawEntityDetectionRay(ent, 6.0f, wallColor);
           drawEntityCircle(ent, 6.f, color);
         } else if (ent->entity_type == 1006) { // Shopkeeper
-          // Holding Item, Follow
-          drawEntityCircle(ent, 2.f, color);
-          // drawEntityCircle(ent, 6.f, color);
-          // gOverlayDrawList->AddLine(
-          //     gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
-          //     gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
-          // gOverlayDrawList->AddLine(
-          //     gameToScreen({ent->x - 5.25f, ent->y + 6.0f}),
-          //     gameToScreen({ent->x + 5.25f, ent->y + 6.0f}), color);
 
-          // drawEntityCircle(ent, 10.f, color);
+          // 0 - Chilling
+          // 1 - Following (suspicious while in shop)
+          // 5 - Aggro (Hoping around shooting like a maniac)
+          // 6 - Unknown - Immediately transitions to aggro
+          // 7 - Patrol (Standing)
+          // 8 - Patrol (Walking)
+          // 9 - Patrol (No break, Vault Keeper). No proximity Aggro
+
+          // Holding Item, Follow
+          if (ent->field8_0x14c == 0 || ent->field8_0x14c == 1) {
+            drawEntityCircle(ent, 2.f, color);
+            drawEntityCircle(ent, 1.f, color);
+          }
+
+          // Patrolling
+          if (ent->field8_0x14c == 7 || ent->field8_0x14c == 8) {
+            drawEntityCircle(ent, 6.f, color);
+          }
+
+          drawEntityCircle(ent, 20.f, color);
+          if (ent->field8_0x14c == 5) {
+            drawEntityCircle(ent, 2.f, color);
+            drawEntityCircle(ent, 12.f, color);
+            if (ent->flag_horizontal_flip) {
+
+              gOverlayDrawList->AddQuad(
+                  gameToScreen({ent->x - 5.0f, ent->y + 12.0f}),
+                  gameToScreen({ent->x, ent->y + 12.0f}),
+                  gameToScreen({ent->x, ent->y - 12.0f}),
+                  gameToScreen({ent->x - 5.0f, ent->y - 12.0f}), color);
+            } else {
+              gOverlayDrawList->AddQuad(
+                  gameToScreen({ent->x, ent->y + 12.0f}),
+                  gameToScreen({ent->x + 5.0f, ent->y + 12.0f}),
+                  gameToScreen({ent->x + 5.0f, ent->y - 12.0f}),
+                  gameToScreen({ent->x, ent->y - 12.0f}), color);
+            }
+          }
         } else if (ent->entity_type == 1007 ||
                    ent->entity_type == 1021) { // Blue / Orange Frog
           drawEntityCircle(ent, 8.f, color);
@@ -1876,7 +1977,7 @@ void drawDebugTab() {
             a3 = (*(addr + 2)) & (0xFF);
             a4 = (*(addr + 3)) & (0xFF);
             ImGui::TableNextColumn();
-            ImGui::Text("%X %X %X %X", a1, a2, a3, a4);
+            ImGui::Text("%02X %02X %02X %02X", a1, a2, a3, a4);
           }
           ImGui::TableNextColumn();
           ImGui::Text("%d", *(int32_t *)addr);
@@ -1885,7 +1986,7 @@ void drawDebugTab() {
           ImGui::Text("%u", *(uint32_t *)addr);
 
           ImGui::TableNextColumn();
-          ImGui::Text("0x%X", *(uint32_t *)addr);
+          ImGui::Text("0x%08X", *(uint32_t *)addr);
 
           ImGui::TableNextColumn();
           ImGui::Text("%f", *(float *)addr);
@@ -2011,18 +2112,19 @@ void drawSelectedEntityTab() {
            i < sizeofEntityKind(gSelectedEntityState.Entity->entity_kind);
            i += 4) {
         char *addr = ((char *)gSelectedEntityState.Entity) + i;
-        ImGui::LogText("0x%X: %f 0x%X\n", i, *(float *)addr, *(uint32_t *)addr);
+        ImGui::LogText("0x%02X: %f 0x%02X\n", i, *(float *)addr,
+                       *(uint32_t *)addr);
       }
       ImGui::LogFinish();
     }
-    if (ImGui::BeginTable("Raw Bytes", 6)) {
+    if (ImGui::BeginTable("Raw Bytes", 6, ImGuiTableFlags_RowBg)) {
 
-      ImGui::TableSetupColumn("Offset");
-      ImGui::TableSetupColumn("Bytes");
-      ImGui::TableSetupColumn("Signed");
-      ImGui::TableSetupColumn("Unsigned");
-      ImGui::TableSetupColumn("Hex");
-      ImGui::TableSetupColumn("Float");
+      ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableSetupColumn("Signed", ImGuiTableColumnFlags_WidthStretch);
+      ImGui::TableSetupColumn("Unsigned", ImGuiTableColumnFlags_WidthStretch);
+      ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_WidthStretch);
+      ImGui::TableSetupColumn("Float", ImGuiTableColumnFlags_WidthStretch);
       ImGui::TableHeadersRow();
 
       for (size_t i = 0;
@@ -2033,27 +2135,79 @@ void drawSelectedEntityTab() {
 
         char *addr = ((char *)gSelectedEntityState.Entity) + i;
         ImGui::TableNextColumn();
-        ImGui::Text("0x%X", i + 4); // Offset by 4 for virtual function table
+        ImGui::Text("0x%X", i);
+
+        std::pair<EntityKind, uint32_t> key = {
+            gSelectedEntityState.Entity->entity_kind,
+            gSelectedEntityState.Entity->entity_type};
+
         {
           uint32_t a1, a2, a3, a4;
           a1 = (*(addr)) & (0xFF);
           a2 = (*(addr + 1)) & (0xFF);
           a3 = (*(addr + 2)) & (0xFF);
           a4 = (*(addr + 3)) & (0xFF);
+
           ImGui::TableNextColumn();
-          ImGui::Text("%X %X %X %X", a1, a2, a3, a4);
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a1, i).c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
+          }
+          ImGui::SameLine();
+
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a2, i + 1)
+                      .c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i + 1, DataType_Byte});
+          }
+          ImGui::SameLine();
+
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a3, i + 2)
+                      .c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i + 2, DataType_Byte});
+          }
+          ImGui::SameLine();
+
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a4, i + 3)
+                      .c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i + 3, DataType_Byte});
+          }
         }
-        ImGui::TableNextColumn();
-        ImGui::Text("%d", *(int32_t *)addr);
 
         ImGui::TableNextColumn();
-        ImGui::Text("%u", *(uint32_t *)addr);
+        if (ImGui::Button(
+                std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
+                    .c_str(),
+                {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Signed});
+        }
 
         ImGui::TableNextColumn();
-        ImGui::Text("0x%X", *(uint32_t *)addr);
+        if (ImGui::Button(
+                std::format("{:d}##SelectedEntityRaw-{}", *(uint32_t *)addr, i)
+                    .c_str(),
+                {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert(
+              {i, DataType_Dword_Unsigned});
+        }
 
         ImGui::TableNextColumn();
-        ImGui::Text("%f", *(float *)addr);
+        if (ImGui::Button(std::format("0x{:08X}##SelectedEntityRaw-{}",
+                                      *(uint32_t *)addr, i)
+                              .c_str(),
+                          {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Hex});
+        }
+
+        ImGui::TableNextColumn();
+        if (ImGui::Button(
+                std::format("{:f}##SelectedEntityRaw-{}", *(float *)addr, i)
+                    .c_str(),
+                {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Float});
+        }
       }
 
       ImGui::EndTable();
