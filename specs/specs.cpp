@@ -293,10 +293,27 @@ void drawPointAtCoord(ImVec2 coord,
                             1.f);
 }
 
+void drawEntityCircle(Entity *ent, float radius,
+                      ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 238.0f,
+                                                        0.7f}),
+                      float x_offset = 0.0f, float y_offset = 0.0f,
+                      bool filled = false) {
+  auto screen = gameToScreen({ent->x + x_offset, ent->y + y_offset});
+  auto screenRadius =
+      gameToScreen({ent->x + x_offset + radius, 0}).x - screen.x;
+
+  if (filled) {
+    gOverlayDrawList->AddCircleFilled(screen, screenRadius, color, 0);
+  } else {
+    gOverlayDrawList->AddCircle(screen, screenRadius, color, 0, 1.f);
+  }
+}
+
 void drawEntityHitbox(Entity *ent,
                       ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 238.0f,
-                                                        0.7f})) {
-  auto screen = gameToScreen({ent->x, ent->y});
+                                                        0.7f}),
+                      bool filled = false) {
+
   ImVec2 topLeft =
       gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
   ImVec2 topRight =
@@ -306,8 +323,13 @@ void drawEntityHitbox(Entity *ent,
   ImVec2 bottomLeft =
       gameToScreen({ent->x - ent->hitbox_x, ent->y - ent->hitbox_down});
 
-  gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft, color,
-                            1.f);
+  if (filled) {
+    gOverlayDrawList->AddQuadFilled(topLeft, topRight, bottomRight, bottomLeft,
+                                    color);
+  } else {
+    gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft, color,
+                              1.f);
+  }
 
   if (gDebugState.IncludeHitboxOrigins) {
     auto ent_origin = gameToScreen({ent->x, ent->y});
@@ -317,15 +339,10 @@ void drawEntityHitbox(Entity *ent,
     gOverlayDrawList->AddLine(bottomRight, ent_origin, color, 1.f);
     drawPointAtCoord({ent->x, ent->y}, color);
   }
-}
 
-void drawEntityCircle(Entity *ent, float radius,
-                      ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 238.0f,
-                                                        0.7f})) {
-  auto screen = gameToScreen({ent->x, ent->y});
-  auto screenRadius = gameToScreen({ent->x + radius, 0}).x - screen.x;
-
-  gOverlayDrawList->AddCircle(screen, screenRadius, color, 0, 1.f);
+  if (ent->flag_23 == 1 || ent->entity_kind == EntityKind::KIND_EXPLOSION) {
+    drawEntityCircle(ent, ent->hitbox_down, color, 0.0f, 0.0f, filled);
+  }
 }
 
 bool drawCharBool(const char *label, char &flag) {
@@ -622,6 +639,47 @@ float dist(ImVec2 pos1, ImVec2 pos2) {
   return sqrt(pow(pos2.x - pos1.x, 2.0f) + pow(pos2.y - pos1.y, 2.0f));
 }
 
+bool entityCollidesWithCircle(Entity *targetEnt, float x_pos, float y_pos,
+                              float radius) {
+  auto target_edge_x_left = targetEnt->x - targetEnt->hitbox_x;
+  auto target_edge_x_right = targetEnt->x + targetEnt->hitbox_x;
+  auto target_x = target_edge_x_left;
+
+  auto target_edge_y_top = targetEnt->y + targetEnt->hitbox_up;
+  auto target_edge_y_bottom = targetEnt->y - targetEnt->hitbox_down;
+  auto target_y = target_edge_y_top;
+
+  auto source_x = x_pos;
+  auto source_y = y_pos;
+
+  if (target_x <= source_x) {
+    target_x = target_edge_x_right;
+    if (source_x <= target_edge_x_right) {
+      target_x = source_x;
+    }
+  }
+
+  if (source_y <= target_y) {
+    target_y = target_edge_y_bottom;
+    if (target_edge_y_bottom <= source_y) {
+      target_y = source_y;
+    }
+  }
+
+  auto distance =
+      pow((target_x - source_x), 2.0) + pow((target_y - source_y), 2.0);
+
+  return distance < radius;
+}
+
+bool collidesWithEntityCircle(Entity *sourceEnt, Entity *targetEnt,
+                              float x_offset = 0.0f, float y_offset = 0.0f) {
+
+  return entityCollidesWithCircle(targetEnt, sourceEnt->x + x_offset,
+                                  sourceEnt->y + y_offset,
+                                  sourceEnt->hitbox_down);
+}
+
 void drawOverlayWindow() {
   ImGuiIO &io = ImGui::GetIO();
 
@@ -795,6 +853,7 @@ void drawOverlayWindow() {
     auto color = ImGui::GetColorU32({0.0f, 1.0f, .5f, .9f});
     auto wallColor = ImGui::GetColorU32({0.9f, 0.9f, 0.0f, .9f});
     auto waterColor = ImGui::GetColorU32({0.0f, 0.0f, 1.0f, .9f});
+    auto bombColor = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.25f});
 
     if (gGlobalState->player1) {
       drawPointAtCoord({gGlobalState->player1->x, gGlobalState->player1->y});
@@ -1011,8 +1070,65 @@ void drawOverlayWindow() {
           gOverlayDrawList->AddLine(gameToScreen({ent->x - 6.0f, ent->y}),
                                     gameToScreen({ent->x + 6.0f, ent->y}),
                                     color);
-        } else if (ent->entity_type == 107) { // Bomb
+        } else if (ent->entity_type == 107 ||
+                   ent->entity_type == 92) { // Bomb / Landmine
           drawEntityCircle(ent, sqrt(3.75f), color);
+          drawEntityCircle(ent, sqrt(1.6f), color);
+
+          // Find all floor collisions
+          auto x_pos = (int)(ent->x + 0.5);
+          auto y_pos = (int)(ent->y + 0.5);
+          auto x_offset = -3;
+          do {
+            auto y_count = 7;
+            auto y_offset = (99 - y_pos) * 0x2e;
+            do {
+              auto floor_idx = x_offset + x_pos + y_offset;
+              if (floor_idx >= 0 && floor_idx < 4692) {
+                auto floor =
+                    gGlobalState->level_state->entity_floors[floor_idx];
+
+                if (floor && (floor->flag_6 != 0 || floor->flag_9 != 0) &&
+                    floor->flag_4 == 0) {
+                  auto x_distance = abs(ent->x - floor->x);
+                  auto y_distance = abs(ent->y - floor->y);
+                  auto distance =
+                      x_distance * x_distance + y_distance * y_distance;
+
+                  if (distance < 3.2) {
+                    drawEntityHitbox(floor, bombColor, true);
+                  }
+                }
+              }
+
+              y_count--;
+              y_offset += 0x2e;
+            } while (y_count > 0);
+            x_offset++;
+          } while (x_offset < 4);
+
+          // Check all active entities for bomb collision
+          for (size_t idx = 0;
+               idx < gGlobalState->entities->entities_active_count; idx++) {
+            auto collision_ent =
+                (EntityActive *)gGlobalState->entities->entities_active[idx];
+
+            if (collision_ent && collision_ent != ent &&
+                collision_ent->field49_0x1ed != 0 &&
+                (collision_ent->field50_0x1ee != 0 ||
+                 collision_ent->field63_0x1fb != 0) &&
+                collision_ent->entity_type != 137) {
+              auto x_distance = abs(ent->x - collision_ent->x);
+              auto y_distance = abs(ent->y - collision_ent->y);
+              auto distance = x_distance * x_distance + y_distance * y_distance;
+
+              if (distance <= 16.0f &&
+                  entityCollidesWithCircle(collision_ent, ent->x, ent->y,
+                                           1.6f)) {
+                drawEntityHitbox(collision_ent, bombColor, true);
+              }
+            }
+          }
         }
       }
     }

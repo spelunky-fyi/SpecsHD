@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.20] - 2023-01-10
+
+### Added
+
+- Landmine support for detection boxes
+- Added inner circle for bomb detection that indicates interaction with entity hitboxes
+- Overlay red on which floor tiles will be destroyed from explosions
+- Overlay red on entites which will be hit by an explosion
+- Added support for circle hitboxes where relevant (Seems to only be explosions, spike ball, roulette wheel, and boulder)
+
 ## [0.0.19] - 2023-01-09
 
 ### Added
