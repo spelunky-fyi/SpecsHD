@@ -73,6 +73,7 @@ struct DebugState {
   bool EnableBinBorders = false;
   bool EnablePacifistOverlay = false;
   bool DrawEnemyDetection = false;
+  bool IncludeHitboxOrigins = false;
 
   EnabledEntities Ids;
   EnabledEntities Hitboxes;
@@ -307,6 +308,15 @@ void drawEntityHitbox(Entity *ent,
 
   gOverlayDrawList->AddQuad(topLeft, topRight, bottomRight, bottomLeft, color,
                             1.f);
+
+  if (gDebugState.IncludeHitboxOrigins) {
+    auto ent_origin = gameToScreen({ent->x, ent->y});
+    gOverlayDrawList->AddLine(topLeft, ent_origin, color, 1.f);
+    gOverlayDrawList->AddLine(topRight, ent_origin, color, 1.f);
+    gOverlayDrawList->AddLine(bottomLeft, ent_origin, color, 1.f);
+    gOverlayDrawList->AddLine(bottomRight, ent_origin, color, 1.f);
+    drawPointAtCoord({ent->x, ent->y}, color);
+  }
 }
 
 void drawEntityCircle(Entity *ent, float radius,
@@ -1001,6 +1011,8 @@ void drawOverlayWindow() {
           gOverlayDrawList->AddLine(gameToScreen({ent->x - 6.0f, ent->y}),
                                     gameToScreen({ent->x + 6.0f, ent->y}),
                                     color);
+        } else if (ent->entity_type == 107) { // Bomb
+          drawEntityCircle(ent, sqrt(3.75f), color);
         }
       }
     }
@@ -1809,6 +1821,7 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
   ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
+  ImGui::Checkbox("Include Hitbox Origins", &gDebugState.IncludeHitboxOrigins);
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
   if (ImGui::Checkbox("Disable Olmec Spawns",
                       &gDebugState.DisableOlmecSpawns)) {

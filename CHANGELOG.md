@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.19] - 2023-01-09
+
+### Added
+
+- Bombs to Detection Boxes
+- Option to show origin point on hitboxes in the Debug menu
+- Ability to link entity values from Raw Entity data as overlay on entity
+
 ## [0.0.18] - 2022-12-28
 
 ### Added
