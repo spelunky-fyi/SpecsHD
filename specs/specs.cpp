@@ -1095,7 +1095,7 @@ void drawOverlayWindow() {
                   auto distance =
                       x_distance * x_distance + y_distance * y_distance;
 
-                  if (distance < 3.2) {
+                  if (distance < 3.75) {
                     drawEntityHitbox(floor, bombColor, true);
                   }
                 }
