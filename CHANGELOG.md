@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.22] - 2023-01-10
+
+### Added
+
+- Support for locking Held Item ID on the player tab.
+
 ## [0.0.21] - 2023-01-10
 
 ### Fixed

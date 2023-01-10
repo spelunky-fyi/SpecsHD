@@ -161,6 +161,9 @@ struct PlayerState {
   bool LockRopes = false;
   int LockedRopesAmount = 0;
 
+  bool LockHeldItemId = false;
+  int LockedHeldItemId = 0;
+
   bool LockCompass = false;
   bool LockedCompassValue = false;
 
@@ -1541,6 +1544,10 @@ void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
     }
   }
 
+  if (state->LockHeldItemId) {
+    data.held_item_id = state->LockedHeldItemId;
+  }
+
   if (state->LockBombs) {
     data.bombs = state->LockedBombsAmount;
   }
@@ -1755,6 +1762,20 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
     state->LockedRopesAmount = data.ropes;
   }
   ImGui::PopItemWidth();
+
+  if (ImGui::Checkbox("##LockHeldItemId", &state->LockHeldItemId)) {
+    if (state->LockHeldItemId) {
+      state->LockedHeldItemId = data.held_item_id;
+    }
+  }
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
+  if (ImGui::InputInt("Held Item", &data.held_item_id)) {
+    data.held_item_id = data.held_item_id;
+    state->LockedHeldItemId = data.held_item_id;
+  }
+  ImGui::PopItemWidth();
+
   ImGui::Separator();
 
   drawLockedPlayerDataCheckbox("Compass", data.has_compass, state->LockCompass,
