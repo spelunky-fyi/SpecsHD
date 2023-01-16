@@ -164,6 +164,12 @@ struct PlayerState {
   bool LockHeldItemId = false;
   int LockedHeldItemId = 0;
 
+  bool LockHeldItemMetadata = false;
+  int LockedHeldItemMetadata = 0;
+
+  bool LockHiredHandCount = false;
+  int LockedHiredHandCount = 0;
+
   bool LockCompass = false;
   bool LockedCompassValue = false;
 
@@ -1547,6 +1553,12 @@ void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
   if (state->LockHeldItemId) {
     data.held_item_id = state->LockedHeldItemId;
   }
+  if (state->LockHeldItemMetadata) {
+    data.held_item_id = state->LockedHeldItemMetadata;
+  }
+  if (state->LockHiredHandCount) {
+    data.held_item_id = state->LockedHiredHandCount;
+  }
 
   if (state->LockBombs) {
     data.bombs = state->LockedBombsAmount;
@@ -1771,8 +1783,31 @@ void drawPlayerTab(EntityPlayer *player, PlayerData &data, PlayerState *state) {
   ImGui::SameLine(80.0f * io.FontGlobalScale);
   ImGui::PushItemWidth(100 * io.FontGlobalScale);
   if (ImGui::InputInt("Held Item", &data.held_item_id)) {
-    data.held_item_id = data.held_item_id;
     state->LockedHeldItemId = data.held_item_id;
+  }
+  ImGui::PopItemWidth();
+
+  if (ImGui::Checkbox("##LockHeldItemMetadata", &state->LockHeldItemMetadata)) {
+    if (state->LockHeldItemMetadata) {
+      state->LockedHeldItemMetadata = data.held_item_metadata;
+    }
+  }
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
+  if (ImGui::InputInt("Held Item Metadata", &data.held_item_metadata)) {
+    state->LockedHeldItemMetadata = data.held_item_metadata;
+  }
+  ImGui::PopItemWidth();
+
+  if (ImGui::Checkbox("##LockHiredHandCount", &state->LockHiredHandCount)) {
+    if (state->LockHiredHandCount) {
+      state->LockedHiredHandCount = data.hh_count;
+    }
+  }
+  ImGui::SameLine(80.0f * io.FontGlobalScale);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
+  if (ImGui::InputInt("Hired Hand Count", &data.hh_count)) {
+    state->LockedHiredHandCount = data.hh_count;
   }
   ImGui::PopItemWidth();
 
@@ -2037,6 +2072,16 @@ void drawDebugTab() {
                        &gGlobalState->level_track);
     ImGui::InputFloat("insertion_point", &gGlobalState->insertion_point,
                       0.0001F, 0.0F, "%.4f");
+    ImGui::Separator();
+    ImGui::PushItemWidth(60.f);
+    ImGui::InputScalar("Wanted Level", ImGuiDataType_S32,
+                       &gGlobalState->wanted_level);
+    ImGui::InputScalar("Number of Angry Shopkeepers", ImGuiDataType_S32,
+                       &gGlobalState->entities->angered_shopkeeper_count);
+    ImGui::PopItemWidth();
+    drawCharBool("Shopkeeper Triggered", gGlobalState->shopkeeper_triggered);
+    drawCharBool("Shopkeeper Music Triggered",
+                 gGlobalState->shopkeeper_music_triggered);
 
     if (ImGui::CollapsingHeader("GlobalState Flags")) {
       drawCharBool("dark_level", gGlobalState->dark_level);

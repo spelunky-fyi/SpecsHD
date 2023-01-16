@@ -61,7 +61,7 @@ public:
   int32_t ropes;                // 0x0014
   uint32_t N00008C1D;           // 0x0018
   char pad_001C[4];             // 0x001C
-  uint32_t hh_count;            // 0x0020
+  int32_t hh_count;             // 0x0020
   uint32_t N00008C20[8];        // 0x0024
   uint32_t N00008C28[8];        // 0x0044
   char pad_0064[8];             // 0x0064
@@ -164,7 +164,7 @@ public:
   uint32_t entities_light_emitting_count;                 // 0x7808
   uint32_t array_1400_count;                              // 0x780C
   uint32_t entities_active_count;                         // 0x7810
-  uint32_t N0007A2EB;                                     // 0x7814
+  uint32_t angered_shopkeeper_count;                      // 0x7814
   Entity *entities_active_by_bin[312][128];               // 0x7818
   uint32_t entities_active_by_bin_count[312];             // 0x2E818
   uint32_t entities_active_pushable_by_bin[312];          // 0x2ECF8
@@ -252,13 +252,10 @@ public:
   uint8_t N00000886;                                  // 0x440607
   uint8_t N000002D8;                                  // 0x440608
   uint8_t N00000FB0;                                  // 0x440609
-  uint8_t N00000FDD;                                  // 0x44060A
+  uint8_t is_snow_level;                              // 0x44060A
   uint8_t N00000FB1;                                  // 0x44060B
-  uint8_t N000002D9;                                  // 0x44060C
-  uint8_t N00000FB3;                                  // 0x44060D
-  uint8_t N00000FE0;                                  // 0x44060E
-  uint8_t N00000FB4;                                  // 0x44060F
-  uint8_t N000002DA;                                  // 0x440610
+  uint32_t wanted_level;                              // 0x44060C
+  uint8_t shopkeeper_music_triggered;                 // 0x440610
   uint8_t N00000FB6;                                  // 0x440611
   uint8_t N00000FE3;                                  // 0x440612
   uint8_t N00000FB7;                                  // 0x440613
@@ -266,11 +263,8 @@ public:
   uint8_t N00000FB9;                                  // 0x440615
   uint8_t N00000FE6;                                  // 0x440616
   uint8_t N00000FBA;                                  // 0x440617
-  uint8_t N000002DC;                                  // 0x440618
-  uint8_t N00000FBC;                                  // 0x440619
-  uint8_t N00000FE9;                                  // 0x44061A
-  uint8_t N00000FBD;                                  // 0x44061B
-  uint8_t N000002DD;                                  // 0x44061C
+  uint32_t punishment_amount;                         // 0x440618
+  uint8_t broke_altar_this_level;                     // 0x44061C
   uint8_t N00000FBF;                                  // 0x44061D
   uint8_t N00000FEC;                                  // 0x44061E
   uint8_t N00000FC0;                                  // 0x44061F
