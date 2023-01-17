@@ -96,6 +96,8 @@ public:
   char unused_maybe[94];
   int field71_0x12c;
 
+  const char *KindName();
+  const char *TypeName();
   void PlaySound(const char *audioName);
 };
 class EntityActive : public Entity {

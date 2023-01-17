@@ -95,6 +95,9 @@ struct DebugState {
   bool DisableOlmecGaps = false;
   bool DisableOlmecCutscene = false;
   bool ShowOlmecCrushProbes = false;
+
+  float MinZCutoff = 0.0;
+  float MaxZCutoff = 99.999;
 };
 DebugState gDebugState = {};
 
@@ -369,19 +372,28 @@ bool drawCharBool(const char *label, uint8_t &flag) {
 }
 
 void drawEntityDetectionRay(Entity *ent, float len, ImU32 color) {
+
+  auto factor = 1.001f;
+  auto top = 0.25f;
   if (ent->flag_horizontal_flip) {
     gOverlayDrawList->AddQuad(
-        gameToScreen({ent->x + ent->hitbox_x - len, ent->y + ent->hitbox_up}),
-        gameToScreen({ent->x + ent->hitbox_x, ent->y + ent->hitbox_up}),
-        gameToScreen({ent->x + ent->hitbox_x, ent->y - ent->hitbox_down}),
-        gameToScreen({ent->x + ent->hitbox_x - len, ent->y - ent->hitbox_down}),
+        gameToScreen({ent->x + ent->hitbox_x * factor - len, ent->y - top}),
+        gameToScreen({ent->x + ent->hitbox_x * factor, ent->y - top}),
+
+        gameToScreen({ent->x + ent->hitbox_x * factor,
+                      ent->y - ent->hitbox_down * factor}),
+
+        gameToScreen({ent->x + ent->hitbox_x * factor - len,
+                      ent->y - ent->hitbox_down * factor}),
         color);
   } else {
     gOverlayDrawList->AddQuad(
-        gameToScreen({ent->x - ent->hitbox_x + len, ent->y + ent->hitbox_up}),
-        gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up}),
-        gameToScreen({ent->x - ent->hitbox_x, ent->y - ent->hitbox_down}),
-        gameToScreen({ent->x - ent->hitbox_x + len, ent->y - ent->hitbox_down}),
+        gameToScreen({ent->x - ent->hitbox_x * factor + len, ent->y - top}),
+        gameToScreen({ent->x - ent->hitbox_x * factor, ent->y - top}),
+        gameToScreen({ent->x - ent->hitbox_x * factor,
+                      ent->y - ent->hitbox_down * factor}),
+        gameToScreen({ent->x - ent->hitbox_x * factor + len,
+                      ent->y - ent->hitbox_down * factor}),
         color);
   }
 }
@@ -2191,6 +2203,56 @@ void drawDebugTab() {
       }
     }
   }
+
+  if (ImGui::CollapsingHeader("Render Dupe")) {
+    ImGui::InputFloat("insertion_point", &gGlobalState->insertion_point,
+                      0.0001F, 0.0F, "%.4f");
+    ImGui::Text("Filter:");
+    ImGui::InputFloat("  Minimum Z", &gDebugState.MinZCutoff, 0.0001F, 0.0F,
+                      "%.4f");
+    ImGui::InputFloat("  Maximum Z", &gDebugState.MaxZCutoff, 0.0001F, 0.0F,
+                      "%.4f");
+    // TODO: Min/Max Z Filters
+    if (ImGui::BeginTable("Entities##Render Dupe", 4, ImGuiTableFlags_RowBg)) {
+
+      ImGui::TableSetupColumn("Kind", ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthStretch);
+      ImGui::TableSetupColumn("Current Z", ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableSetupColumn("Deleted", ImGuiTableColumnFlags_WidthFixed);
+      ImGui::TableHeadersRow();
+
+      for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+           idx++) {
+        auto ent = gGlobalState->entities->entities_active[idx];
+        if (!ent) {
+          continue;
+        }
+
+        if (ent->current_z < gDebugState.MinZCutoff) {
+          continue;
+        }
+
+        if (ent->current_z > gDebugState.MaxZCutoff) {
+          continue;
+        }
+
+        ImGui::TableNextRow();
+
+        ImGui::TableNextColumn();
+        ImGui::Text("%s", ent->KindName());
+
+        ImGui::TableNextColumn();
+        ImGui::Text("%04d: %s", ent->entity_type, ent->TypeName());
+
+        ImGui::TableNextColumn();
+        ImGui::Text("%f", ent->current_z);
+
+        ImGui::TableNextColumn();
+        ImGui::Text("%d", ent->flag_deletion);
+      }
+      ImGui::EndTable();
+    }
+  }
 }
 
 size_t sizeofEntityKind(EntityKind entityKind) {
@@ -2237,9 +2299,9 @@ void drawSelectedEntityTab() {
     ImGui::SliderFloat("height", &gSelectedEntityState.Entity->height, 0.0,
                        10.0);
     ImGui::SliderFloat("current_z", &gSelectedEntityState.Entity->current_z,
-                       0.0, 50.0);
+                       0.0, 50.0, "%.6f");
     ImGui::SliderFloat("original_z", &gSelectedEntityState.Entity->original_z,
-                       0.0, 50.0);
+                       0.0, 50.0, "%.6f");
     ImGui::SliderFloat("alpha", &gSelectedEntityState.Entity->alpha, 0.0, 1.0);
     ImGui::SliderFloat("hitbox up", &gSelectedEntityState.Entity->hitbox_up,
                        0.0, 5.0);

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.24] - 2023-01-17
+
+## Added
+
+- Render Dupe dropdown in Debug tab that lists active entities along with their current z
+
+## Fixed
+
+- Detection Ray size from enemies to be more accurate
+- Precision on z values in selected tab
+
 ## [0.0.23] - 2023-01-15
 
 ### Added
