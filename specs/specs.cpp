@@ -96,8 +96,8 @@ struct DebugState {
   bool DisableOlmecCutscene = false;
   bool ShowOlmecCrushProbes = false;
 
-  float MinZCutoff = 0.0;
-  float MaxZCutoff = 99.999;
+  float MinZCutoff = 0.0f;
+  float MaxZCutoff = 99.999f;
 };
 DebugState gDebugState = {};
 
