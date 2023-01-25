@@ -132,6 +132,64 @@ void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
   VirtualProtectEx(process, (LPVOID)addr, size, oldrights, &oldrights);
 }
 
+bool hook(void *toHook, void *ourFunc, int len) {
+  if (len < 5) {
+    return false;
+  }
+
+  DWORD curProtection;
+  VirtualProtect(toHook, len, PAGE_EXECUTE_READWRITE, &curProtection);
+
+  // Nop out original instructions
+  memset(toHook, 0x90, len);
+
+  DWORD relativeAddress = ((DWORD)ourFunc - (DWORD)toHook) - 5;
+
+  *(BYTE *)toHook = 0xE9;
+  *(DWORD *)((DWORD)toHook + 1) = relativeAddress;
+
+  DWORD tmp;
+  VirtualProtect(toHook, len, curProtection, &tmp);
+
+  return true;
+}
+
+DWORD hookEligibleBMsJmpBackAddr = NULL;
+int ELIGIBLE_FLOORS_FOR_BM[4692] = {0};
+int ELIGIBLE_FLOORS_FOR_BM_COUNT = 0;
+
+void __declspec(naked) hookEligibleBMs() {
+  int *eligible;
+
+  __asm {
+    ; Stolen Bytes
+    mov eax, dword ptr [ebp + ecx*0x4 + 0x134c]
+
+    ; Save all registers
+    pushad
+
+    ; Get the total amount of eligable floors
+    mov ELIGIBLE_FLOORS_FOR_BM_COUNT, ebx
+    ; Get the address of the array on the stack.
+    ; Actually at esp+0x30 but add 0x20 for pushad
+    mov ecx, esp
+    add ecx, 0x50
+    mov eligible, ecx
+  }
+
+  for (int i = 0; i < ELIGIBLE_FLOORS_FOR_BM_COUNT; i++) {
+    ELIGIBLE_FLOORS_FOR_BM[i] = eligible[i];
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookEligibleBMsJmpBackAddr]
+  }
+}
+
 void specsOnInit() {
 
   gConfig = Specs::Config::load();
@@ -874,121 +932,33 @@ void drawOverlayWindow() {
   if (gDebugState.BlackMarketTrainer && gGlobalState->screen_state == 0 &&
       gGlobalState->play_state == 0) {
     if (gGlobalState->level > 4 && gGlobalState->level < 9 &&
-        gGlobalState->is_worm == 0 && gGlobalState->is_blackmarket == 0) {
+        gGlobalState->is_worm == 0 && gGlobalState->is_blackmarket == 0 &&
+        gGlobalState->level_state->alt_exit_x > 0 &&
+        gGlobalState->level_state->alt_exit_y > 0) {
 
       auto color = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.25f});
+      auto replace_color = ImGui::GetColorU32({255.0f, 255.0f, 0.0f, 0.25f});
       auto bm_color = ImGui::GetColorU32({0.f, 255.0f, 0.0f, 0.25f});
-      for (auto idx = 229; idx < 4692; idx++) {
+
+      for (auto e_idx = 0; e_idx < ELIGIBLE_FLOORS_FOR_BM_COUNT; e_idx++) {
+
+        auto idx = ELIGIBLE_FLOORS_FOR_BM[e_idx];
         auto floor = gGlobalState->level_state->entity_floors[idx];
         if (!floor) {
           continue;
         }
         auto screen = gameToScreen({floor->x - 0.3f, floor->y + 0.3f});
 
+        // BM, draw green
         if (floor->x == gGlobalState->level_state->alt_exit_x &&
             floor->y == gGlobalState->level_state->alt_exit_y) {
           drawEntityHitbox(floor, bm_color, true);
           continue;
         }
 
-        if (idx < 229) {
-          gOverlayDrawList->AddText(
-              ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-              ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Too\nHigh");
-          continue;
-        }
-
-        // Only check specific floor types
+        // Check for replaced entities
         if (floor->entity_type != 0x2389 && floor->entity_type != 0x2387) {
-          gOverlayDrawList->AddText(
-              ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-              ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Wrong\nType");
-          continue;
-        }
-
-        if (floor->flag_4 || floor->flag_5 || floor->shopkeeper_tile ||
-            floor->under_door) {
-          gOverlayDrawList->AddText(
-              ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-              ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Wrong\nFlags");
-          continue;
-        }
-
-        // Floor Below
-        auto floor_below = gGlobalState->level_state->entity_floors[idx + 46];
-        if (!floor_below) {
-          gOverlayDrawList->AddText(
-              ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-              ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "None\nBelow");
-          continue;
-        }
-
-        if (floor_below->entity_type != 0x2389 &&
-            floor_below->entity_type != 0x2387) {
-          gOverlayDrawList->AddText(
-              ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-              ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Below\nWrong\nType");
-          continue;
-        }
-
-        if (floor_below->flag_4 || floor_below->flag_5 ||
-            floor_below->shopkeeper_tile || floor_below->under_door) {
-          gOverlayDrawList->AddText(ImGui::GetFont(),
-                                    ImGui::GetFontSize() + 2.f,
-                                    ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
-                                    "Below\nWrong\nFlags");
-          continue;
-        }
-
-        // Floor Left
-        if (idx > 1) {
-          auto floor_left = gGlobalState->level_state->entity_floors[idx - 1];
-          // Left is water
-          if (floor_left && floor_left->entity_type == 0x1b) {
-            gOverlayDrawList->AddText(
-                ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-                ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Left\nWater");
-            continue;
-          }
-        }
-
-        // Floor Right
-        if (idx <= 4690) {
-          auto floor_right = gGlobalState->level_state->entity_floors[idx + 1];
-          // Right is water
-          if (floor_right && floor_right->entity_type == 0x1b) {
-            gOverlayDrawList->AddText(
-                ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-                ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Right\nWater");
-            continue;
-          }
-        }
-
-        // Floor Above
-        if (idx < 46) {
-          auto floor_above = gGlobalState->level_state->entity_floors[idx - 46];
-          // Above is water
-          if (floor_above && floor_above->entity_type == 0x1b) {
-            gOverlayDrawList->AddText(
-                ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-                ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Above\nWater");
-            continue;
-          }
-        }
-
-        // Floor Below Water Check. should be impossible?
-        if (floor_below->entity_type == 0x1b) {
-          gOverlayDrawList->AddText(
-              ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
-              ImVec2{screen.x, screen.y}, IM_COL32_WHITE, "Below\nWater");
-          continue;
-        }
-
-        if (gGlobalState->rushing_water && floor_below->y <= 72) {
-          gOverlayDrawList->AddText(ImGui::GetFont(),
-                                    ImGui::GetFontSize() + 2.f,
-                                    ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
-                                    "Rushing\nWater\nCutoff");
+          drawEntityHitbox(floor, replace_color, true);
           continue;
         }
 
@@ -2132,7 +2102,16 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
   ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
-  ImGui::Checkbox("Black Market Trainer", &gDebugState.BlackMarketTrainer);
+  if (ImGui::Checkbox("Black Market Trainer",
+                      &gDebugState.BlackMarketTrainer)) {
+    if (!hookEligibleBMsJmpBackAddr) {
+      // Hook Eligible BM Floors
+      int hookLen = 7;
+      DWORD hookAddr = gBaseAddress + 0xbe35e;
+      hookEligibleBMsJmpBackAddr = hookAddr + hookLen;
+      hook((void *)hookAddr, hookEligibleBMs, hookLen);
+    }
+  };
   ImGui::Checkbox("Include Hitbox Origins", &gDebugState.IncludeHitboxOrigins);
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
   if (ImGui::Checkbox("Disable Olmec Spawns",

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.26] - 2023-01-25
+
+### Changed
+
+- Black Market Traner now hooks the eligible floors array to get the exact list instead of using a heuristic
+- Yellow spaces are spaces there were eligible but were replaced by traps so they appear ineligible
+
 ## [0.0.25] - 2023-01-24
 
 ### Added
