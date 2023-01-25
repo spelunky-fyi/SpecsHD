@@ -7,13 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.25] - 2023-01-24
+
+### Added
+
+- Black Market Trainer in Debug menu. Shows all places a black market can spawn in Jungle
+
+### Fixed
+
+- Precision on \_z displays
+
 ## [0.0.24] - 2023-01-17
 
-## Added
+### Added
 
 - Render Dupe dropdown in Debug tab that lists active entities along with their current z
 
-## Fixed
+### Fixed
 
 - Detection Ray size from enemies to be more accurate
 - Precision on z values in selected tab
