@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.27] - 2023-01-29
+
+### Fixed
+
+- Bug related to locking HH Count and Held Item Metadata
+
 ## [0.0.26] - 2023-01-25
 
 ### Changed
