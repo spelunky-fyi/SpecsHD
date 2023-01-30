@@ -73,6 +73,7 @@ struct DebugState {
   bool EnableBinBorders = false;
   bool EnablePacifistOverlay = false;
   bool DrawEnemyDetection = false;
+  bool BlackMarketTrainer = false;
   bool IncludeHitboxOrigins = false;
 
   EnabledEntities Ids;
@@ -129,6 +130,64 @@ void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
 
   WriteProcessMemory(process, (LPVOID)addr, value, size, NULL);
   VirtualProtectEx(process, (LPVOID)addr, size, oldrights, &oldrights);
+}
+
+bool hook(void *toHook, void *ourFunc, int len) {
+  if (len < 5) {
+    return false;
+  }
+
+  DWORD curProtection;
+  VirtualProtect(toHook, len, PAGE_EXECUTE_READWRITE, &curProtection);
+
+  // Nop out original instructions
+  memset(toHook, 0x90, len);
+
+  DWORD relativeAddress = ((DWORD)ourFunc - (DWORD)toHook) - 5;
+
+  *(BYTE *)toHook = 0xE9;
+  *(DWORD *)((DWORD)toHook + 1) = relativeAddress;
+
+  DWORD tmp;
+  VirtualProtect(toHook, len, curProtection, &tmp);
+
+  return true;
+}
+
+DWORD hookEligibleBMsJmpBackAddr = NULL;
+int ELIGIBLE_FLOORS_FOR_BM[4692] = {0};
+int ELIGIBLE_FLOORS_FOR_BM_COUNT = 0;
+
+void __declspec(naked) hookEligibleBMs() {
+  int *eligible;
+
+  __asm {
+    ; Stolen Bytes
+    mov eax, dword ptr [ebp + ecx*0x4 + 0x134c]
+
+    ; Save all registers
+    pushad
+
+    ; Get the total amount of eligable floors
+    mov ELIGIBLE_FLOORS_FOR_BM_COUNT, ebx
+    ; Get the address of the array on the stack.
+    ; Actually at esp+0x30 but add 0x20 for pushad
+    mov ecx, esp
+    add ecx, 0x50
+    mov eligible, ecx
+  }
+
+  for (int i = 0; i < ELIGIBLE_FLOORS_FOR_BM_COUNT; i++) {
+    ELIGIBLE_FLOORS_FOR_BM[i] = eligible[i];
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookEligibleBMsJmpBackAddr]
+  }
 }
 
 void specsOnInit() {
@@ -867,6 +926,44 @@ void drawOverlayWindow() {
 
         probe_idx++;
       } while (probe_idx < 8);
+    }
+  }
+
+  if (gDebugState.BlackMarketTrainer && gGlobalState->screen_state == 0 &&
+      gGlobalState->play_state == 0) {
+    if (gGlobalState->level > 4 && gGlobalState->level < 9 &&
+        gGlobalState->is_worm == 0 && gGlobalState->is_blackmarket == 0 &&
+        gGlobalState->level_state->alt_exit_x > 0 &&
+        gGlobalState->level_state->alt_exit_y > 0) {
+
+      auto color = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.25f});
+      auto replace_color = ImGui::GetColorU32({255.0f, 255.0f, 0.0f, 0.25f});
+      auto bm_color = ImGui::GetColorU32({0.f, 255.0f, 0.0f, 0.25f});
+
+      for (auto e_idx = 0; e_idx < ELIGIBLE_FLOORS_FOR_BM_COUNT; e_idx++) {
+
+        auto idx = ELIGIBLE_FLOORS_FOR_BM[e_idx];
+        auto floor = gGlobalState->level_state->entity_floors[idx];
+        if (!floor) {
+          continue;
+        }
+        auto screen = gameToScreen({floor->x - 0.3f, floor->y + 0.3f});
+
+        // BM, draw green
+        if (floor->x == gGlobalState->level_state->alt_exit_x &&
+            floor->y == gGlobalState->level_state->alt_exit_y) {
+          drawEntityHitbox(floor, bm_color, true);
+          continue;
+        }
+
+        // Check for replaced entities
+        if (floor->entity_type != 0x2389 && floor->entity_type != 0x2387) {
+          drawEntityHitbox(floor, replace_color, true);
+          continue;
+        }
+
+        drawEntityHitbox(floor, color, true);
+      }
     }
   }
 
@@ -2005,6 +2102,16 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
   ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
+  if (ImGui::Checkbox("Black Market Trainer",
+                      &gDebugState.BlackMarketTrainer)) {
+    if (!hookEligibleBMsJmpBackAddr) {
+      // Hook Eligible BM Floors
+      int hookLen = 7;
+      DWORD hookAddr = gBaseAddress + 0xbe35e;
+      hookEligibleBMsJmpBackAddr = hookAddr + hookLen;
+      hook((void *)hookAddr, hookEligibleBMs, hookLen);
+    }
+  };
   ImGui::Checkbox("Include Hitbox Origins", &gDebugState.IncludeHitboxOrigins);
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
   if (ImGui::Checkbox("Disable Olmec Spawns",
@@ -2245,7 +2352,7 @@ void drawDebugTab() {
         ImGui::Text("%04d: %s", ent->entity_type, ent->TypeName());
 
         ImGui::TableNextColumn();
-        ImGui::Text("%f", ent->current_z);
+        ImGui::Text("%.4f", ent->current_z);
 
         ImGui::TableNextColumn();
         ImGui::Text("%d", ent->flag_deletion);
@@ -2299,9 +2406,9 @@ void drawSelectedEntityTab() {
     ImGui::SliderFloat("height", &gSelectedEntityState.Entity->height, 0.0,
                        10.0);
     ImGui::SliderFloat("current_z", &gSelectedEntityState.Entity->current_z,
-                       0.0, 50.0, "%.6f");
+                       0.0, 50.0, "%.4f");
     ImGui::SliderFloat("original_z", &gSelectedEntityState.Entity->original_z,
-                       0.0, 50.0, "%.6f");
+                       0.0, 50.0, "%.4f");
     ImGui::SliderFloat("alpha", &gSelectedEntityState.Entity->alpha, 0.0, 1.0);
     ImGui::SliderFloat("hitbox up", &gSelectedEntityState.Entity->hitbox_up,
                        0.0, 5.0);
