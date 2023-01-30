@@ -1566,10 +1566,10 @@ void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
     data.held_item_id = state->LockedHeldItemId;
   }
   if (state->LockHeldItemMetadata) {
-    data.held_item_id = state->LockedHeldItemMetadata;
+    data.held_item_metadata = state->LockedHeldItemMetadata;
   }
   if (state->LockHiredHandCount) {
-    data.held_item_id = state->LockedHiredHandCount;
+    data.hh_count = state->LockedHiredHandCount;
   }
 
   if (state->LockBombs) {
