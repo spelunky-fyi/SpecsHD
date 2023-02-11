@@ -2576,6 +2576,13 @@ ForcePatch gPsychicPresenceForcePatch = {
     {0xcb703, {0x0}, {0x1}},
 };
 
+ForcePatch gIcePoolsForcePatch = {
+    {0xcb856,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0x27, 0x01, 0x00, 0x00}},
+    {0xcb855, {0x0}, {0x1}},
+};
+
 void prePlaceRoomsFullSpelunky() {
   // Mines
   if (gGlobalState->level >= 1 && gGlobalState->level <= 4) {
@@ -2618,6 +2625,11 @@ void prePlaceRoomsFullSpelunky() {
       applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_ALWAYS);
       applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
     } else if (gGlobalState->level == 12 and
+               gGlobalState->mothership_spawned == 0) {
+      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gIcePoolsForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+    } else if (gGlobalState->level == 12 and
                gGlobalState->mothership_spawned == 1) {
       applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_ALWAYS);
       applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
@@ -2641,6 +2653,7 @@ void postPlaceRoomsFullSpelunky() {
   } else if (gGlobalState->level >= 9 && gGlobalState->level <= 12) {
     applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NORMAL);
     applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NORMAL);
+    applyForcePatch(gIcePoolsForcePatch, FORCE_PATCH_TYPE_NORMAL);
   }
   applyForcePatch(gDarkLevelForcePatch, FORCE_PATCH_TYPE_NORMAL);
 }
