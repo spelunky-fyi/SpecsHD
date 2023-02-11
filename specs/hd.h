@@ -24,6 +24,52 @@ public:
   char pad_003C[32];        // 0x003C
 };
 
+enum CharacterIndex : int32_t {
+  CHARACTER_GUY = 0,
+  CHARACTER_RED = 1,
+  CHARACTER_GREEN = 2,
+  CHARACTER_BLUE = 3,
+  CHARACTER_YANG = 4,
+  CHARACTER_MEATBOY = 5,
+  CHARACTER_YELLOW = 6,
+  CHARACTER_JUNGLE_WARRIOR = 7,
+  CHARACTER_PURPLE = 8,
+  CHARACTER_VAN_HELSING = 9,
+  CHARACTER_CYAN = 10,
+  CHARACTER_LIME = 11,
+  CHARACTER_INUK = 12,
+  CHARACTER_ROUND_GIRL = 13,
+  CHARACTER_NINJA = 14,
+  CHARACTER_VIKING = 15,
+  CHARACTER_ROUND_BOY = 16,
+  CHARACTER_CARL = 17,
+  CHARACTER_ROBOT = 18,
+  CHARACTER_MONK = 19,
+};
+
+enum TextureId : int32_t {
+  TEXTURE_ID_GUY = 50,            // char_orange.png
+  TEXTURE_ID_RED = 51,            // char_red.png
+  TEXTURE_ID_GREEN = 52,          // char_green.png
+  TEXTURE_ID_BLUE = 53,           // char_blue.png
+  TEXTURE_ID_YANG = 54,           // char_white.png
+  TEXTURE_ID_MEATBOY = 55,        // char_pink.png
+  TEXTURE_ID_YELLOW = 56,         // char_yellow.png
+  TEXTURE_ID_JUNGLE_WARRIOR = 57, // char_brown.png
+  TEXTURE_ID_PURPLE = 58,         // char_purple.png
+  TEXTURE_ID_VAN_HELSING = 59,    // char_black.png
+  TEXTURE_ID_CYAN = 60,           // char_cyan.png
+  TEXTURE_ID_LIME = 61,           // char_lime.png
+  TEXTURE_ID_INUK = 1062,         // char_dlc1.png
+  TEXTURE_ID_ROUND_GIRL = 1063,   // char_dlc2.png
+  TEXTURE_ID_NINJA = 1064,        // char_dlc3.png
+  TEXTURE_ID_VIKING = 1065,       // char_dlc4.png
+  TEXTURE_ID_ROUND_BOY = 1066,    // char_dlc5.png
+  TEXTURE_ID_CARL = 1067,         // char_dlc6.png
+  TEXTURE_ID_ROBOT = 1068,        // char_dlc7.png
+  TEXTURE_ID_MONK = 1069,         // char_dlc8.png
+};
+
 enum class DamselChoice : int32_t {
   Damsel = 0,
   Mansel = 1,
@@ -51,6 +97,20 @@ public:
   wchar_t N0000087A[1024]; // 0x0080
 };                         // Size: 0x0880
 
+class TextureDefinition {
+public:
+  int32_t texture_id;     // 0x0000
+  char name[128];         // 0x0004
+  char name_normal[128];  // 0x0084
+  char pad_0104[8];       // 0x0104
+  uint32_t sheet_width;   // 0x010C
+  uint32_t sheet_height;  // 0x0110
+  uint32_t sprite_width;  // 0x0114
+  uint32_t sprite_height; // 0x0118
+  uint32_t loaded;        // 0x011C
+};                        // Size: 0x0120
+static_assert(sizeof(TextureDefinition) == 0x120);
+
 class PlayerData {
 public:
   int32_t health;               // 0x0000
@@ -62,7 +122,7 @@ public:
   uint32_t N00008C1D;           // 0x0018
   char pad_001C[4];             // 0x001C
   int32_t hh_count;             // 0x0020
-  uint32_t N00008C20[8];        // 0x0024
+  uint32_t hh_texture_id[8];    // 0x0024
   uint32_t N00008C28[8];        // 0x0044
   char pad_0064[8];             // 0x0064
   float classic_HUD_heart_size; // 0x006C
@@ -177,6 +237,16 @@ public:
   Entity *entities[160];
 };
 
+class _34Struct {
+public:
+  TextureDefinition texture_defs[256]; // 0x0000
+  char pad_12000[1060];                // 0x12000
+  uint32_t char_id_to_texture_id[20];  // 0x12424
+  char pad_12474[16];                  // 0x12474
+  int32_t coffin_char;                 // 0x12484
+};
+static_assert(sizeof(_34Struct) == 0x12488);
+
 class GlobalState {
 public:
   char pad_0000[4];             // 0x0000
@@ -187,7 +257,7 @@ public:
       lang2; // 0x0010 Not sure why two languages. both updated as same time.
   char pad_0014[28];                                  // 0x0014
   EntityStruct *entities;                             // 0x0030
-  void *textures;                                     // 0x0034
+  _34Struct *_34struct;                               // 0x0034
   void *_38struct;                                    // 0x0038
   LevelState *level_state;                            // 0x003C
   class Controls *controls;                           // 0x0040
@@ -251,7 +321,7 @@ public:
   uint8_t is_worm;                                    // 0x440606
   uint8_t N00000886;                                  // 0x440607
   uint8_t N000002D8;                                  // 0x440608
-  uint8_t N00000FB0;                                  // 0x440609
+  uint8_t placed_coffin;                              // 0x440609
   uint8_t is_snow_level;                              // 0x44060A
   uint8_t N00000FB1;                                  // 0x44060B
   uint32_t wanted_level;                              // 0x44060C
@@ -315,4 +385,10 @@ static_assert(sizeof(GlobalState) == 0x447548);
 
 uint32_t GetRoomForPosition(float x, float y);
 
+void LoadTexture(_34Struct *_34_struct, const char *texture_name);
+void LoadCoffinTexture(_34Struct *_34_struct);
+
 void setupOffsets(DWORD baseAddress);
+
+TextureId charIdToTextureId(CharacterIndex);
+CharacterIndex TextureIdToCharId(TextureId);

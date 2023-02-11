@@ -1,5 +1,7 @@
 #pragma once
 
+#include "hd.h"
+
 enum class Ownership : int32_t {
   Unowned = -99,
   HiredHand = -1,
@@ -85,7 +87,7 @@ public:
   char flag_22;
   char flag_23;
   char flag_24;
-  class TextureInfo *texture_info;
+  class TextureDefinition *texture_definition;
   int field63_0xb4;
   class Entity *deco_over;
   class Entity *deco_top;
@@ -147,7 +149,7 @@ public:
   int field43_0x1d8;
   int field44_0x1dc;
   int field45_0x1e0;
-  class TextureInfo *field46_0x1e4;
+  class TextureDefinition *field46_0x1e4;
   int field47_0x1e8;
   char field48_0x1ec;
   char field49_0x1ed;
@@ -739,8 +741,8 @@ public:
   int field11_0x278;
   int field12_0x27c;
   class PlayerData *player_data;
-  int field14_0x284;
-  int field15_0x288;
+  EntityPlayer *follower;
+  EntityPlayer *following;
   int field16_0x28c;
   int field17_0x290;
   int field18_0x294;

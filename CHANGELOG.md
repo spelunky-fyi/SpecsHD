@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Moved Audio tab into collapsed header in Debug
+- Room Type View now shows 5 rows instead of 4 in non-worm levels
+
+### Added
+
+- Mods Tab
+- "Dark Mode" Mod
+- "The Full Spelunky" Mod
+
 ## [0.0.27] - 2023-01-29
 
 ### Fixed

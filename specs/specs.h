@@ -2,3 +2,4 @@
 
 void specsOnInit();
 void specsOnFrame();
+void specsOnDestroy();

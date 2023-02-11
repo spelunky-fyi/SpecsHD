@@ -497,12 +497,32 @@ void GlobalState::PlayOlmecMusic(const char *audioName) {
   }
 }
 
+DWORD gLoadCoffinTexture;
+void LoadCoffinTexture(_34Struct *_34_struct) {
+  __asm {
+        pushad
+
+        mov esi, _34_struct
+        call gLoadCoffinTexture
+
+        popad
+  }
+}
+
 DWORD gGetRoomForPosition;
 uint32_t GetRoomForPosition(float x, float y) {
   using GetRoomForPositionPtr = uint32_t(__stdcall *)(float x, float y);
   GetRoomForPositionPtr GetRoomForPosition =
       (GetRoomForPositionPtr)(gGetRoomForPosition);
   return GetRoomForPosition(x, y);
+}
+
+DWORD gLoadTexture;
+void LoadTexture(_34Struct *_34_struct, const char *texture_name) {
+  using LoadTexturePtr =
+      void(__stdcall *)(_34Struct * _34_struct, const char *texture_name);
+  LoadTexturePtr LoadTexture = (LoadTexturePtr)(gLoadTexture);
+  return LoadTexture(_34_struct, texture_name);
 }
 
 void setupOffsets(DWORD baseAddress) {
@@ -513,4 +533,23 @@ void setupOffsets(DWORD baseAddress) {
   gPlayMusic = baseAddress + 0x9920;
 
   gGetRoomForPosition = baseAddress + 0x0CC760;
+
+  gLoadTexture = baseAddress + 0xef350;
+  gLoadCoffinTexture = baseAddress + 0xeef60;
+}
+
+TextureId charIdToTextureId(CharacterIndex id) {
+  int32_t new_id = id + 50;
+  if (new_id >= 62) {
+    new_id = new_id + 1000;
+  }
+  return (TextureId)new_id;
+}
+
+CharacterIndex TextureIdToCharId(TextureId id) {
+  int32_t new_id = id - 50;
+  if (new_id > 1000) {
+    new_id = new_id - 1000;
+  }
+  return (CharacterIndex)new_id;
 }

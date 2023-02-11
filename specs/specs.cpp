@@ -68,6 +68,46 @@ struct DrawEntityOffsetsValueHashFunction {
   }
 };
 
+struct ModsState {
+  bool TheFullSpelunky = false;
+  bool DarkMode = false;
+};
+ModsState gModsState = {};
+
+struct FullSpelunkyState {
+  std::vector<CharacterIndex> allCharacters = {
+      CHARACTER_GUY,
+      CHARACTER_RED,
+      CHARACTER_GREEN,
+      CHARACTER_BLUE,
+      CHARACTER_MEATBOY,
+      CHARACTER_YELLOW,
+      CHARACTER_PURPLE,
+      CHARACTER_VAN_HELSING,
+      CHARACTER_CYAN,
+      CHARACTER_LIME,
+      CHARACTER_INUK,
+      CHARACTER_ROUND_GIRL,
+      CHARACTER_NINJA,
+      CHARACTER_VIKING,
+      CHARACTER_ROUND_BOY,
+      CHARACTER_CARL,
+      CHARACTER_ROBOT,
+      CHARACTER_MONK,
+
+      CHARACTER_JUNGLE_WARRIOR,
+      CHARACTER_YANG,
+  };
+
+  std::vector<CharacterIndex> randoms = {
+      CHARACTER_GUY,  CHARACTER_RED,    CHARACTER_GREEN,
+      CHARACTER_BLUE, CHARACTER_YELLOW, CHARACTER_PURPLE,
+      CHARACTER_CYAN, CHARACTER_LIME,   CHARACTER_JUNGLE_WARRIOR,
+      CHARACTER_YANG,
+  };
+};
+FullSpelunkyState gFullSpelunkyState = {};
+
 struct DebugState {
   bool EnableTileBorders = false;
   bool EnableBinBorders = false;
@@ -132,6 +172,72 @@ void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
   VirtualProtectEx(process, (LPVOID)addr, size, oldrights, &oldrights);
 }
 
+enum FORCE_PATCH_TYPE : int32_t {
+  FORCE_PATCH_TYPE_NORMAL = 0,
+  FORCE_PATCH_TYPE_ALWAYS = 1,
+  FORCE_PATCH_TYPE_NEVER = 2,
+};
+
+struct Patch {
+  DWORD offset;
+  std::vector<BYTE> patch;
+  std::vector<BYTE> original;
+};
+
+struct ForcePatch {
+  Patch always;
+  Patch never;
+};
+
+void applyForcePatch(ForcePatch &patch, FORCE_PATCH_TYPE type) {
+  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                 PROCESS_CREATE_THREAD,
+                             0, GetCurrentProcessId());
+  if (type == FORCE_PATCH_TYPE_NORMAL) {
+    patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
+                      &patch.always.original[0], patch.always.original.size());
+    patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
+                      &patch.never.original[0], patch.never.original.size());
+  } else if (type == FORCE_PATCH_TYPE_ALWAYS) {
+    patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
+                      &patch.always.patch[0], patch.always.patch.size());
+    patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
+                      &patch.never.original[0], patch.never.original.size());
+  } else if (type == FORCE_PATCH_TYPE_NEVER) {
+    patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
+                      &patch.always.original[0], patch.always.original.size());
+    patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
+                      &patch.never.patch[0], patch.never.patch.size());
+  }
+
+  CloseHandle(process);
+}
+
+void applyPatches(std::vector<Patch> &patches, bool rollback = false) {
+
+  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                 PROCESS_CREATE_THREAD,
+                             0, GetCurrentProcessId());
+
+  for (Patch patch : patches) {
+    if (rollback) {
+      if (!patch.original.empty()) {
+        patchReadOnlyCode(process, gBaseAddress + patch.offset,
+                          &patch.original[0], patch.original.size());
+      }
+    } else {
+      if (!patch.patch.empty()) {
+        patchReadOnlyCode(process, gBaseAddress + patch.offset, &patch.patch[0],
+                          patch.patch.size());
+      }
+    }
+  }
+
+  CloseHandle(process);
+}
+
 bool hook(void *toHook, void *ourFunc, int len) {
   if (len < 5) {
     return false;
@@ -152,6 +258,143 @@ bool hook(void *toHook, void *ourFunc, int len) {
   VirtualProtect(toHook, len, curProtection, &tmp);
 
   return true;
+}
+
+void prePlaceRoomsFullSpelunky();
+void postPlaceRoomsFullSpelunky();
+void resetFullSpelunkyState();
+void unlockCoffinsFullSpelunky();
+
+TextureDefinition *getTextureById(int32_t texture_id) {
+  TextureDefinition *texture_def;
+
+  for (int texture_idx = 0; texture_idx < 256; texture_idx++) {
+    texture_def = &gGlobalState->_34struct->texture_defs[texture_idx];
+    if (texture_def->texture_id == texture_id) {
+      return texture_def;
+    }
+  }
+  return NULL;
+}
+
+void loadHiredHandTextures() {
+  TextureDefinition *texture_def;
+  for (int hh_idx = 0; hh_idx < gGlobalState->player1_data.hh_count; hh_idx++) {
+    texture_def =
+        getTextureById(gGlobalState->player1_data.hh_texture_id[hh_idx]);
+    if (texture_def && !texture_def->loaded) {
+      LoadTexture(gGlobalState->_34struct, texture_def->name);
+    }
+  }
+  if (!gFullSpelunkyState.randoms.empty()) {
+    texture_def =
+        getTextureById(charIdToTextureId(gFullSpelunkyState.randoms[0]));
+    if (texture_def && !texture_def->loaded) {
+      LoadTexture(gGlobalState->_34struct, texture_def->name);
+    }
+  }
+}
+
+DWORD hookLoadCoffinTextureJmpBackAddr = NULL;
+void __declspec(naked) hookLoadCoffinTexture() {
+  // 0xeef60 8b 15 6c
+  //         44 35 00
+
+  __asm {
+    ; Stolen Bytes
+    mov edx, dword ptr [gGlobalState]
+
+    ; Save all registers
+    pushad
+  }
+
+  loadHiredHandTextures();
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookLoadCoffinTextureJmpBackAddr]
+  }
+}
+
+DWORD hookPrePlaceRoomsJmpBackAddr = NULL;
+void __declspec(naked) hookPrePlaceRooms() {
+
+  // 0xbded9 (6 Bytes)
+  // 8b 80 d4 05 44 00
+  __asm {
+    ; Stolen Bytes
+    mov eax,dword ptr [eax + 0x4405d4]
+
+    ; Save all registers
+    pushad
+  }
+
+  if (gModsState.TheFullSpelunky) {
+    prePlaceRoomsFullSpelunky();
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookPrePlaceRoomsJmpBackAddr]
+  }
+}
+
+DWORD hookPostPlaceRoomsJmpBackAddr = NULL;
+void __declspec(naked) hookPostPlaceRooms() {
+  // 002be845
+  // 81 c4 68 49 00 00
+
+  __asm {
+    ; Stolen Bytes
+    add esp,0x4968
+
+    ; Save all registers
+    pushad
+  }
+
+  if (gModsState.TheFullSpelunky) {
+    postPlaceRoomsFullSpelunky();
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookPostPlaceRoomsJmpBackAddr]
+  }
+}
+
+DWORD hookPreResetForRunJmpBackAddr = NULL;
+void __declspec(naked) hookPreResetForRun() {
+
+  // 0x649f6 (6 Bytes)
+  // 89 9e d4 05 44 00
+  __asm {
+    ; Stolen Bytes
+    mov dword ptr [esi + 0x4405d4],ebx
+
+    ; Save all registers
+    pushad
+  }
+
+  if (gModsState.TheFullSpelunky) {
+    resetFullSpelunkyState();
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookPreResetForRunJmpBackAddr]
+  }
 }
 
 DWORD hookEligibleBMsJmpBackAddr = NULL;
@@ -190,12 +433,84 @@ void __declspec(naked) hookEligibleBMs() {
   }
 }
 
+DWORD hookUnlockCoffinsJmpBackAddr = NULL;
+void __declspec(naked) hookUnlockCoffins() {
+  __asm {
+    ; Stolen Bytes
+    mov eax,dword ptr [EBX + 0x1715c]
+
+    ; Save all registers
+    pushad
+  }
+
+  unlockCoffinsFullSpelunky();
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookUnlockCoffinsJmpBackAddr]
+  }
+}
+
+void initHooks() {
+  int hookLen;
+  DWORD hookAddr;
+
+  // Hook Reset For Run
+  hookLen = 6;
+  hookAddr = gBaseAddress + 0x649f6;
+  hookPreResetForRunJmpBackAddr = hookAddr + hookLen;
+  hook((void *)hookAddr, hookPreResetForRun, hookLen);
+
+  // Hook Pre Place Rooms
+  hookLen = 6;
+  hookAddr = gBaseAddress + 0xbded9;
+  hookPrePlaceRoomsJmpBackAddr = hookAddr + hookLen;
+  hook((void *)hookAddr, hookPrePlaceRooms, hookLen);
+
+  // Hook Post Place Rooms
+  hookLen = 6;
+  hookAddr = gBaseAddress + 0xbe845;
+  hookPostPlaceRoomsJmpBackAddr = hookAddr + hookLen;
+  hook((void *)hookAddr, hookPostPlaceRooms, hookLen);
+
+  hookLen = 6;
+  hookAddr = gBaseAddress + 0xeef60;
+  hookLoadCoffinTextureJmpBackAddr = hookAddr + hookLen;
+  hook((void *)hookAddr, hookLoadCoffinTexture, hookLen);
+}
+
+void specsOnDestroy() {
+  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                 PROCESS_CREATE_THREAD,
+                             0, GetCurrentProcessId());
+
+  BYTE patch[] = {0x89, 0x9e, 0xd4, 0x05, 0x44, 0x00};
+  patchReadOnlyCode(process, gBaseAddress + 0x649f6, patch, 6);
+
+  BYTE patch2[] = {0x8b, 0x80, 0xd4, 0x05, 0x44, 0x00};
+  patchReadOnlyCode(process, gBaseAddress + 0xbded9, patch2, 6);
+
+  BYTE patch3[] = {0x81, 0xc4, 0x68, 0x49, 0x00, 0x00};
+  patchReadOnlyCode(process, gBaseAddress + 0xbe845, patch3, 6);
+
+  BYTE patch4[] = {0x8b, 0x15, 0x6c, 0x44, 0x35, 0x00};
+  patchReadOnlyCode(process, gBaseAddress + 0xeef60, patch4, 10);
+
+  CloseHandle(process);
+}
+
 void specsOnInit() {
+  srand((unsigned int)time(NULL));
 
   gConfig = Specs::Config::load();
 
   gBaseAddress = (size_t)GetModuleHandleA(NULL);
   setupOffsets(gBaseAddress);
+  initHooks();
 
   gDebugState.Selection.activeEntities = true;
   gDebugState.Selection.floorEntities = true;
@@ -1628,7 +1943,7 @@ void drawLevelTab() {
           continue;
         }
       } else {
-        if (idx >= 4 * 4) {
+        if (idx >= 4 * 5) {
           break;
         }
       }
@@ -2030,23 +2345,342 @@ void drawPlayersTab() {
   }
 }
 
-void drawAudioTab() {
+std::vector<Patch> gDarkModePatches = {
+    {0x6afbe, {0x1}, {0x0}},
+};
 
-  // auto player = *(&((*gGlobalState).player1) + gGlobalState->flag_player);
-  auto player = gGlobalState->player1;
-  if (!player) {
-    ImGui::Text("Need Player Entity");
+std::vector<Patch> gFullSpelunkyPatches = {
+    // Allow coffins on level 1
+    {0xbe12a, {0x0}, {0x1}},
+    {0x6ab16, {0x0}, {0x1}},
+
+    // Don't set the flag that you've placed a coffin
+    {0xd9abe, {0x0}, {0x1}},
+
+    // Put back stolen bytes
+    {0xe8860, {}, {0x8b, 0x83, 0x5c, 0x71, 0x01, 0x00}},
+
+    // Allow coffins in Hell
+    {0x6ab5f, {0x14}, {0x11}},
+    {0xbe12f, {0x14}, {0x10}},
+
+    // Overwrite coffins in hell gen to use coop coffins
+    {0xd5338, {0x49}, {0x2b}},
+    {0xd5347, {0x49}, {0x2d}},
+
+    // Assign Coffin on Skin is Crawling
+    {0xcaa43,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x39, 0xb9, 0x84, 0x24, 0x01, 0x00, 0x75, 0x10}},
+
+    // Assign Coffin on Rushing Water
+    {0xcaf0c,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x39, 0xb9, 0x84, 0x24, 0x01, 0x00, 0x75, 0x10}},
+
+    // Assign Coffin on Tiki Village
+    {0xcb3e5,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x39, 0xb9, 0x84, 0x24, 0x01, 0x00, 0x75, 0x10}},
+
+    // Assign Coffin on Wet Fur
+    {0xcb5fa,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x39, 0xb9, 0x84, 0x24, 0x01, 0x00, 0x75, 0x10}},
+
+    // Allow Unlock Coffin in Rushing Water
+    {0xbe119,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x80, 0xb8, 0xf6, 0x05, 0x44, 0x00, 0x00, 0x75, 0x20}},
+
+    // Allow Unlock Coffin in Tiki Village
+    {0xbe110,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x80, 0xb8, 0xf9, 0x05, 0x44, 0x00, 0x00, 0x75, 0x29}},
+
+    // Prevent Old Bitey From Spawning over Coffin
+    // Need to have 2 options on the left as the game won't spawn Old Bitey
+    // under the exit and will keep rerolling.
+    {0xcae14, {0x1}, {0x3}},
+    {0xcae75, {0x1}, {0x3}},
+
+    // Force BM to be on second level of Jungle
+    {0xbe1cc, {0x6}, {0x5}},
+    {0xbe1d5, {0x7}, {0x8}},
+    {0xbe1ea, {0x7}, {0x8}},
+
+    // Always Spawn Carl in BM
+    {0xcc1f6,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+      0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x83, 0xba, 0x84, 0x24, 0x01, 0x00, 0xff, 0x75, 0x6d, 0x39, 0xb0, 0x20,
+      0x64, 0x44, 0x00, 0x75, 0x65}},
+
+    // Psychic Presence always on third row
+    {0xcb721, {0x0}, {0x1}},
+    {0xcb72d, {0x7f, 0x29, 0x0, 0x0}, {0x7b, 0x29, 0x0, 0x0}},
+
+    // Allow Psychic Presence on Moai
+    {0xcb6c5,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0xf3, 0x00, 0x00, 0x00}},
+
+    // Moai always on second row
+    {0xcb4c2, {0x0}, {0x1}},
+    {0xcb539, {0x0}, {0x1}},
+
+};
+
+void resetFullSpelunkyState() {
+  gFullSpelunkyState.allCharacters = {
+      CHARACTER_GUY,
+      CHARACTER_RED,
+      CHARACTER_GREEN,
+      CHARACTER_BLUE,
+      CHARACTER_MEATBOY,
+      CHARACTER_YELLOW,
+      CHARACTER_PURPLE,
+      CHARACTER_VAN_HELSING,
+      CHARACTER_CYAN,
+      CHARACTER_LIME,
+      CHARACTER_INUK,
+      CHARACTER_ROUND_GIRL,
+      CHARACTER_NINJA,
+      CHARACTER_VIKING,
+      CHARACTER_ROUND_BOY,
+      CHARACTER_CARL,
+      CHARACTER_ROBOT,
+      CHARACTER_MONK,
+
+      CHARACTER_JUNGLE_WARRIOR,
+      CHARACTER_YANG,
+  };
+
+  gFullSpelunkyState.randoms = {
+      CHARACTER_GUY,  CHARACTER_RED,    CHARACTER_GREEN,
+      CHARACTER_BLUE, CHARACTER_YELLOW, CHARACTER_PURPLE,
+      CHARACTER_CYAN, CHARACTER_LIME,   CHARACTER_JUNGLE_WARRIOR,
+      CHARACTER_YANG,
+  };
+}
+
+ForcePatch gDarkLevelForcePatch = {
+    {0x6afbe, {0x1}, {0x0}},
+    {0x6afae, {0x0}, {0x1}},
+};
+
+ForcePatch gSnakePitForcePatch = {
+    {0xca167,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0x90, 0x0, 0x0, 0x0}},
+    {0xca166, {0x0}, {0x1}},
+};
+
+ForcePatch gSkinIsCrawlingForcePatch = {
+    {0xcaa28,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0x00, 0x02, 0x00, 0x00}},
+    {0xcaa27, {0x0}, {0x1}},
+};
+
+ForcePatch gRushingWaterForcePatch = {
+    {0xcad7c,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x84, 0xc1, 0x01, 0x00, 0x00}},
+    {0xcad6c, {0x0}, {0x1}},
+};
+
+ForcePatch gDeadAreRestlessForcePatch = {
+    {0xbdf38,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0xc9, 0x00, 0x00, 0x00}},
+    {0xbdf28, {0x0}, {0x1}},
+};
+
+ForcePatch gBeesForcePatch = {
+    {0xcafb2,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0x80, 0x03, 0x00, 0x00}},
+    {0xcafb1, {0x0}, {0x1}},
+};
+
+ForcePatch gTikiVillageForcePatch = {
+    {0xcb3ca,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0x90, 0x00, 0x00, 0x00}},
+    {0xcb3c9, {0x0}, {0x1}},
+};
+
+ForcePatch gWetFurForcePatch = {
+    {0xcb59c,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x84, 0xf5, 0x00, 0x00, 0x00}},
+    {0xcb58c, {0x0}, {0x1}},
+};
+
+ForcePatch gPsychicPresenceForcePatch = {
+    {0xcb704,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0xbf, 0x00, 0x00, 0x00}},
+    {0xcb703, {0x0}, {0x1}},
+};
+
+void prePlaceRoomsFullSpelunky() {
+  // Mines
+  if (gGlobalState->level >= 1 && gGlobalState->level <= 4) {
+    if (gGlobalState->level == 3) {
+      applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+      applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_NEVER);
+    } else if (gGlobalState->level == 4) {
+      applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+    } else {
+      applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_NEVER);
+    }
+    // Jungle
+  } else if (gGlobalState->level >= 5 && gGlobalState->level <= 8) {
+    if (gGlobalState->level == 5) {
+      applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+      applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+      applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_NEVER);
+    } else if (gGlobalState->level == 8) {
+      applyForcePatch(gDarkLevelForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+      applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+    } else {
+      applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_NEVER);
+    }
+    // Ice Caves
+  } else if (gGlobalState->level >= 9 && gGlobalState->level <= 12) {
+    if (gGlobalState->level == 9) {
+      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NEVER);
+    } else if (gGlobalState->level == 11 and
+               gGlobalState->mothership_spawned == 0) {
+      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
+    } else if (gGlobalState->level == 12 and
+               gGlobalState->mothership_spawned == 1) {
+      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
+    } else {
+      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
+      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NEVER);
+    }
+  }
+}
+
+void postPlaceRoomsFullSpelunky() {
+  // Mines
+  if (gGlobalState->level >= 1 && gGlobalState->level <= 4) {
+    applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_NORMAL);
+    applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_NORMAL);
+  } else if (gGlobalState->level >= 5 && gGlobalState->level <= 8) {
+    applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_NORMAL);
+    applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_NORMAL);
+    applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_NORMAL);
+    applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_NORMAL);
+  } else if (gGlobalState->level >= 9 && gGlobalState->level <= 12) {
+    applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NORMAL);
+    applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NORMAL);
+  }
+  applyForcePatch(gDarkLevelForcePatch, FORCE_PATCH_TYPE_NORMAL);
+}
+
+void unlockCoffinsFullSpelunky() {
+  if (gFullSpelunkyState.allCharacters.empty() ||
+      gFullSpelunkyState.randoms.empty()) {
+    gGlobalState->_34struct->coffin_char = -1;
     return;
   }
 
-  if (ImGui::BeginListBox("##", {-1, -1})) {
-    for (size_t idx = 0; idx < gAudioNames.size(); idx++) {
-      if (ImGui::Selectable(gAudioNames[idx], false)) {
-        player->PlaySound(gAudioNames[idx]);
+  if (gGlobalState->is_haunted_castle != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_VAN_HELSING;
+  } else if (gGlobalState->is_worm != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_MEATBOY;
+  } else if (gGlobalState->skin_is_crawling != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_ROUND_GIRL;
+  } else if (gGlobalState->rushing_water != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_VIKING;
+  } else if (gGlobalState->tiki_village != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_ROUND_BOY;
+  } else if (gGlobalState->is_wet_fur != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_INUK;
+  } else if (gGlobalState->is_mothership != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_ROBOT;
+  } else if (gGlobalState->is_city_of_gold != 0) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_MONK;
+  } else if (gGlobalState->level == 16) {
+    gGlobalState->_34struct->coffin_char = CHARACTER_NINJA;
+  } else {
+    gGlobalState->_34struct->coffin_char = gFullSpelunkyState.randoms[0];
+  }
+
+  // Only allow Yang or Jungle Warrior once all coffins are collected.
+  if (gGlobalState->_34struct->coffin_char == CHARACTER_YANG &&
+      gFullSpelunkyState.allCharacters.size() > 1) {
+    gGlobalState->_34struct->coffin_char = gFullSpelunkyState.allCharacters[0];
+  } else if (gGlobalState->_34struct->coffin_char == CHARACTER_JUNGLE_WARRIOR &&
+             gFullSpelunkyState.allCharacters.size() > 2) {
+    gGlobalState->_34struct->coffin_char = gFullSpelunkyState.allCharacters[0];
+  }
+
+  // Only allow Yang in Hell
+  if (gGlobalState->_34struct->coffin_char == CHARACTER_YANG &&
+      gGlobalState->level < 17) {
+    gGlobalState->_34struct->coffin_char = -1;
+  }
+}
+
+void onRunningFrame() {
+  if (gModsState.TheFullSpelunky) {
+    for (int hh_idx = 0; hh_idx < gGlobalState->player1_data.hh_count;
+         hh_idx++) {
+      auto texture_id = gGlobalState->player1_data.hh_texture_id[hh_idx];
+      auto char_id = TextureIdToCharId((TextureId)texture_id);
+
+      std::vector<CharacterIndex>::iterator position;
+      position = std::find(gFullSpelunkyState.randoms.begin(),
+                           gFullSpelunkyState.randoms.end(), char_id);
+      if (position != gFullSpelunkyState.randoms.end()) {
+        gFullSpelunkyState.randoms.erase(position);
+      }
+
+      position = std::find(gFullSpelunkyState.allCharacters.begin(),
+                           gFullSpelunkyState.allCharacters.end(), char_id);
+      if (position != gFullSpelunkyState.allCharacters.end()) {
+        gFullSpelunkyState.allCharacters.erase(position);
       }
     }
-    ImGui::EndListBox();
   }
+}
+
+void drawModsTab() {
+  if (ImGui::Checkbox("Dark Mode", &gModsState.DarkMode)) {
+    applyPatches(gDarkModePatches, !gModsState.DarkMode);
+  };
+
+  if (ImGui::Checkbox("The Full Spelunky", &gModsState.TheFullSpelunky)) {
+    if (gModsState.TheFullSpelunky && !hookUnlockCoffinsJmpBackAddr) {
+      // Hook Coffin Assignments
+      int hookLen = 6;
+      DWORD hookAddr = gBaseAddress + 0xe8860;
+      hookUnlockCoffinsJmpBackAddr = hookAddr + hookLen;
+      hook((void *)hookAddr, hookUnlockCoffins, hookLen);
+      applyPatches(gFullSpelunkyPatches);
+    }
+    if (!gModsState.TheFullSpelunky && hookUnlockCoffinsJmpBackAddr) {
+      applyPatches(gFullSpelunkyPatches, true);
+      hookUnlockCoffinsJmpBackAddr = NULL;
+    }
+  };
 }
 
 void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
@@ -2358,6 +2992,25 @@ void drawDebugTab() {
         ImGui::Text("%d", ent->flag_deletion);
       }
       ImGui::EndTable();
+    }
+  }
+
+  if (ImGui::CollapsingHeader("Audio")) {
+    // auto player = *(&((*gGlobalState).player1) +
+    // gGlobalState->flag_player);
+    auto player = gGlobalState->player1;
+    if (!player) {
+      ImGui::Text("Need Player Entity");
+      return;
+    }
+
+    if (ImGui::BeginListBox("##", {-1, -1})) {
+      for (size_t idx = 0; idx < gAudioNames.size(); idx++) {
+        if (ImGui::Selectable(gAudioNames[idx], false)) {
+          player->PlaySound(gAudioNames[idx]);
+        }
+      }
+      ImGui::EndListBox();
     }
   }
 }
@@ -2677,8 +3330,8 @@ void drawToolWindow() {
       ImGui::EndTabItem();
     }
 
-    if (ImGui::BeginTabItem("Audio")) {
-      drawAudioTab();
+    if (ImGui::BeginTabItem("Mods")) {
+      drawModsTab();
       ImGui::EndTabItem();
     }
 
@@ -2783,60 +3436,37 @@ void onLevelStart() {
       gGlobalState->level_ms = 33.50;
     }
   }
+
+  if (gModsState.TheFullSpelunky) {
+    if (gGlobalState->level == 5 || gGlobalState->level == 8) {
+
+      for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+           idx++) {
+
+        auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+
+        if (!ent) {
+          continue;
+        }
+
+        if (ent->entity_type != 211) {
+          continue;
+        }
+
+        auto room = GetRoomForPosition(ent->x, ent->y);
+        auto roomType = gGlobalState->level_state->room_types[room];
+        if (roomType != 73 && roomType != 74) {
+          continue;
+        }
+
+        if (gFullSpelunkyState.randoms.size() > 2) {
+          ent->field5_0x140 = charIdToTextureId(gFullSpelunkyState.randoms[0]);
+        }
+        break;
+      }
+    }
+  }
 }
-
-// bool gGotStats = false;
-// void getStats() {
-//   if ((gGlobalState->screen_state != 0 && gGlobalState->screen_state != 4) ||
-//       (gGlobalState->play_state != 0 && gGlobalState->play_state != 27 &&
-//        gGlobalState->play_state != 28)) {
-//     gGotStats = false;
-//   }
-//   if (!gGotStats && gGlobalState->level == 16 &&
-//       gGlobalState->play_state == 0 && gGlobalState->screen_state == 0) {
-
-//     gGotStats = true;
-//     ImGui::LogToClipboard();
-//     ImGui::LogText("%d\n", gGlobalState->total_seconds);
-//     ImGui::LogText("%lf\n", gGlobalState->total_ms);
-
-//     // EntityCallback cb = [&](Entity *e) {
-//     //   bool found = false;
-//     //   if (e->entity_kind == EntityKind::KIND_PLAYER) {
-//     //     found = true;
-//     //   } else if (e->entity_type == 1011) {
-//     //     found = true;
-//     //   } else if (e->entity_type == 1055) {
-//     //     found = true;
-//     //   }
-
-//     //   if (!found) {
-//     //     return;
-//     //   }
-
-//     //   ImGui::LogText("\nFound: %d: %d\n====================\n",
-//     //   e->entity_kind,
-//     //                  e->entity_type);
-//     //   for (size_t i = 0; i < sizeofEntityKind(e->entity_kind); i += 4) {
-//     //     char *addr = ((char *)e) + i;
-
-//     //     auto a1 = (*(addr)) & (0xFF);
-//     //     auto a2 = (*(addr + 1)) & (0xFF);
-//     //     auto a3 = (*(addr + 2)) & (0xFF);
-//     //     auto a4 = (*(addr + 3)) & (0xFF);
-
-//     //     ImGui::LogText("0x%X: %02X %02X %02X %02X 0x%08X %d %u %f\n", i,
-//     //     a1, a2,
-//     //                    a3, a4, *(uint32_t *)addr, *(int32_t *)addr,
-//     //                    *(uint32_t *)addr, *(float *)addr);
-//     //   }
-//     // };
-//     // forEntities({}, cb, gGlobalState->entities->entities_active,
-//     //             gGlobalState->entities->entities_active_count);
-
-//     ImGui::LogFinish();
-//   }
-// }
 
 uint32_t gScreenStatePrevious = 0;
 void specsOnFrame() {
@@ -2857,11 +3487,14 @@ void specsOnFrame() {
     onLevelStart();
   }
 
-  // getStats();
   handleKeyInput();
   ensureLockedAmounts();
   drawOverlayWindow();
   drawToolWindow();
+
+  if (gGlobalState->screen_state == 0 && gGlobalState->play_state == 0) {
+    onRunningFrame();
+  }
 
   gScreenStatePrevious = gGlobalState->screen_state;
 }
