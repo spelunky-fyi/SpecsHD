@@ -264,6 +264,7 @@ void prePlaceRoomsFullSpelunky();
 void postPlaceRoomsFullSpelunky();
 void resetFullSpelunkyState();
 void unlockCoffinsFullSpelunky();
+void preSpawnTilesFullSpelunky();
 
 TextureDefinition *getTextureById(int32_t texture_id) {
   TextureDefinition *texture_def;
@@ -368,6 +369,32 @@ void __declspec(naked) hookPostPlaceRooms() {
 
     ; Jump back to previous location
     jmp [hookPostPlaceRoomsJmpBackAddr]
+  }
+}
+
+DWORD hookPreSpawnTilesJmpBackAddr = NULL;
+void __declspec(naked) hookPreSpawnTiles() {
+
+  // 0xdd769 (6 Bytes)
+  // 8b 85 5c 71 01 00
+  __asm {
+    ; Stolen Bytes
+    mov eax,dword ptr [ebp + 0x1715c]
+
+    ; Save all registers
+    pushad
+  }
+
+  if (gModsState.TheFullSpelunky) {
+    preSpawnTilesFullSpelunky();
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookPreSpawnTilesJmpBackAddr]
   }
 }
 
@@ -480,6 +507,11 @@ void initHooks() {
   hookAddr = gBaseAddress + 0xeef60;
   hookLoadCoffinTextureJmpBackAddr = hookAddr + hookLen;
   hook((void *)hookAddr, hookLoadCoffinTexture, hookLen);
+
+  hookLen = 6;
+  hookAddr = gBaseAddress + 0xdd769;
+  hookPreSpawnTilesJmpBackAddr = hookAddr + hookLen;
+  hook((void *)hookAddr, hookPreSpawnTiles, hookLen);
 }
 
 void specsOnDestroy() {
@@ -499,6 +531,9 @@ void specsOnDestroy() {
 
   BYTE patch4[] = {0x8b, 0x15, 0x6c, 0x44, 0x35, 0x00};
   patchReadOnlyCode(process, gBaseAddress + 0xeef60, patch4, 10);
+
+  BYTE patch5[] = {0x8b, 0x85, 0x5c, 0x71, 0x01, 0x00};
+  patchReadOnlyCode(process, gBaseAddress + 0xdd769, patch5, 10);
 
   CloseHandle(process);
 }
@@ -1202,6 +1237,22 @@ void drawOverlayWindow() {
   gOverlayDrawList->AddText(
       ImGui::GetFont(), ImGui::GetFontSize() + 5, {148.f, 40.f},
       ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.05f}), "SpecsHD");
+
+  // ImVec2 start = {20.f, 20.f};
+  // auto size = 10.f;
+  // auto padding = 4.f;
+
+  // for (auto idx = 0; idx < 20; idx++) {
+  //   auto color = charIdToColor((CharacterIndex)idx);
+  //   ImVec2 p0 = {start.x + idx * size + padding, start.y};
+  //   if (idx >= 10) {
+  //     p0.x = start.x + (idx - 10) * size + padding;
+  //     p0.y = p0.y + size * 1 + padding;
+  //   }
+  //   ImVec2 p1 = {p0.x + size, p0.y + size};
+
+  //   gOverlayDrawList->AddRectFilled(p0, p1, color);
+  // }
 
   if (gDebugState.EnableTileBorders) {
     drawTileBorders();
@@ -2594,6 +2645,66 @@ void postPlaceRoomsFullSpelunky() {
   applyForcePatch(gDarkLevelForcePatch, FORCE_PATCH_TYPE_NORMAL);
 }
 
+void preSpawnTilesFullSpelunky() {
+
+  if (gModsState.TheFullSpelunky) {
+    if (gGlobalState->level == 5) {
+      bool found_hc_entrance = false;
+      bool placed_hc_entrance = false;
+      for (auto idx = 0; idx < 48; idx++) {
+        if (gGlobalState->level_state->room_types[idx] == 47) {
+          found_hc_entrance = true;
+          break;
+        }
+      }
+      if (!found_hc_entrance) {
+        for (auto idx = 4; idx < 48; idx++) {
+          if (gGlobalState->level_state->room_types[idx] == 0) {
+            gGlobalState->level_state->room_types[idx] = 47;
+            placed_hc_entrance = true;
+            break;
+          }
+        }
+      }
+      if (!placed_hc_entrance) {
+        for (auto idx = 4; idx < 48; idx++) {
+          auto roomType = gGlobalState->level_state->room_types[idx];
+          if (roomType == 2 || roomType == 3) {
+            gGlobalState->level_state->room_types[idx] = 47;
+            placed_hc_entrance = true;
+            break;
+          }
+        }
+      }
+    } else if (gGlobalState->level == 9 && gGlobalState->is_wet_fur == 1) {
+      // Place coffin in Wet Fur
+      for (auto idx = 4; idx < 12; idx++) {
+        if (gGlobalState->level_state->room_types[idx] == 0) {
+          gGlobalState->level_state->room_types[idx] = 43;
+          break;
+        }
+      }
+    } else if (gGlobalState->level == 11 && gGlobalState->is_mothership == 1) {
+      // Place coffin in Mothership
+      for (auto idx = 4; idx < 12; idx++) {
+        if (gGlobalState->level_state->room_types[idx] == 0) {
+          gGlobalState->level_state->room_types[idx] = 43;
+          break;
+        }
+      }
+    } else if (gGlobalState->is_worm == 1) {
+      // Place coffin in Mothership
+      for (auto idx = 8; idx < 48; idx++) {
+        if (((idx % 4) < 2) &&
+            gGlobalState->level_state->room_types[idx] == 1) {
+          gGlobalState->level_state->room_types[idx] = 44;
+          break;
+        }
+      }
+    }
+  }
+}
+
 void unlockCoffinsFullSpelunky() {
   if (gFullSpelunkyState.allCharacters.empty() ||
       gFullSpelunkyState.randoms.empty()) {
@@ -3463,6 +3574,32 @@ void onLevelStart() {
           ent->field5_0x140 = charIdToTextureId(gFullSpelunkyState.randoms[0]);
         }
         break;
+      }
+    } else if (gGlobalState->level == 9 && gGlobalState->is_wet_fur ||
+               gGlobalState->level == 11 && gGlobalState->is_mothership ||
+               gGlobalState->is_worm) {
+      for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+           idx++) {
+
+        auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+
+        if (!ent) {
+          continue;
+        }
+
+        if (ent->entity_type != 211) {
+          continue;
+        }
+
+        auto room = GetRoomForPosition(ent->x, ent->y);
+        auto roomType = gGlobalState->level_state->room_types[room];
+        if (roomType == 43 || roomType == 44 || roomType == 45) {
+          if (gFullSpelunkyState.randoms.size() > 2) {
+            ent->field5_0x140 =
+                charIdToTextureId(gFullSpelunkyState.randoms[0]);
+          }
+          break;
+        }
       }
     }
   }

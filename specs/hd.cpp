@@ -1,6 +1,8 @@
 #include <format>
 #include <string>
 
+#include "3rdparty/imgui/imgui.h"
+
 #include "hd.h"
 
 // GlobalState
@@ -544,6 +546,52 @@ TextureId charIdToTextureId(CharacterIndex id) {
     new_id = new_id + 1000;
   }
   return (TextureId)new_id;
+}
+
+ImU32 charIdToColor(CharacterIndex id) {
+  switch (id) {
+  case CHARACTER_GUY:
+    return ImGui::GetColorU32({1.00f, 0.58f, 0.03f, 1.f});
+  case CHARACTER_RED:
+    return ImGui::GetColorU32({1.00f, 0.07f, 0.07f, 1.f});
+  case CHARACTER_GREEN:
+    return ImGui::GetColorU32({0.34f, 0.92f, 0.12f, 1.f});
+  case CHARACTER_BLUE:
+    return ImGui::GetColorU32({0.12f, 0.40f, 0.93f, 1.f});
+  case CHARACTER_YANG:
+    return ImGui::GetColorU32({1.00f, 1.00f, 1.00f, 1.f});
+  case CHARACTER_MEATBOY:
+    return ImGui::GetColorU32({1.00f, 0.46f, 0.45f, 1.f});
+  case CHARACTER_YELLOW:
+    return ImGui::GetColorU32({0.94f, 0.96f, 0.22f, 1.f});
+  case CHARACTER_JUNGLE_WARRIOR:
+    return ImGui::GetColorU32({0.51f, 0.31f, 0.14f, 1.f});
+  case CHARACTER_PURPLE:
+    return ImGui::GetColorU32({0.71f, 0.23f, 0.90f, 1.f});
+  case CHARACTER_VAN_HELSING:
+    return ImGui::GetColorU32({0.20f, 0.20f, 0.20f, 1.f});
+  case CHARACTER_CYAN:
+    return ImGui::GetColorU32({0.47f, 1.00f, 1.00f, 1.f});
+  case CHARACTER_LIME:
+    return ImGui::GetColorU32({0.73f, 0.88f, 0.00f, 1.f});
+  case CHARACTER_INUK:
+    return ImGui::GetColorU32({0.92f, 0.16f, 0.40f, 1.f});
+  case CHARACTER_ROUND_GIRL:
+    return ImGui::GetColorU32({0.27f, 0.06f, 0.43f, 1.f});
+  case CHARACTER_NINJA:
+    return ImGui::GetColorU32({0.23f, 0.38f, 0.00f, 1.f});
+  case CHARACTER_VIKING:
+    return ImGui::GetColorU32({0.67f, 0.67f, 0.67f, 1.f});
+  case CHARACTER_ROUND_BOY:
+    return ImGui::GetColorU32({0.24f, 0.83f, 0.62f, 1.f});
+  case CHARACTER_CARL:
+    return ImGui::GetColorU32({1.00f, 0.29f, 0.05f, 1.f});
+  case CHARACTER_ROBOT:
+    return ImGui::GetColorU32({0.27f, 0.27f, 0.27f, 1.f});
+  case CHARACTER_MONK:
+    return ImGui::GetColorU32({1.00f, 0.90f, 0.22f, 1.f});
+  }
+  return ImGui::GetColorU32({1.f, 1.f, 1.f, 1.f});
 }
 
 CharacterIndex TextureIdToCharId(TextureId id) {
