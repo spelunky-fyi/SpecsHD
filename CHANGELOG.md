@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.29] - 2023-02-11
+
+### Changed
+
+- The Full Spelunky now has more guaranteed Cog/Hell coffins
+
 ## [0.0.28] - 2023-02-11
 
 ### Changed

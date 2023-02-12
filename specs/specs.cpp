@@ -2769,6 +2769,43 @@ void preSpawnTilesFullSpelunky() {
           break;
         }
       }
+    } else if (gGlobalState->level == 15 && gGlobalState->is_city_of_gold) {
+      bool found_coffin = false;
+      for (auto idx = 0; idx < 48; idx++) {
+        if (gGlobalState->level_state->room_types[idx] == 44 && idx < 4 &&
+            gGlobalState->level_state->entrance_room_x != idx) {
+          found_coffin = true;
+          break;
+        }
+      }
+      if (!found_coffin) {
+        for (auto idx = 4; idx < 48; idx++) {
+          if (gGlobalState->level_state->room_types[idx] == 2) {
+            gGlobalState->level_state->room_types[idx] = 44;
+            break;
+          }
+        }
+      }
+      // Hell
+    } else if (gGlobalState->level > 16) {
+      if (gGlobalState->_34struct->coffin_char > -1) {
+        bool found_coffin = false;
+        for (auto idx = 0; idx < 48; idx++) {
+          auto levelType = gGlobalState->level_state->room_types[idx];
+          if (levelType == 73) {
+            found_coffin = true;
+            break;
+          }
+        }
+        if (!found_coffin) {
+          for (auto idx = 4; idx < 48; idx++) {
+            if (gGlobalState->level_state->room_types[idx] == 0) {
+              gGlobalState->level_state->room_types[idx] = 73;
+              break;
+            }
+          }
+        }
+      }
     }
   }
 }
