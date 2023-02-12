@@ -58,7 +58,7 @@ public:
   float field30_0x78;
   float field31_0x7c;
   float field32_0x80;
-  float field33_0x84;
+  float brightness;
   float red;
   float green;
   float blue;

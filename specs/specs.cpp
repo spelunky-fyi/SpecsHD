@@ -2859,6 +2859,17 @@ void unlockCoffinsFullSpelunky() {
 
 void onRunningFrame() {
   if (gModsState.TheFullSpelunky) {
+    if (gGlobalState->dark_level && gGlobalState->player1) {
+      if (gGlobalState->player1_data.has_udjat ||
+          gGlobalState->player1_data.has_spectacles) {
+        gGlobalState->player1->brightness = 20.0;
+      } else {
+        gGlobalState->player1->brightness = 15.0;
+      }
+    } else {
+      gGlobalState->player1->brightness = 5.0;
+    }
+
     for (int hh_idx = 0; hh_idx < gGlobalState->player1_data.hh_count;
          hh_idx++) {
       auto texture_id = gGlobalState->player1_data.hh_texture_id[hh_idx];

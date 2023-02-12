@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.30] - 2023-02-12
+
+### Changed
+
+- In The Full Spelunky the player now gives off more brightness by default in dark levels and further more brightness for both specs and the udjat eye.
+
 ## [0.0.29] - 2023-02-11
 
 ### Changed
