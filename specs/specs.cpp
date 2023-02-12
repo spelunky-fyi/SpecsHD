@@ -100,11 +100,23 @@ struct FullSpelunkyState {
   };
 
   std::vector<CharacterIndex> randoms = {
-      CHARACTER_GUY,  CHARACTER_RED,    CHARACTER_GREEN,
-      CHARACTER_BLUE, CHARACTER_YELLOW, CHARACTER_PURPLE,
-      CHARACTER_CYAN, CHARACTER_LIME,   CHARACTER_JUNGLE_WARRIOR,
+      CHARACTER_GUY,
+      CHARACTER_RED,
+      CHARACTER_GREEN,
+      CHARACTER_BLUE,
+      CHARACTER_YELLOW,
+      CHARACTER_PURPLE,
+      CHARACTER_CYAN,
+      CHARACTER_LIME,
+      CHARACTER_CARL,
+      CHARACTER_ROUND_GIRL,
+      CHARACTER_ROUND_BOY,
+      CHARACTER_INUK,
+      CHARACTER_JUNGLE_WARRIOR,
       CHARACTER_YANG,
   };
+
+  bool showCharacterOverlay = false;
 };
 FullSpelunkyState gFullSpelunkyState = {};
 
@@ -1238,21 +1250,31 @@ void drawOverlayWindow() {
       ImGui::GetFont(), ImGui::GetFontSize() + 5, {148.f, 40.f},
       ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.05f}), "SpecsHD");
 
-  // ImVec2 start = {20.f, 20.f};
-  // auto size = 10.f;
-  // auto padding = 4.f;
+  if (gModsState.TheFullSpelunky && gFullSpelunkyState.showCharacterOverlay) {
 
-  // for (auto idx = 0; idx < 20; idx++) {
-  //   auto color = charIdToColor((CharacterIndex)idx);
-  //   ImVec2 p0 = {start.x + idx * size + padding, start.y};
-  //   if (idx >= 10) {
-  //     p0.x = start.x + (idx - 10) * size + padding;
-  //     p0.y = p0.y + size * 1 + padding;
-  //   }
-  //   ImVec2 p1 = {p0.x + size, p0.y + size};
+    auto size = 20.f;
+    auto padding = 4.f;
+    ImVec2 start = {
+        io.DisplaySize.x - size - padding,
+        (io.DisplaySize.y / 2) - ((size + padding) * 10),
+    };
 
-  //   gOverlayDrawList->AddRectFilled(p0, p1, color);
-  // }
+    for (auto idx = 0; idx < 20; idx++) {
+      ImColor color = charIdToColor((CharacterIndex)idx, 0.7f);
+
+      ImVec2 p0 = {start.x, start.y + idx * (size + padding)};
+      ImVec2 p1 = {p0.x + size, p0.y + size};
+
+      if (std::find(gFullSpelunkyState.allCharacters.begin(),
+                    gFullSpelunkyState.allCharacters.end(),
+                    idx) != gFullSpelunkyState.allCharacters.end()) {
+
+        gOverlayDrawList->AddRectFilled(p0, p1, color);
+        gOverlayDrawList->AddRect(p0, p1, ImColor({0.f, 0.f, 0.f, 1.f}), 0.f, 0,
+                                  2.f);
+      }
+    }
+  }
 
   if (gDebugState.EnableTileBorders) {
     drawTileBorders();
@@ -2508,9 +2530,19 @@ void resetFullSpelunkyState() {
   };
 
   gFullSpelunkyState.randoms = {
-      CHARACTER_GUY,  CHARACTER_RED,    CHARACTER_GREEN,
-      CHARACTER_BLUE, CHARACTER_YELLOW, CHARACTER_PURPLE,
-      CHARACTER_CYAN, CHARACTER_LIME,   CHARACTER_JUNGLE_WARRIOR,
+      CHARACTER_GUY,
+      CHARACTER_RED,
+      CHARACTER_GREEN,
+      CHARACTER_BLUE,
+      CHARACTER_YELLOW,
+      CHARACTER_PURPLE,
+      CHARACTER_CYAN,
+      CHARACTER_LIME,
+      CHARACTER_CARL,
+      CHARACTER_ROUND_GIRL,
+      CHARACTER_ROUND_BOY,
+      CHARACTER_INUK,
+      CHARACTER_JUNGLE_WARRIOR,
       CHARACTER_YANG,
   };
 }
@@ -2583,6 +2615,13 @@ ForcePatch gIcePoolsForcePatch = {
     {0xcb855, {0x0}, {0x1}},
 };
 
+ForcePatch gKaliPitForcePatch = {
+    {0xca3b8,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x85, 0x9f, 0x00, 0x00, 0x00}},
+    {0xca3b7, {0x0}, {0x1}},
+};
+
 void prePlaceRoomsFullSpelunky() {
   // Mines
   if (gGlobalState->level >= 1 && gGlobalState->level <= 4) {
@@ -2604,7 +2643,6 @@ void prePlaceRoomsFullSpelunky() {
       applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_NEVER);
       applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_NEVER);
     } else if (gGlobalState->level == 8) {
-      applyForcePatch(gDarkLevelForcePatch, FORCE_PATCH_TYPE_NEVER);
       applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_NEVER);
       applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_NEVER);
       applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_ALWAYS);
@@ -2637,6 +2675,19 @@ void prePlaceRoomsFullSpelunky() {
       applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
       applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NEVER);
     }
+    // Temple
+  } else if (gGlobalState->level >= 13 && gGlobalState->level <= 15) {
+    if (gGlobalState->level == 14) {
+      applyForcePatch(gKaliPitForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+    } else {
+      applyForcePatch(gKaliPitForcePatch, FORCE_PATCH_TYPE_NEVER);
+    }
+  }
+
+  if (gGlobalState->level == 12 and gGlobalState->mothership_spawned == 0) {
+    gGlobalState->dark_level = 1;
+  } else {
+    gGlobalState->dark_level = 0;
   }
 }
 
@@ -2654,8 +2705,10 @@ void postPlaceRoomsFullSpelunky() {
     applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NORMAL);
     applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NORMAL);
     applyForcePatch(gIcePoolsForcePatch, FORCE_PATCH_TYPE_NORMAL);
+    // Temple
+  } else if (gGlobalState->level >= 13 && gGlobalState->level <= 15) {
+    applyForcePatch(gKaliPitForcePatch, FORCE_PATCH_TYPE_NORMAL);
   }
-  applyForcePatch(gDarkLevelForcePatch, FORCE_PATCH_TYPE_NORMAL);
 }
 
 void preSpawnTilesFullSpelunky() {
@@ -2678,14 +2731,16 @@ void preSpawnTilesFullSpelunky() {
             break;
           }
         }
-      }
-      if (!placed_hc_entrance) {
-        for (auto idx = 4; idx < 48; idx++) {
-          auto roomType = gGlobalState->level_state->room_types[idx];
-          if (roomType == 2 || roomType == 3) {
-            gGlobalState->level_state->room_types[idx] = 47;
-            placed_hc_entrance = true;
-            break;
+
+        // If you didn't find an open side room shove it on the path
+        if (!placed_hc_entrance) {
+          for (auto idx = 4; idx < 48; idx++) {
+            auto roomType = gGlobalState->level_state->room_types[idx];
+            if (roomType == 2 || roomType == 3) {
+              gGlobalState->level_state->room_types[idx] = 47;
+              placed_hc_entrance = true;
+              break;
+            }
           }
         }
       }
@@ -2747,13 +2802,15 @@ void unlockCoffinsFullSpelunky() {
     gGlobalState->_34struct->coffin_char = gFullSpelunkyState.randoms[0];
   }
 
-  // Only allow Yang or Jungle Warrior once all coffins are collected.
   if (gGlobalState->_34struct->coffin_char == CHARACTER_YANG &&
       gFullSpelunkyState.allCharacters.size() > 1) {
-    gGlobalState->_34struct->coffin_char = gFullSpelunkyState.allCharacters[0];
-  } else if (gGlobalState->_34struct->coffin_char == CHARACTER_JUNGLE_WARRIOR &&
-             gFullSpelunkyState.allCharacters.size() > 2) {
-    gGlobalState->_34struct->coffin_char = gFullSpelunkyState.allCharacters[0];
+    gGlobalState->_34struct->coffin_char = -1;
+  }
+
+  // Only allow Jungle Warrior by Temple
+  if (gGlobalState->_34struct->coffin_char == CHARACTER_JUNGLE_WARRIOR &&
+      gGlobalState->level < 13) {
+    gGlobalState->_34struct->coffin_char = -1;
   }
 
   // Only allow Yang in Hell
@@ -2783,14 +2840,52 @@ void onRunningFrame() {
         gFullSpelunkyState.allCharacters.erase(position);
       }
     }
+
+    for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+         idx++) {
+
+      auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+
+      if (!ent) {
+        continue;
+      }
+
+      if (ent->entity_kind != EntityKind::KIND_PLAYER) {
+        continue;
+      }
+
+      EntityPlayer *player = (EntityPlayer *)ent;
+      if (!player->ai_bot) {
+        continue;
+      }
+
+      auto texture_id = player->texture_definition->texture_id;
+      auto char_id = TextureIdToCharId((TextureId)texture_id);
+
+      std::vector<CharacterIndex>::iterator position;
+      position = std::find(gFullSpelunkyState.randoms.begin(),
+                           gFullSpelunkyState.randoms.end(), char_id);
+      if (position != gFullSpelunkyState.randoms.end()) {
+        gFullSpelunkyState.randoms.erase(position);
+      }
+
+      position = std::find(gFullSpelunkyState.allCharacters.begin(),
+                           gFullSpelunkyState.allCharacters.end(), char_id);
+      if (position != gFullSpelunkyState.allCharacters.end()) {
+        gFullSpelunkyState.allCharacters.erase(position);
+      }
+    }
   }
 }
 
 void drawModsTab() {
+  ImGuiIO &io = ImGui::GetIO();
+
   if (ImGui::Checkbox("Dark Mode", &gModsState.DarkMode)) {
     applyPatches(gDarkModePatches, !gModsState.DarkMode);
   };
 
+  ImGui::Separator();
   if (ImGui::Checkbox("The Full Spelunky", &gModsState.TheFullSpelunky)) {
     if (gModsState.TheFullSpelunky && !hookUnlockCoffinsJmpBackAddr) {
       // Hook Coffin Assignments
@@ -2805,6 +2900,12 @@ void drawModsTab() {
       hookUnlockCoffinsJmpBackAddr = NULL;
     }
   };
+
+  ImGui::Text("");
+  ImGui::SameLine(30.0f * io.FontGlobalScale);
+  ImGui::Checkbox("Show Character Overlay##The Full Spelunky",
+                  &gFullSpelunkyState.showCharacterOverlay);
+  ImGui::Separator();
 }
 
 void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {

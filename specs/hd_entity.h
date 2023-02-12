@@ -743,7 +743,7 @@ public:
   class PlayerData *player_data;
   EntityPlayer *follower;
   EntityPlayer *following;
-  int field16_0x28c;
+  int *ai_bot;
   int field17_0x290;
   int field18_0x294;
   int field19_0x298;

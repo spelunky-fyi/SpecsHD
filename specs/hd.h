@@ -391,5 +391,5 @@ void LoadCoffinTexture(_34Struct *_34_struct);
 void setupOffsets(DWORD baseAddress);
 
 TextureId charIdToTextureId(CharacterIndex);
-ImU32 charIdToColor(CharacterIndex);
+ImU32 charIdToColor(CharacterIndex, float);
 CharacterIndex TextureIdToCharId(TextureId);
