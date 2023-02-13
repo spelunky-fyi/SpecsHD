@@ -70,6 +70,7 @@ struct DrawEntityOffsetsValueHashFunction {
 
 struct ModsState {
   bool TheFullSpelunky = false;
+  bool Biglunky = false;
   bool DarkMode = false;
 };
 ModsState gModsState = {};
@@ -2422,6 +2423,8 @@ std::vector<Patch> gDarkModePatches = {
     {0x6afbe, {0x1}, {0x0}},
 };
 
+std::vector<Patch> gBiglunkyPatches = {};
+
 std::vector<Patch> gFullSpelunkyPatches = {
     // Allow coffins on level 1
     {0xbe12a, {0x0}, {0x1}},
@@ -2684,10 +2687,12 @@ void prePlaceRoomsFullSpelunky() {
     }
   }
 
-  if (gGlobalState->level == 12 and gGlobalState->mothership_spawned == 0) {
-    gGlobalState->dark_level = 1;
-  } else {
-    gGlobalState->dark_level = 0;
+  if (!gModsState.DarkMode) {
+    if (gGlobalState->level == 12 and gGlobalState->mothership_spawned == 0) {
+      gGlobalState->dark_level = 1;
+    } else {
+      gGlobalState->dark_level = 0;
+    }
   }
 }
 
@@ -2948,12 +2953,19 @@ void drawModsTab() {
       hookUnlockCoffinsJmpBackAddr = NULL;
     }
   };
-
   ImGui::Text("");
   ImGui::SameLine(30.0f * io.FontGlobalScale);
   ImGui::Checkbox("Show Character Overlay##The Full Spelunky",
                   &gFullSpelunkyState.showCharacterOverlay);
   ImGui::Separator();
+
+  if (ImGui::Checkbox("Biglunky", &gModsState.Biglunky)) {
+    if (gModsState.Biglunky) {
+      applyPatches(gBiglunkyPatches);
+    } else {
+      applyPatches(gBiglunkyPatches, true);
+    }
+  };
 }
 
 void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {

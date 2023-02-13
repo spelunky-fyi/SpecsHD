@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Support for Dark Mode and The Full Spelunky to work together
+- New Mod: Biglunky
+
 ## [0.0.30] - 2023-02-12
 
 ### Changed
