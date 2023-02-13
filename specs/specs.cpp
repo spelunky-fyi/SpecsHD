@@ -278,6 +278,7 @@ void postPlaceRoomsFullSpelunky();
 void resetFullSpelunkyState();
 void unlockCoffinsFullSpelunky();
 void preSpawnTilesFullSpelunky();
+void preSpawnTilesBiglunky();
 
 TextureDefinition *getTextureById(int32_t texture_id) {
   TextureDefinition *texture_def;
@@ -400,6 +401,9 @@ void __declspec(naked) hookPreSpawnTiles() {
 
   if (gModsState.TheFullSpelunky) {
     preSpawnTilesFullSpelunky();
+  }
+  if (gModsState.Biglunky) {
+    preSpawnTilesBiglunky();
   }
 
   __asm {
@@ -2423,7 +2427,58 @@ std::vector<Patch> gDarkModePatches = {
     {0x6afbe, {0x1}, {0x0}},
 };
 
-std::vector<Patch> gBiglunkyPatches = {};
+std::vector<Patch> gBiglunkyPatches = {
+    // Worm Max Right Camera Bounds: 15.5 -> 35.5
+    {0x135d34, {0x00, 0x00, 0x0e, 0x42}, {0x00, 0x00, 0x78, 0x41}},
+
+    // Non-Worm Max Down Camera Bounds:
+    // 70.125 -> 6.125
+    {0x135d30, {0x00, 0x00, 0xc4, 0x40}, {0x00, 0x40, 0x8c, 0x42}},
+
+    // Force levels to be 12 High
+    {0xdd7b5, {0x90, 0x90}, {0x74, 0x16}},
+
+    // Force levels to be 4 wide
+    {
+        0xdd84f,
+        {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
+         0x90},
+        {0xc7, 0x44, 0x24, 0x14, 0x17, 0x00, 0x00, 0x00, 0x89, 0x5c, 0x24,
+         0x2c},
+    },
+
+    // Death Depth: 46 -> 2
+    {0x1367a4, {0x00, 0x00, 0x00, 0x40}, {0x00, 0x00, 0x38, 0x42}},
+
+    {0xe8230, {0x90, 0x90}, {0x74, 0x05}},
+
+    // Exit Room Y 11
+    {0xc9d49, {0xb}, {0x3}},
+
+    // 12 Rows
+    {0xca820, {0xc}, {0x4}},
+    {0xca806, {0xb}, {0x3}},
+
+    // Spawn Bounds
+    {0xbe7e5, {0x2d}, {0x19}}, // Worm Width Common
+    {0xbe7f2, {0x65}, {0x2d}}, // Normal Height Common
+    {0xbe7fc, {0x65}, {0x25}}, // Wet Fur Height Common
+    {0xbe828, {0x65}, {0x2e}}, // Rushing Water Enemies
+    {0xbe82f, {0x65}, {0x26}}, // Normal Enemies
+
+    // Spawn Arrow Traps
+    {0xe0795, {0x82, 0x12}, {0x78, 0x06}},
+
+    // Push Blocks
+    {0xe0351, {0x54, 0x12}, {0x4a, 0x06}},
+
+    // Decorations
+    {0xdd736, {0x82, 0x12}, {0xd4, 0x06}},
+    {0xbe49c, {0x63}, {0x23}},
+
+    // Move Yama Entrance
+    {0xca07e, {0xb}, {0x3}},
+};
 
 std::vector<Patch> gFullSpelunkyPatches = {
     // Allow coffins on level 1
@@ -2716,8 +2771,28 @@ void postPlaceRoomsFullSpelunky() {
   }
 }
 
-void preSpawnTilesFullSpelunky() {
+void preSpawnTilesBiglunky() {
 
+  if (gModsState.Biglunky) {
+    if (gGlobalState->level == 20) {
+      for (auto idx = 12; idx < 44; idx++) {
+        if (idx % 4 < 2) {
+          gGlobalState->level_state->room_types[idx] = 55;
+        } else {
+          gGlobalState->level_state->room_types[idx] = 58;
+        }
+      }
+
+      // Bottom Row
+      gGlobalState->level_state->room_types[44] = 59;
+      gGlobalState->level_state->room_types[45] = 60;
+      gGlobalState->level_state->room_types[46] = 61;
+      gGlobalState->level_state->room_types[47] = 62;
+    }
+  }
+}
+
+void preSpawnTilesFullSpelunky() {
   if (gModsState.TheFullSpelunky) {
     if (gGlobalState->level == 5) {
       bool found_hc_entrance = false;
