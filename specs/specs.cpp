@@ -307,6 +307,7 @@ void resetFullSpelunkyState();
 void unlockCoffinsFullSpelunky();
 void preSpawnTilesFullSpelunky();
 void preSpawnTilesBiglunky();
+void preGenerateRoomBiglunky();
 
 TextureDefinition *getTextureById(int32_t texture_id) {
   TextureDefinition *texture_def;
@@ -385,6 +386,31 @@ void __declspec(naked) hookPrePlaceRooms() {
 
     ; Jump back to previous location
     jmp [hookPrePlaceRoomsJmpBackAddr]
+  }
+}
+
+DWORD hookPreGenerateRoomJmpBackAddr = NULL;
+void __declspec(naked) hookPreGenerateRoom() {
+
+  // 0xd66a6 8b 84 9d ec a5 00 00
+  __asm {
+    ; Stolen Bytes
+    mov  eax,dword ptr [ebp + ebx*0x4 + 0xa5ec]
+
+    ; Save all registers
+    pushad
+  }
+
+  if (gModsState.Biglunky) {
+    preGenerateRoomBiglunky();
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    ; Jump back to previous location
+    jmp [hookPreGenerateRoomJmpBackAddr]
   }
 }
 
@@ -557,6 +583,11 @@ void initHooks() {
   hookAddr = gBaseAddress + 0xdd769;
   hookPreSpawnTilesJmpBackAddr = hookAddr + hookLen;
   hook((void *)hookAddr, hookPreSpawnTiles, hookLen);
+
+  hookLen = 7;
+  hookAddr = gBaseAddress + 0xd66a6;
+  hookPreGenerateRoomJmpBackAddr = hookAddr + hookLen;
+  hook((void *)hookAddr, hookPreGenerateRoom, hookLen);
 }
 
 void specsOnDestroy() {
@@ -575,10 +606,13 @@ void specsOnDestroy() {
   patchReadOnlyCode(process, gBaseAddress + 0xbe845, patch3, 6);
 
   BYTE patch4[] = {0x8b, 0x15, 0x6c, 0x44, 0x35, 0x00};
-  patchReadOnlyCode(process, gBaseAddress + 0xeef60, patch4, 10);
+  patchReadOnlyCode(process, gBaseAddress + 0xeef60, patch4, 6);
 
   BYTE patch5[] = {0x8b, 0x85, 0x5c, 0x71, 0x01, 0x00};
-  patchReadOnlyCode(process, gBaseAddress + 0xdd769, patch5, 10);
+  patchReadOnlyCode(process, gBaseAddress + 0xdd769, patch5, 6);
+
+  BYTE patch6[] = {0x8b, 0x84, 0x9d, 0xec, 0x5, 0x00, 0x00};
+  patchReadOnlyCode(process, gBaseAddress + 0xd66a6, patch6, 7);
 
   CloseHandle(process);
 }
@@ -2570,6 +2604,13 @@ std::vector<Patch> gBiglunkyPatches = {
     {0xde996, {0x90, 0x4a}, {0xa0, 0x26}},
     {0xde9a3, {0x90, 0x4a}, {0xa0, 0x26}},
 
+    // Udjat Blink Faster
+    {0x530d6, {0x90}, {0x40}},
+    {0x530d7, {0x90, 0x90, 0x90}, {0x8d, 0x04, 0x80}},
+
+    // More Alien Lords
+    {0xd2c72, {0x06}, {0x0a}},
+
 };
 
 std::vector<RelativePatch> gBiglunkyRelativePatches = {
@@ -2579,6 +2620,12 @@ std::vector<RelativePatch> gBiglunkyRelativePatches = {
 
     // Move Olmec Exit Door
     {0xde961, 0x136284, 0x1367fc},
+
+    // Udjat Range from 100.0 to 500.0
+    {0x530c0, 0x1364e0, 0x135aa4},
+
+    // Alien Queen Range from 144.0 to 1200.0
+    {0x437b4, 0x136698, 0x365bc},
 };
 
 std::vector<Patch> gFullSpelunkyPatches = {
@@ -2869,6 +2916,15 @@ void postPlaceRoomsFullSpelunky() {
     // Temple
   } else if (gGlobalState->level >= 13 && gGlobalState->level <= 15) {
     applyForcePatch(gKaliPitForcePatch, FORCE_PATCH_TYPE_NORMAL);
+  }
+}
+
+void preGenerateRoomBiglunky() {
+  if (gModsState.Biglunky) {
+    if (gGlobalState->is_mothership && std::rand() % 6 == 0) {
+      // Set altar spawned to 0 to force an alien lord
+      gGlobalState->altar_spawned = 0;
+    }
   }
 }
 
