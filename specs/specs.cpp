@@ -1333,6 +1333,10 @@ void drawOverlayWindow() {
       auto replace_color = ImGui::GetColorU32({255.0f, 255.0f, 0.0f, 0.25f});
       auto bm_color = ImGui::GetColorU32({0.f, 255.0f, 0.0f, 0.25f});
 
+      if (gGlobalState->player1) {
+        drawEntityCircle(gGlobalState->player1, 10.f, bm_color);
+      }
+
       for (auto e_idx = 0; e_idx < ELIGIBLE_FLOORS_FOR_BM_COUNT; e_idx++) {
 
         auto idx = ELIGIBLE_FLOORS_FOR_BM[e_idx];
@@ -2016,18 +2020,7 @@ void drawLevelTab() {
   if (ImGui::CollapsingHeader("Room Types")) {
     for (auto idx = 0; idx < 48; idx++) {
       auto column = idx % 4;
-      if (gGlobalState->is_worm) {
-        if (column > 1) {
-          continue;
-        }
-      } else {
-        if (idx >= 4 * 5) {
-          break;
-        }
-      }
-
       auto type = gGlobalState->level_state->room_types[idx];
-
       auto col = IM_COL32(183, 183, 183, 255);
       if (type >= 1 && type <= 3) {
         // Path
@@ -2427,6 +2420,9 @@ std::vector<Patch> gDarkModePatches = {
     {0x6afbe, {0x1}, {0x0}},
 };
 
+// Get bytes for float
+//  ["{:02x}".format(i) for i in bytearray(struct.pack("f", 0.0))]
+//
 std::vector<Patch> gBiglunkyPatches = {
     // Worm Max Right Camera Bounds: 15.5 -> 35.5
     {0x135d34, {0x00, 0x00, 0x0e, 0x42}, {0x00, 0x00, 0x78, 0x41}},
@@ -2434,6 +2430,8 @@ std::vector<Patch> gBiglunkyPatches = {
     // Non-Worm Max Down Camera Bounds:
     // 70.125 -> 6.125
     {0x135d30, {0x00, 0x00, 0xc4, 0x40}, {0x00, 0x40, 0x8c, 0x42}},
+    // 54.125 -> 6.125
+    {0x135d24, {0x00, 0x00, 0xc4, 0x40}, {0x00, 0x80, 0x58, 0x42}},
 
     // Force levels to be 12 High
     {0xdd7b5, {0x90, 0x90}, {0x74, 0x16}},
@@ -2447,8 +2445,8 @@ std::vector<Patch> gBiglunkyPatches = {
          0x2c},
     },
 
-    // Death Depth: 46 -> 2
-    {0x1367a4, {0x00, 0x00, 0x00, 0x40}, {0x00, 0x00, 0x38, 0x42}},
+    // Death Depth: 46 -> 0
+    {0x1367a4, {0x00, 0x00, 0x00, 0x00}, {0x00, 0x00, 0x38, 0x42}},
 
     {0xe8230, {0x90, 0x90}, {0x74, 0x05}},
 
@@ -2478,6 +2476,20 @@ std::vector<Patch> gBiglunkyPatches = {
 
     // Move Yama Entrance
     {0xca07e, {0xb}, {0x3}},
+
+    // Make worm 1 level
+    {0x6aa37, {0xeb}, {0x74}},
+
+    // Wet Fur Path
+    {0xd34f6, {0x30}, {0x10}},
+
+    // Mothership Path
+    {0xd2b14, {0x30}, {0x10}},
+
+    // Don't spawn Moship BG. it doesn't do a bounds check and crashes the
+    // game...
+    {0xc9a4d, {0x90, 0xe9}, {0x0f, 0x84}},
+
 };
 
 std::vector<Patch> gFullSpelunkyPatches = {
@@ -3239,11 +3251,37 @@ void drawDebugTab() {
     }
   }
 
+  if (ImGui::CollapsingHeader("Level State")) {
+
+    ImGui::InputScalar("shop_type", ImGuiDataType_S32,
+                       &gGlobalState->level_state->shop_type);
+    ImGui::InputScalar("entrance_room_x", ImGuiDataType_S32,
+                       &gGlobalState->level_state->entrance_room_x);
+    ImGui::InputScalar("entrance_room_y", ImGuiDataType_S32,
+                       &gGlobalState->level_state->entrance_room_y);
+    ImGui::InputScalar("exit_room_x", ImGuiDataType_S32,
+                       &gGlobalState->level_state->exit_room_x);
+    ImGui::InputScalar("exit_room_y", ImGuiDataType_S32,
+                       &gGlobalState->level_state->exit_room_y);
+    ImGui::InputScalar("entrance_x", ImGuiDataType_Float,
+                       &gGlobalState->level_state->entrance_x);
+    ImGui::InputScalar("entrance_y", ImGuiDataType_Float,
+                       &gGlobalState->level_state->entrance_y);
+    ImGui::InputScalar("exit_x", ImGuiDataType_Float,
+                       &gGlobalState->level_state->exit_x);
+    ImGui::InputScalar("exit_y", ImGuiDataType_Float,
+                       &gGlobalState->level_state->exit_y);
+    ImGui::InputScalar("alt_exit_x", ImGuiDataType_Float,
+                       &gGlobalState->level_state->alt_exit_x);
+    ImGui::InputScalar("alt_exit_y", ImGuiDataType_Float,
+                       &gGlobalState->level_state->alt_exit_y);
+  }
+
   if (ImGui::CollapsingHeader("Camera State")) {
 
     ImGui::InputScalar("camera_x", ImGuiDataType_Float,
                        &gCameraState->camera_x);
-    ImGui::InputScalar("camera_x", ImGuiDataType_Float,
+    ImGui::InputScalar("camera_y", ImGuiDataType_Float,
                        &gCameraState->camera_y);
     ImGui::InputScalar("following_x", ImGuiDataType_Float,
                        &gCameraState->following_x);

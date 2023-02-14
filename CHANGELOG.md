@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for Dark Mode and The Full Spelunky to work together
 - New Mod: Biglunky
+- Support for Dark Mode and The Full Spelunky to work together
+- Level State in Debug tab that shows various entrance/exit values
+- 10 Tile Radius around player in BM Trainer to show where BM will be when you hear first chirp
+
+### Changed
+
+- Room Types drop down now shows all 48 rooms always.
 
 ## [0.0.30] - 2023-02-12
 
