@@ -509,6 +509,25 @@ void GlobalState::PlayOlmecMusic(const char *audioName) {
   }
 }
 
+DWORD gDestroyFloor;
+
+bool DestroyFloor(LevelState *level_state, EntityFloor *floor) {
+
+  bool val;
+  __asm {
+        pushad
+
+        push level_state
+        mov eax, floor
+        call gDestroyFloor
+        mov val, al
+
+        popad
+  }
+
+  return val;
+}
+
 DWORD gLoadCoffinTexture;
 void LoadCoffinTexture(_34Struct *_34_struct) {
   __asm {
@@ -543,6 +562,8 @@ void setupOffsets(DWORD baseAddress) {
   gEntityPlaySoundOffset = baseAddress + 0x16A95;
 
   gPlayMusic = baseAddress + 0x9920;
+
+  gDestroyFloor = baseAddress + 0xdf2c0;
 
   gGetRoomForPosition = baseAddress + 0x0CC760;
 

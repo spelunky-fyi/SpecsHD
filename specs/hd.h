@@ -384,6 +384,7 @@ public:
 static_assert(sizeof(GlobalState) == 0x447548);
 
 uint32_t GetRoomForPosition(float x, float y);
+bool DestroyFloor(LevelState *level_state, EntityFloor *floor);
 
 void LoadTexture(_34Struct *_34_struct, const char *texture_name);
 void LoadCoffinTexture(_34Struct *_34_struct);

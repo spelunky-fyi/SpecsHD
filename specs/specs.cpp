@@ -2534,6 +2534,8 @@ std::vector<Patch> gBiglunkyPatches = {
     {0x135d30, {0x00, 0x00, 0xc4, 0x40}, {0x00, 0x40, 0x8c, 0x42}},
     // 54.125 -> 6.125
     {0x135d24, {0x00, 0x00, 0xc4, 0x40}, {0x00, 0x80, 0x58, 0x42}},
+    // 62.125 -> 6.125
+    {0x135d28, {0x00, 0x00, 0xc4, 0x40}, {0x00, 0x80, 0x78, 0x42}},
 
     // Force levels to be 12 High
     {0xdd7b5, {0x90, 0x90}, {0x74, 0x16}},
@@ -2610,6 +2612,38 @@ std::vector<Patch> gBiglunkyPatches = {
 
     // More Alien Lords
     {0xd2c72, {0x06}, {0x0a}},
+
+    // Remove Rushing Water Rooms (Placed manually).
+    {0xcad87,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x1c, 0xa6, 0x00, 0x00}},
+    {0xcad8d,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x20, 0xa6, 0x00, 0x00}},
+    {0xcad93,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x24, 0xa6, 0x00, 0x00}},
+    {0xcad99,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x28, 0xa6, 0x00, 0x00}},
+    {0xcada4,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x2c, 0xa6, 0x00, 0x00}},
+    {0xcadaa,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x30, 0xa6, 0x00, 0x00}},
+    {0xcadb0,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x34, 0xa6, 0x00, 0x00}},
+    {0xcadb6,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x89, 0x85, 0x38, 0xa6, 0x00, 0x00}},
+    {0xcae84,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0xc7, 0x84, 0x85, 0x2c, 0xa6, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00}},
+
+    // Rushing Water Limit
+    {0x1365c0, {0x00, 0x00, 0xc0, 0x41}, {0x00, 0x00, 0x90, 0x42}}
 
 };
 
@@ -2932,7 +2966,28 @@ void preSpawnTilesBiglunky() {
 
   if (gModsState.Biglunky) {
 
-    if (gGlobalState->level == 16) {
+    if (gGlobalState->rushing_water == 1) {
+      gGlobalState->level_state->exit_room_y =
+          gGlobalState->level_state->exit_room_y - 2;
+
+      // Lake Islands
+      gGlobalState->level_state->room_types[36] = 9;
+      gGlobalState->level_state->room_types[37] = 9;
+      gGlobalState->level_state->room_types[38] = 9;
+      gGlobalState->level_state->room_types[39] = 9;
+
+      // Middle Lake
+      gGlobalState->level_state->room_types[40] = 10;
+      gGlobalState->level_state->room_types[41] = 11;
+      gGlobalState->level_state->room_types[42] = 11;
+      gGlobalState->level_state->room_types[43] = 10;
+
+      // Bottom Lake
+      gGlobalState->level_state->room_types[44] = 10;
+      gGlobalState->level_state->room_types[45] = 10;
+      gGlobalState->level_state->room_types[46] = 10;
+      gGlobalState->level_state->room_types[47] = 10;
+    } else if (gGlobalState->level == 16) {
       GenerateRoom(0, gGlobalState->level_state, 3, 45, 36);
       GenerateRoom(0, gGlobalState->level_state, 13, 45, 37);
       GenerateRoom(0, gGlobalState->level_state, 23, 45, 38);
@@ -3112,15 +3167,17 @@ void unlockCoffinsFullSpelunky() {
 
 void onRunningFrame() {
   if (gModsState.TheFullSpelunky) {
-    if (gGlobalState->dark_level && gGlobalState->player1) {
-      if (gGlobalState->player1_data.has_udjat ||
-          gGlobalState->player1_data.has_spectacles) {
-        gGlobalState->player1->brightness = 20.0;
+    if (gGlobalState->player1) {
+      if (gGlobalState->dark_level) {
+        if (gGlobalState->player1_data.has_udjat ||
+            gGlobalState->player1_data.has_spectacles) {
+          gGlobalState->player1->brightness = 20.0;
+        } else {
+          gGlobalState->player1->brightness = 15.0;
+        }
       } else {
-        gGlobalState->player1->brightness = 15.0;
+        gGlobalState->player1->brightness = 5.0;
       }
-    } else {
-      gGlobalState->player1->brightness = 5.0;
     }
 
     for (int hh_idx = 0; hh_idx < gGlobalState->player1_data.hh_count;
@@ -3996,6 +4053,21 @@ void onLevelStart() {
       gGlobalState->total_ms += 33.50;
       gGlobalState->level_seconds = 11;
       gGlobalState->level_ms = 33.50;
+    }
+  }
+
+  if (gModsState.TheFullSpelunky) {
+    if (gGlobalState->rushing_water) {
+      for (auto idx = 0; idx < 4692; idx++) {
+        auto ent = gGlobalState->level_state->entity_floors[idx];
+        if (ent && ent->y == 12 && ent->x >= 3 && ent->x < 43) {
+          DestroyFloor(gGlobalState->level_state, ent);
+          auto bg = gGlobalState->level_state->entity_floors_bg[idx];
+          if (bg) {
+            bg->flag_deletion = 1;
+          }
+        }
+      }
     }
   }
 
