@@ -2877,6 +2877,16 @@ void preSpawnTilesBiglunky() {
   if (gModsState.Biglunky) {
 
     if (gGlobalState->level == 16) {
+      GenerateRoom(0, gGlobalState->level_state, 3, 45, 36);
+      GenerateRoom(0, gGlobalState->level_state, 13, 45, 37);
+      GenerateRoom(0, gGlobalState->level_state, 23, 45, 38);
+      GenerateRoom(0, gGlobalState->level_state, 33, 45, 39);
+
+      GenerateRoom(0, gGlobalState->level_state, 3, 61, 36);
+      GenerateRoom(0, gGlobalState->level_state, 13, 61, 37);
+      GenerateRoom(0, gGlobalState->level_state, 23, 61, 38);
+      GenerateRoom(0, gGlobalState->level_state, 33, 61, 39);
+
       GenerateRoom(0, gGlobalState->level_state, 3, 77, 36);
       GenerateRoom(0, gGlobalState->level_state, 13, 77, 37);
       GenerateRoom(0, gGlobalState->level_state, 23, 77, 38);
