@@ -22,6 +22,16 @@ Entity *GlobalState::SpawnEntity(float x, float y, uint32_t entityType,
   return reinterpret_cast<Entity *>(entityAddress);
 }
 
+DWORD gGenerateRoomOffset;
+void GenerateRoom(int32_t entrance_or_exit, LevelState *level_state,
+                  int32_t x_start, int32_t y_start, int32_t room_idx) {
+  using GenerateRoomPtr = void(__fastcall *)(
+      void *nothing, int32_t entrance_or_exit, LevelState *level_state,
+      int32_t x_start, int32_t y_start, int32_t room_idx);
+  GenerateRoomPtr GenerateRoom = (GenerateRoomPtr)(gGenerateRoomOffset);
+  GenerateRoom(NULL, entrance_or_exit, level_state, x_start, y_start, room_idx);
+}
+
 // Entity
 DWORD gEntityPlaySoundOffset;
 
@@ -538,6 +548,8 @@ void setupOffsets(DWORD baseAddress) {
 
   gLoadTexture = baseAddress + 0xef350;
   gLoadCoffinTexture = baseAddress + 0xeef60;
+
+  gGenerateRoomOffset = baseAddress + 0xd6690;
 }
 
 TextureId charIdToTextureId(CharacterIndex id) {

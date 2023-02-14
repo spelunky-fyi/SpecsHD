@@ -393,3 +393,5 @@ void setupOffsets(DWORD baseAddress);
 TextureId charIdToTextureId(CharacterIndex);
 ImU32 charIdToColor(CharacterIndex, float);
 CharacterIndex TextureIdToCharId(TextureId);
+void GenerateRoom(int32_t entrance_or_exit, LevelState *level_state,
+                  int32_t x_start, int32_t y_start, int32_t room_idx);

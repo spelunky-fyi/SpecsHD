@@ -2833,7 +2833,11 @@ void postPlaceRoomsFullSpelunky() {
 void preSpawnTilesBiglunky() {
 
   if (gModsState.Biglunky) {
-    if (gGlobalState->level == 20) {
+
+    if (gGlobalState->level == 16) {
+      GenerateRoom(0, gGlobalState->level_state, 3, 37, 16);
+      GenerateRoom(0, gGlobalState->level_state, 13, 37, 17);
+    } else if (gGlobalState->level == 20) {
       for (auto idx = 12; idx < 44; idx++) {
         if (idx % 4 < 2) {
           gGlobalState->level_state->room_types[idx] = 55;
