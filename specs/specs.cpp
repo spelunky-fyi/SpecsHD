@@ -198,6 +198,12 @@ struct Patch {
   std::vector<BYTE> original;
 };
 
+struct RelativePatch {
+  DWORD offset;
+  DWORD patch;
+  DWORD original;
+};
+
 struct ForcePatch {
   Patch always;
   Patch never;
@@ -223,6 +229,27 @@ void applyForcePatch(ForcePatch &patch, FORCE_PATCH_TYPE type) {
                       &patch.always.original[0], patch.always.original.size());
     patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
                       &patch.never.patch[0], patch.never.patch.size());
+  }
+
+  CloseHandle(process);
+}
+
+void applyRelativePatches(std::vector<RelativePatch> &patches,
+                          bool rollback = false) {
+
+  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
+                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
+                                 PROCESS_CREATE_THREAD,
+                             0, GetCurrentProcessId());
+
+  for (RelativePatch patch : patches) {
+    if (rollback) {
+      DWORD value = gBaseAddress + patch.original;
+      patchReadOnlyCode(process, gBaseAddress + patch.offset, &value, 4);
+    } else {
+      DWORD value = gBaseAddress + patch.patch;
+      patchReadOnlyCode(process, gBaseAddress + patch.offset, &value, 4);
+    }
   }
 
   CloseHandle(process);
@@ -2536,7 +2563,11 @@ std::vector<Patch> gBiglunkyPatches = {
     {0xdeddc, {0xa5, 0x0f}, {0x05, 0x07}},
     {0xdee17, {0xb9, 0x10}, {0x19, 0x08}},
     {0xdee5e, {0x15, 0x11}, {0x75, 0x08}},
+};
 
+std::vector<RelativePatch> gBiglunkyRelativePatches = {
+    {0xdeb55, 0x136044, 0x135cdc},
+    {0xdec45, 0x136044, 0x135cdc},
 };
 
 std::vector<Patch> gFullSpelunkyPatches = {
@@ -2835,8 +2866,10 @@ void preSpawnTilesBiglunky() {
   if (gModsState.Biglunky) {
 
     if (gGlobalState->level == 16) {
-      GenerateRoom(0, gGlobalState->level_state, 3, 37, 16);
-      GenerateRoom(0, gGlobalState->level_state, 13, 37, 17);
+      GenerateRoom(0, gGlobalState->level_state, 3, 77, 36);
+      GenerateRoom(0, gGlobalState->level_state, 13, 77, 37);
+      GenerateRoom(0, gGlobalState->level_state, 23, 77, 38);
+      GenerateRoom(0, gGlobalState->level_state, 33, 77, 39);
     } else if (gGlobalState->level == 20) {
       for (auto idx = 12; idx < 44; idx++) {
         if (idx % 4 < 2) {
@@ -3100,8 +3133,10 @@ void drawModsTab() {
   if (ImGui::Checkbox("Biglunky", &gModsState.Biglunky)) {
     if (gModsState.Biglunky) {
       applyPatches(gBiglunkyPatches);
+      applyRelativePatches(gBiglunkyRelativePatches);
     } else {
       applyPatches(gBiglunkyPatches, true);
+      applyRelativePatches(gBiglunkyRelativePatches, true);
     }
   };
 }
