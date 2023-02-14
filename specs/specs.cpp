@@ -2643,7 +2643,11 @@ std::vector<Patch> gBiglunkyPatches = {
      {0xc7, 0x84, 0x85, 0x2c, 0xa6, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00}},
 
     // Rushing Water Limit
-    {0x1365c0, {0x00, 0x00, 0xc0, 0x41}, {0x00, 0x00, 0x90, 0x42}}
+    {0x1365c0, {0x00, 0x00, 0xc0, 0x41}, {0x00, 0x00, 0x90, 0x42}},
+
+    // Longer Tiki Village
+    {0xceb97, {0x27}, {0x7}},
+    {0xce9b3, {0x27}, {0x7}},
 
 };
 
@@ -2660,6 +2664,10 @@ std::vector<RelativePatch> gBiglunkyRelativePatches = {
 
     // Alien Queen Range from 144.0 to 1200.0
     {0x437b4, 0x136698, 0x365bc},
+
+    // HC Background from 32.0 -> 96.0
+    {0xc9fc3, 0x135d0c, 0x135bdc},
+    {0xc9f77, 0x135e98, 0x136050}, // Move BG down to center it
 };
 
 std::vector<Patch> gFullSpelunkyPatches = {
@@ -2987,6 +2995,102 @@ void preSpawnTilesBiglunky() {
       gGlobalState->level_state->room_types[45] = 10;
       gGlobalState->level_state->room_types[46] = 10;
       gGlobalState->level_state->room_types[47] = 10;
+    } else if (gGlobalState->is_haunted_castle == 1) {
+
+      // Copy normal bottom floors to new bottom
+
+      gGlobalState->level_state->room_types[40] =
+          gGlobalState->level_state->room_types[8];
+      gGlobalState->level_state->room_types[41] =
+          gGlobalState->level_state->room_types[9];
+      gGlobalState->level_state->room_types[42] =
+          gGlobalState->level_state->room_types[10];
+      gGlobalState->level_state->room_types[43] =
+          gGlobalState->level_state->room_types[11];
+      gGlobalState->level_state->room_types[44] =
+          gGlobalState->level_state->room_types[12];
+      gGlobalState->level_state->room_types[45] =
+          gGlobalState->level_state->room_types[13];
+      gGlobalState->level_state->room_types[46] =
+          gGlobalState->level_state->room_types[14];
+      gGlobalState->level_state->room_types[47] =
+          gGlobalState->level_state->room_types[15];
+
+      // Extend Castle
+      gGlobalState->level_state->room_types[8] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[9] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[10] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[11] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->room_types[12] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[13] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[14] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[15] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->room_types[16] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[17] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[18] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[19] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->room_types[20] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[21] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[22] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[23] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->room_types[24] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[25] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[26] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[27] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->room_types[28] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[29] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[30] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[31] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->room_types[32] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[33] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[34] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[35] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->room_types[36] =
+          gGlobalState->level_state->room_types[4];
+      gGlobalState->level_state->room_types[37] =
+          gGlobalState->level_state->room_types[5];
+      gGlobalState->level_state->room_types[38] =
+          gGlobalState->level_state->room_types[6];
+      gGlobalState->level_state->room_types[39] =
+          gGlobalState->level_state->room_types[7];
+
+      gGlobalState->level_state->exit_room_y = 11;
+
     } else if (gGlobalState->level == 16) {
       GenerateRoom(0, gGlobalState->level_state, 3, 45, 36);
       GenerateRoom(0, gGlobalState->level_state, 13, 45, 37);
