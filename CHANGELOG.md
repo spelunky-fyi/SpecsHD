@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New Mod: Biglunky
-- Support for Dark Mode and The Full Spelunky to work together
-- Level State in Debug tab that shows various entrance/exit values
-- 10 Tile Radius around player in BM Trainer to show where BM will be when you hear first chirp
+- New Mod: `Biglunky`
+- Support for `Dark Mode` and `The Full Spelunky` to work together
+- `Show Room Borders` in Debug Menu
+- `Level State` in Debug Menu that shows various entrance/exit values
+- 10 Tile Radius around player in `BM Trainer` to show where BM will be when you hear first chirp
 
 ### Changed
 

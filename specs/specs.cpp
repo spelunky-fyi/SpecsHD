@@ -124,6 +124,7 @@ FullSpelunkyState gFullSpelunkyState = {};
 struct DebugState {
   bool EnableTileBorders = false;
   bool EnableBinBorders = false;
+  bool EnableRoomBorders = false;
   bool EnablePacifistOverlay = false;
   bool DrawEnemyDetection = false;
   bool BlackMarketTrainer = false;
@@ -856,6 +857,42 @@ void drawBinBorders() {
   }
 }
 
+void drawRoomBorders() {
+  if (gGlobalState->screen_state == 0) {
+
+    auto room_width = 10.f;
+    auto room_height = 8.f;
+    auto max_height = 99.5f;
+    auto max_width = 42.5f;
+
+    for (auto x = 2.5f; x < 50.f; x += room_width) {
+      gOverlayDrawList->AddLine(gameToScreen({x, 3.5f}),
+                                gameToScreen({x, max_height}), IM_COL32_WHITE,
+                                2.0f);
+    }
+    for (auto y = 3.5f; y < 120.f; y += room_height) {
+      gOverlayDrawList->AddLine(gameToScreen({2.5, y}),
+                                gameToScreen({max_width, y}), IM_COL32_WHITE,
+                                2.0f);
+    }
+
+    for (auto idx = 0; idx < 48; idx++) {
+      auto column = idx % 4;
+      auto row = idx / 4;
+      auto type = gGlobalState->level_state->room_types[idx];
+
+      auto y = max_height - (row * room_height);
+      auto x = 2.5f + (column * room_width);
+
+      auto out = std::format("Type: {}", type);
+      auto screen = gameToScreen({x + 0.25f, y - 0.25f});
+      gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 8,
+                                ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
+                                out.c_str());
+    }
+  }
+}
+
 void drawTileBorders() {
   for (auto x = -4.f; x < 12.f * 4.f; x += 1.f) {
     gOverlayDrawList->AddLine(gameToScreen({x + -.5f, -4.5f}),
@@ -1287,6 +1324,10 @@ void drawOverlayWindow() {
 
   if (gDebugState.EnableBinBorders) {
     drawBinBorders();
+  }
+
+  if (gDebugState.EnableRoomBorders) {
+    drawRoomBorders();
   }
 
   if (gDebugState.EnablePacifistOverlay) {
@@ -3106,6 +3147,7 @@ void drawDebugTab() {
   }
   ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
+  ImGui::Checkbox("Draw Room Borders", &gDebugState.EnableRoomBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
   ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
   if (ImGui::Checkbox("Black Market Trainer",
