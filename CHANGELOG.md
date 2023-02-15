@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Room Types drop down now shows all 48 rooms always.
 
+### Fixed
+
+- Crash when player is destroyed
+
 ## [0.0.30] - 2023-02-12
 
 ### Changed
