@@ -3087,8 +3087,13 @@ void preSpawnTilesBiglunky() {
 
       gGlobalState->level_state->room_types[28] = 4;
       gGlobalState->level_state->room_types[29] = 2;
-      gGlobalState->level_state->room_types[30] = 1;
-      gGlobalState->level_state->room_types[31] = 2;
+      gGlobalState->level_state->room_types[30] = 3;
+      gGlobalState->level_state->room_types[31] = 1;
+
+      gGlobalState->level_state->room_types[32] = 2;
+      gGlobalState->level_state->room_types[33] = 3;
+      gGlobalState->level_state->room_types[34] = 2;
+      gGlobalState->level_state->room_types[35] = 2;
 
     } else if (gGlobalState->rushing_water == 1) {
       gGlobalState->level_state->exit_room_y =
