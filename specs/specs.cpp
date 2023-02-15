@@ -2681,6 +2681,8 @@ std::vector<Patch> gBiglunkyPatches = {
     {0xca4a2, {0xb}, {0x3}},
     {0xca4a8, {0x9c, 0xa6}, {0x1c, 0xa6}},
 
+    {0xca8f5, {0x2}, {0x3}},
+    {0xca8fa, {0x2}, {0x1}},
 };
 
 std::vector<RelativePatch> gBiglunkyRelativePatches = {
@@ -3044,7 +3046,51 @@ void preSpawnTilesBiglunky() {
 
   if (gModsState.Biglunky) {
 
-    if (gGlobalState->rushing_water == 1) {
+    if (gGlobalState->is_blackmarket == 1) {
+      gGlobalState->level_state->exit_room_y = 11;
+      gGlobalState->level_state->entrance_room_x = 1;
+
+      gGlobalState->level_state->room_types[0] = 1;
+      gGlobalState->level_state->room_types[1] = 2;
+      gGlobalState->level_state->room_types[2] = 2;
+      gGlobalState->level_state->room_types[3] = 1;
+
+      gGlobalState->level_state->room_types[4] = 4;
+      gGlobalState->level_state->room_types[5] = 2;
+      gGlobalState->level_state->room_types[6] = 2;
+      gGlobalState->level_state->room_types[7] = 2;
+
+      gGlobalState->level_state->room_types[8] = 1;
+      gGlobalState->level_state->room_types[9] = 2;
+      gGlobalState->level_state->room_types[10] = 3;
+      gGlobalState->level_state->room_types[11] = 4;
+
+      gGlobalState->level_state->room_types[12] = 4;
+      gGlobalState->level_state->room_types[13] = 3;
+      gGlobalState->level_state->room_types[14] = 2;
+      gGlobalState->level_state->room_types[15] = 1;
+
+      gGlobalState->level_state->room_types[16] = 1;
+      gGlobalState->level_state->room_types[17] = 2;
+      gGlobalState->level_state->room_types[18] = 3;
+      gGlobalState->level_state->room_types[19] = 5;
+
+      gGlobalState->level_state->room_types[20] = 4;
+      gGlobalState->level_state->room_types[21] = 3;
+      gGlobalState->level_state->room_types[22] = 2;
+      gGlobalState->level_state->room_types[23] = 1;
+
+      gGlobalState->level_state->room_types[24] = 1;
+      gGlobalState->level_state->room_types[25] = 2;
+      gGlobalState->level_state->room_types[26] = 3;
+      gGlobalState->level_state->room_types[27] = 4;
+
+      gGlobalState->level_state->room_types[28] = 4;
+      gGlobalState->level_state->room_types[29] = 3;
+      gGlobalState->level_state->room_types[30] = 1;
+      gGlobalState->level_state->room_types[31] = 2;
+
+    } else if (gGlobalState->rushing_water == 1) {
       gGlobalState->level_state->exit_room_y =
           gGlobalState->level_state->exit_room_y - 2;
 
