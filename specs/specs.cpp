@@ -2671,6 +2671,16 @@ std::vector<Patch> gBiglunkyPatches = {
     // but this bounds check is for 2048
     {0x8917c, {0x04}, {0x08}},
 
+    // Fix Teleporting below normal borders
+    {0x15b21, {0x90, 0x90}, {0x7c, 0x7c}},
+    {0x15b26, {0xeb}, {0x7e}},
+    {0x349bc, {0xeb}, {0x75}},
+
+    // Vlad's Tower
+    {0xca4bb, {0xc}, {0x4}},
+    {0xca4a2, {0xb}, {0x3}},
+    {0xca4a8, {0x9c, 0xa6}, {0x1c, 0xa6}},
+
 };
 
 std::vector<RelativePatch> gBiglunkyRelativePatches = {
@@ -2690,6 +2700,10 @@ std::vector<RelativePatch> gBiglunkyRelativePatches = {
     // HC Background from 32.0 -> 96.0
     {0xc9fc3, 0x135d0c, 0x135bdc},
     {0xc9f77, 0x135e98, 0x136050}, // Move BG down to center it
+
+    // // Vlad's Background from 32.0 -> 96.0
+    {0xca516, 0x135d0c, 0x135bdc},
+    {0xca4c0, 0x135e98, 0x136670}, // Move BG down to center it
 };
 
 std::vector<Patch> gFullSpelunkyPatches = {
