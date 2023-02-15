@@ -277,7 +277,10 @@ public:
   wchar_t level_name[640];                            // 0x00C6
   class StringEntry string_table[2048];               // 0x05C6
   uint16_t padding;                                   // 0x4405C6
-  uint32_t N0007A29D;                                 // 0x4405C8
+  uint8_t N0007A29D;                                  // 0x4405C8
+  uint8_t N0005953F;                                  // 0x4405C9
+  uint8_t redraw_tiles;                               // 0x4405CA
+  uint8_t N00059540;                                  // 0x4405CB
   uint32_t N0007A29F;                                 // 0x4405CC
   char pad_4405D0[4];                                 // 0x4405D0
   uint32_t level;                                     // 0x4405D4

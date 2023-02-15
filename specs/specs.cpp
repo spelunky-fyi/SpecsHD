@@ -308,6 +308,8 @@ void unlockCoffinsFullSpelunky();
 void preSpawnTilesFullSpelunky();
 void preSpawnTilesBiglunky();
 void preGenerateRoomBiglunky();
+void prePlaceRoomsBiglunky();
+void postPlaceRoomsBiglunky();
 
 TextureDefinition *getTextureById(int32_t texture_id) {
   TextureDefinition *texture_def;
@@ -380,6 +382,10 @@ void __declspec(naked) hookPrePlaceRooms() {
     prePlaceRoomsFullSpelunky();
   }
 
+  if (gModsState.Biglunky) {
+    prePlaceRoomsBiglunky();
+  }
+
   __asm {
     ; Restore all registers
     popad
@@ -429,6 +435,9 @@ void __declspec(naked) hookPostPlaceRooms() {
 
   if (gModsState.TheFullSpelunky) {
     postPlaceRoomsFullSpelunky();
+  }
+  if (gModsState.Biglunky) {
+    postPlaceRoomsBiglunky();
   }
 
   __asm {
@@ -2649,6 +2658,19 @@ std::vector<Patch> gBiglunkyPatches = {
     {0xceb97, {0x27}, {0x7}},
     {0xce9b3, {0x27}, {0x7}},
 
+    // Spawn Tiki's further
+    {0xbe46b, {0x64}, {0x24}},
+
+    // Spawn Crush Traps further
+    {0xe15cb, {0xca, 0x11}, {0x4a, 0x06}},
+
+    // Spawn Spikeballs further
+    {0xe1ac3, {0xf8, 0x11}, {0x78, 0x06}},
+
+    // CoG tiles overflow this because they only allow 1024 items
+    // but this bounds check is for 2048
+    {0x8917c, {0x04}, {0x08}},
+
 };
 
 std::vector<RelativePatch> gBiglunkyRelativePatches = {
@@ -2937,6 +2959,40 @@ void prePlaceRoomsFullSpelunky() {
       gGlobalState->dark_level = 1;
     } else {
       gGlobalState->dark_level = 0;
+    }
+  }
+}
+
+void prePlaceRoomsBiglunky() {
+  if (!gModsState.DarkMode && !gModsState.TheFullSpelunky) {
+    gGlobalState->dark_level = 0;
+  }
+}
+
+void postPlaceRoomsBiglunky() {
+  if (gModsState.Biglunky) {
+    if (gGlobalState->is_city_of_gold) {
+      auto num_flag_21 = 0;
+      for (auto idx = 0; idx < 4692; idx++) {
+        auto ent = gGlobalState->level_state->entity_floors[idx];
+        if (ent && ent->flag_21 == 1) {
+          if (num_flag_21 > 512) {
+            ent->flag_21 = 0;
+          }
+          num_flag_21++;
+        }
+      }
+    } else if (gGlobalState->rushing_water) {
+      for (auto idx = 0; idx < 4692; idx++) {
+        auto ent = gGlobalState->level_state->entity_floors[idx];
+        if (ent && ent->y == 12 && ent->x >= 3 && ent->x < 43) {
+          DestroyFloor(gGlobalState->level_state, ent);
+          auto bg = gGlobalState->level_state->entity_floors_bg[idx];
+          if (bg) {
+            bg->flag_deletion = 1;
+          }
+        }
+      }
     }
   }
 }
@@ -4157,21 +4213,6 @@ void onLevelStart() {
       gGlobalState->total_ms += 33.50;
       gGlobalState->level_seconds = 11;
       gGlobalState->level_ms = 33.50;
-    }
-  }
-
-  if (gModsState.TheFullSpelunky) {
-    if (gGlobalState->rushing_water) {
-      for (auto idx = 0; idx < 4692; idx++) {
-        auto ent = gGlobalState->level_state->entity_floors[idx];
-        if (ent && ent->y == 12 && ent->x >= 3 && ent->x < 43) {
-          DestroyFloor(gGlobalState->level_state, ent);
-          auto bg = gGlobalState->level_state->entity_floors_bg[idx];
-          if (bg) {
-            bg->flag_deletion = 1;
-          }
-        }
-      }
     }
   }
 
