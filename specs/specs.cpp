@@ -72,6 +72,7 @@ struct ModsState {
   bool TheFullSpelunky = false;
   bool Biglunky = false;
   bool DarkMode = false;
+  bool TunnelMan = false;
 };
 ModsState gModsState = {};
 
@@ -310,6 +311,8 @@ void preSpawnTilesBiglunky();
 void preGenerateRoomBiglunky();
 void prePlaceRoomsBiglunky();
 void postPlaceRoomsBiglunky();
+void resetTunnelManState();
+Entity *postSpawnEntityTunnelMan(Entity *);
 
 TextureDefinition *getTextureById(int32_t texture_id) {
   TextureDefinition *texture_def;
@@ -480,12 +483,12 @@ void __declspec(naked) hookPreSpawnTiles() {
 
 DWORD hookPreResetForRunJmpBackAddr = NULL;
 void __declspec(naked) hookPreResetForRun() {
+  // 0x64ed4 89 86 a0
+  //        00 00 00
 
-  // 0x649f6 (6 Bytes)
-  // 89 9e d4 05 44 00
   __asm {
     ; Stolen Bytes
-    mov dword ptr [esi + 0x4405d4],ebx
+     MOV        dword ptr [ESI + 0xa0],EAX
 
     ; Save all registers
     pushad
@@ -493,6 +496,9 @@ void __declspec(naked) hookPreResetForRun() {
 
   if (gModsState.TheFullSpelunky) {
     resetFullSpelunkyState();
+  }
+  if (gModsState.TunnelMan) {
+    resetTunnelManState();
   }
 
   __asm {
@@ -561,13 +567,44 @@ void __declspec(naked) hookUnlockCoffins() {
   }
 }
 
+DWORD hookPostSpawnEntityJmpBackAddr = NULL;
+void __declspec(naked) hookPostSpawnEntity() {
+
+  Entity *spawned_entity;
+
+  __asm {
+
+    ; Stolen Bytes
+    MOV        ECX,dword ptr [EBP + 0x30]
+    MOV        EDX,ESI
+
+    ; Save all registers
+    pushad
+
+    mov spawned_entity, esi
+  }
+
+  if (gModsState.TunnelMan) {
+    spawned_entity = postSpawnEntityTunnelMan(spawned_entity);
+  }
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    mov esi, spawned_entity
+    ; Jump back to previous location
+    jmp [hookPostSpawnEntityJmpBackAddr]
+  }
+}
+
 void initHooks() {
   int hookLen;
   DWORD hookAddr;
 
   // Hook Reset For Run
   hookLen = 6;
-  hookAddr = gBaseAddress + 0x649f6;
+  hookAddr = gBaseAddress + 0x64ed4;
   hookPreResetForRunJmpBackAddr = hookAddr + hookLen;
   hook((void *)hookAddr, hookPreResetForRun, hookLen);
 
@@ -597,6 +634,11 @@ void initHooks() {
   hookAddr = gBaseAddress + 0xd66a6;
   hookPreGenerateRoomJmpBackAddr = hookAddr + hookLen;
   hook((void *)hookAddr, hookPreGenerateRoom, hookLen);
+
+  hookLen = 5;
+  hookAddr = gBaseAddress + 0x7c387;
+  hookPostSpawnEntityJmpBackAddr = hookAddr + hookLen;
+  hook((void *)hookAddr, hookPostSpawnEntity, hookLen);
 }
 
 void specsOnDestroy() {
@@ -605,8 +647,8 @@ void specsOnDestroy() {
                                  PROCESS_CREATE_THREAD,
                              0, GetCurrentProcessId());
 
-  BYTE patch[] = {0x89, 0x9e, 0xd4, 0x05, 0x44, 0x00};
-  patchReadOnlyCode(process, gBaseAddress + 0x649f6, patch, 6);
+  BYTE patch[] = {0x89, 0x86, 0xa0, 0x00, 0x00, 0x00};
+  patchReadOnlyCode(process, gBaseAddress + 0x64ed4, patch, 6);
 
   BYTE patch2[] = {0x8b, 0x80, 0xd4, 0x05, 0x44, 0x00};
   patchReadOnlyCode(process, gBaseAddress + 0xbded9, patch2, 6);
@@ -622,6 +664,9 @@ void specsOnDestroy() {
 
   BYTE patch6[] = {0x8b, 0x84, 0x9d, 0xec, 0x5, 0x00, 0x00};
   patchReadOnlyCode(process, gBaseAddress + 0xd66a6, patch6, 7);
+
+  BYTE patch7[] = {0x8b, 0x4d, 0x30, 0x8b, 0xd6};
+  patchReadOnlyCode(process, gBaseAddress + 0x7c387, patch7, 5);
 
   CloseHandle(process);
 }
@@ -2790,6 +2835,16 @@ std::vector<Patch> gFullSpelunkyPatches = {
 
 };
 
+void resetTunnelManState() {
+  gGlobalState->player1_data.health = 2;
+  gGlobalState->player1_data.health2 = 2;
+  gGlobalState->player1_data.bombs = 0;
+  gGlobalState->player1_data.ropes = 0;
+  if (gGlobalState->player1) {
+    gGlobalState->player1->health = 2;
+  }
+}
+
 void resetFullSpelunkyState() {
   gFullSpelunkyState.allCharacters = {
       CHARACTER_GUY,
@@ -2977,6 +3032,25 @@ void prePlaceRoomsFullSpelunky() {
       gGlobalState->dark_level = 0;
     }
   }
+}
+
+Entity *postSpawnEntityTunnelMan(Entity *ent) {
+  if (gGlobalState && gGlobalState->screen_state == 0 &&
+      gGlobalState->play_state == 0) {
+    if (ent && ent->entity_type == 109) {
+      ent->alpha = 0.0;
+      ent->flag_deletion = 1;
+
+      auto new_ent = gGlobalState->SpawnEntity(ent->x, ent->y, 510, true);
+      if (gGlobalState->player1 && gGlobalState->player1->field68_0x200 == 0) {
+        new_ent->alpha = 0.0;
+        gGlobalState->player1->field27_0x198 = 0;
+      }
+
+      return new_ent;
+    }
+  }
+  return ent;
 }
 
 void prePlaceRoomsBiglunky() {
@@ -3391,6 +3465,20 @@ void unlockCoffinsFullSpelunky() {
 }
 
 void onRunningFrame() {
+  if (gModsState.TunnelMan && gGlobalState->player1) {
+    if (gGlobalState->player1->holding_entity &&
+        gGlobalState->player1->holding_entity->entity_type == 510) {
+
+      if (gGlobalState->player1->field27_0x198 < 1) {
+        auto mattock = gGlobalState->player1->holding_entity;
+        mattock->flag_deletion = 1;
+        mattock->holder_entity = NULL;
+        gGlobalState->player1->holding_entity = NULL;
+        gGlobalState->player1->player_data->held_item_id = 0;
+      }
+    }
+  }
+
   if (gModsState.TheFullSpelunky) {
     if (gGlobalState->player1) {
       if (gGlobalState->dark_level) {
@@ -3496,6 +3584,13 @@ void drawModsTab() {
     } else {
       applyPatches(gBiglunkyPatches, true);
       applyRelativePatches(gBiglunkyRelativePatches, true);
+    }
+  };
+
+  ImGui::Separator();
+  if (ImGui::Checkbox("Tunnel Man", &gModsState.TunnelMan)) {
+    if (gModsState.TunnelMan) {
+      resetTunnelManState();
     }
   };
 }

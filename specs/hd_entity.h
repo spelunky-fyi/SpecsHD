@@ -130,7 +130,7 @@ public:
   float field24_0x18c;
   float field25_0x190;
   float field26_0x194;
-  float field27_0x198;
+  int field27_0x198;
   float field28_0x19c;
   float field29_0x1a0;
   float field30_0x1a4;
