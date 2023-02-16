@@ -567,6 +567,42 @@ void __declspec(naked) hookUnlockCoffins() {
   }
 }
 
+DWORD hookWhipJmpBackAddr = NULL;
+DWORD hookWhipSkipWhippingAddr = NULL;
+void __declspec(naked) hookWhip() {
+
+  //  0x569a5
+  //  83 bf 34 01 00 00 1d
+
+  __asm {
+    ; Save all registers
+    pushad
+  }
+
+  // Player off ground
+  if (gGlobalState->player1 && gGlobalState->player1_data.has_crysknife == 0 &&
+      gGlobalState->player1->field68_0x200 == 0) {
+    __asm {
+      ; Restore all registers
+      popad
+
+      ; Jump back to previous location
+      jmp [hookWhipSkipWhippingAddr]
+    }
+  }
+  else {
+    __asm {
+      ; Restore all registers
+      popad
+
+      CMP dword ptr [EDI + 0x134],0x1d
+
+      ; Jump back to previous location
+      jmp [hookWhipJmpBackAddr]
+    }
+  }
+}
+
 DWORD hookPostSpawnEntityJmpBackAddr = NULL;
 void __declspec(naked) hookPostSpawnEntity() {
 
@@ -593,6 +629,8 @@ void __declspec(naked) hookPostSpawnEntity() {
     popad
 
     mov esi, spawned_entity
+    mov spawned_entity, 0
+
     ; Jump back to previous location
     jmp [hookPostSpawnEntityJmpBackAddr]
   }
@@ -2835,6 +2873,11 @@ std::vector<Patch> gFullSpelunkyPatches = {
 
 };
 
+std::vector<Patch> gTunnelManPatches = {
+    // Put back stolen bytes
+    {0x569a5, {}, {0x83, 0xbf, 0x34, 0x01, 0x00, 0x00, 0x1d}},
+};
+
 void resetTunnelManState() {
   gGlobalState->player1_data.health = 2;
   gGlobalState->player1_data.health2 = 2;
@@ -3040,12 +3083,7 @@ Entity *postSpawnEntityTunnelMan(Entity *ent) {
     if (ent && ent->entity_type == 109) {
       ent->alpha = 0.0;
       ent->flag_deletion = 1;
-
       auto new_ent = gGlobalState->SpawnEntity(ent->x, ent->y, 510, true);
-      if (gGlobalState->player1 && gGlobalState->player1->field68_0x200 == 0) {
-        new_ent->alpha = 0.0;
-        gGlobalState->player1->field27_0x198 = 0;
-      }
 
       return new_ent;
     }
@@ -3591,6 +3629,21 @@ void drawModsTab() {
   if (ImGui::Checkbox("Tunnel Man", &gModsState.TunnelMan)) {
     if (gModsState.TunnelMan) {
       resetTunnelManState();
+
+      if (!hookWhipJmpBackAddr) {
+
+        int hookLen = 7;
+        DWORD hookAddr = gBaseAddress + 0x569a5;
+        hookWhipJmpBackAddr = hookAddr + hookLen;
+        hookWhipSkipWhippingAddr = gBaseAddress + 0x56a80;
+        hook((void *)hookAddr, hookWhip, hookLen);
+      }
+    } else {
+      if (hookWhipJmpBackAddr) {
+        applyPatches(gTunnelManPatches, true);
+        hookWhipJmpBackAddr = NULL;
+        hookWhipSkipWhippingAddr = NULL;
+      }
     }
   };
 }

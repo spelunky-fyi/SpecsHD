@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.33] - 2023-02-16
+
+### Fixed
+
+- Crash on shutdown related to entity hooking
+- Tunnel Man Mod now works with crysknife
+- Tunnal Man Mod no longer plays audio when you press whip in the air
+
 ## [0.0.32] - 2023-02-15
 
 ### Added
