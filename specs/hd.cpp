@@ -126,6 +126,8 @@ const char *Entity::TypeName() {
     return "Sapphire Small";
   case 127:
     return "Ruby Small";
+  case 137:
+    return "Rope Segment";
   case 142:
     return "Cobweb Projectile";
   case 153:
@@ -267,7 +269,7 @@ const char *Entity::TypeName() {
   case 301:
     return "Exploding Animation";
   case 302:
-    return "Laser Effect";
+    return "Laser Effect / Jetpack Flame";
   case 303:
     return "Small Light";
   case 304:
