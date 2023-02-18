@@ -208,6 +208,8 @@ const char *Entity::TypeName() {
     return "Plasma Cannon Projectile/Shot";
   case 210:
     return "Mattock Head";
+  case 211:
+    return "Coffin";
   case 213:
     return "Turret Projectile";
   case 214:
