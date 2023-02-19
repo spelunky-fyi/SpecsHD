@@ -1472,9 +1472,17 @@ void drawOverlayWindow() {
     }
   }
 
-  gOverlayDrawList->AddText(
-      ImGui::GetFont(), ImGui::GetFontSize() + 5, {148.f, 40.f},
-      ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.05f}), "SpecsHD");
+  gOverlayDrawList->AddText(ImGui::GetFont(), 32.f, {148.f, 40.f},
+                            ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.05f}),
+                            "SpecsHD");
+
+  if (gModsState.SeededMode) {
+    auto out =
+        std::format("Seed: {}", gSeededModeState.seed, ImGui::GetFontSize());
+    gOverlayDrawList->AddText(
+        ImGui::GetFont(), 32.f, {io.DisplaySize.x - 348.f, 40.f},
+        ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.8f}), out.c_str());
+  }
 
   if (gModsState.TheFullSpelunky && gFullSpelunkyState.showCharacterOverlay) {
 
