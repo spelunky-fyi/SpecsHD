@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.34] - 2023-02-16
+
+### Added
+- New Mod: Seeded Mode
+ 
+### Fixed
+- Fixed/Added more Entity names for Render Duper view (Thanks zutklown)
+
 ## [0.0.33] - 2023-02-16
 
 ### Fixed

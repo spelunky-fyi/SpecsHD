@@ -73,6 +73,7 @@ struct ModsState {
   bool Biglunky = false;
   bool DarkMode = false;
   bool TunnelMan = false;
+  bool SeededMode = false;
 };
 ModsState gModsState = {};
 
@@ -121,6 +122,11 @@ struct FullSpelunkyState {
   bool showCharacterOverlay = false;
 };
 FullSpelunkyState gFullSpelunkyState = {};
+
+struct SeededModeState {
+  int seed = 1;
+};
+SeededModeState gSeededModeState = {};
 
 struct DebugState {
   bool EnableTileBorders = false;
@@ -600,6 +606,31 @@ void __declspec(naked) hookWhip() {
       ; Jump back to previous location
       jmp [hookWhipJmpBackAddr]
     }
+  }
+}
+
+DWORD hookSeedLevelJmpBackAddr = NULL;
+void __declspec(naked) hookSeedLevel() {
+
+  // 006ae01 52              PUSH       EDX
+  // 006ae02 ff d6           CALL ESI=>KERNEL32.DLL::QueryPerformanceCounter
+  // 006ae04 8b 44 24 18     MOV        EAX,dword ptr [ESP + local_10]
+
+  int seed;
+
+  __asm {
+    ; Save all registers
+    pushad
+  }
+
+  seed = gSeededModeState.seed * gGlobalState->level;
+
+  __asm {
+    ; Restore all registers
+    popad
+
+    mov eax, seed
+    jmp[hookSeedLevelJmpBackAddr]
   }
 }
 
@@ -2873,6 +2904,29 @@ std::vector<Patch> gFullSpelunkyPatches = {
 
 };
 
+std::vector<Patch> gSeededModePatches = {
+    // Seed Kali Drops
+    {0x1531c, {0x90, 0x90}, {0x74, 0x0c}},
+
+    // Seed Item Drops
+    {0x214ac, {0x90, 0x90}, {0x74, 0x08}},
+
+    // Seed Crate Opens
+    {0x3332f, {0x90, 0x90}, {0x74, 0x08}},
+
+    // Seed Chest Opens
+    {0x33810, {0x90, 0x90}, {0x74, 0x08}},
+
+    // Seed Monster Drops
+    {0x36d69, {0x90, 0x90}, {0x74, 0x08}},
+
+    // Restore Stolen Bytes from Hook
+    {0x6ae01, {}, {0x52, 0xff, 0xd6, 0x8b, 0x44, 0x24, 0x18}},
+
+    // Never allow coffins
+    {0xe887c, {0x0}, {0x1}},
+};
+
 std::vector<Patch> gTunnelManPatches = {
     // Put back stolen bytes
     {0x569a5, {}, {0x83, 0xbf, 0x34, 0x01, 0x00, 0x00, 0x1d}},
@@ -3613,8 +3667,8 @@ void drawModsTab() {
   ImGui::SameLine(30.0f * io.FontGlobalScale);
   ImGui::Checkbox("Show Character Overlay##The Full Spelunky",
                   &gFullSpelunkyState.showCharacterOverlay);
-  ImGui::Separator();
 
+  ImGui::Separator();
   if (ImGui::Checkbox("Biglunky", &gModsState.Biglunky)) {
     if (gModsState.Biglunky) {
       applyPatches(gBiglunkyPatches);
@@ -3646,6 +3700,31 @@ void drawModsTab() {
       }
     }
   };
+
+  ImGui::Separator();
+  if (ImGui::Checkbox("Seeded", &gModsState.SeededMode)) {
+    if (gModsState.SeededMode) {
+      if (!hookSeedLevelJmpBackAddr) {
+        int hookLen = 7;
+        DWORD hookAddr = gBaseAddress + 0x6ae01;
+        hookSeedLevelJmpBackAddr = hookAddr + hookLen;
+        hook((void *)hookAddr, hookSeedLevel, hookLen);
+        applyPatches(gSeededModePatches);
+      }
+    } else {
+      if (hookSeedLevelJmpBackAddr) {
+        applyPatches(gSeededModePatches, true);
+        hookSeedLevelJmpBackAddr = NULL;
+      }
+    }
+  }
+  ImGui::Text("");
+  ImGui::SameLine(30.0f * io.FontGlobalScale);
+  if (ImGui::InputInt("Seed##SeededMode", &gSeededModeState.seed)) {
+    // Uses floor(INT_MAX / 20) to allow for multiplying by level
+    int maxSeed = 107374182;
+    gSeededModeState.seed = std::clamp(gSeededModeState.seed, 1, maxSeed);
+  }
 }
 
 void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
