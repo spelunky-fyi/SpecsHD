@@ -125,6 +125,7 @@ FullSpelunkyState gFullSpelunkyState = {};
 
 struct SeededModeState {
   int seed = 1;
+  bool useDailySeeding = false;
 };
 SeededModeState gSeededModeState = {};
 
@@ -2935,6 +2936,12 @@ std::vector<Patch> gSeededModePatches = {
     {0xe887c, {0x0}, {0x1}},
 };
 
+std::vector<Patch> gSeededModeDailySeedingPatches = {
+    {0xdeef8,
+     {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
+     {0x0f, 0x84, 0x78, 0x00, 0x00, 0x00}},
+};
+
 std::vector<Patch> gTunnelManPatches = {
     // Put back stolen bytes
     {0x569a5, {}, {0x83, 0xbf, 0x34, 0x01, 0x00, 0x00, 0x1d}},
@@ -3672,7 +3679,7 @@ void drawModsTab() {
     }
   };
   ImGui::Text("");
-  ImGui::SameLine(30.0f * io.FontGlobalScale);
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
   ImGui::Checkbox("Show Character Overlay##The Full Spelunky",
                   &gFullSpelunkyState.showCharacterOverlay);
 
@@ -3718,20 +3725,35 @@ void drawModsTab() {
         hookSeedLevelJmpBackAddr = hookAddr + hookLen;
         hook((void *)hookAddr, hookSeedLevel, hookLen);
         applyPatches(gSeededModePatches);
+        if (gSeededModeState.useDailySeeding) {
+          applyPatches(gSeededModeDailySeedingPatches);
+        }
       }
     } else {
       if (hookSeedLevelJmpBackAddr) {
         applyPatches(gSeededModePatches, true);
+        applyPatches(gSeededModeDailySeedingPatches, true);
         hookSeedLevelJmpBackAddr = NULL;
       }
     }
   }
   ImGui::Text("");
-  ImGui::SameLine(30.0f * io.FontGlobalScale);
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
   if (ImGui::InputInt("Seed##SeededMode", &gSeededModeState.seed)) {
     // Uses floor(INT_MAX / 20) to allow for multiplying by level
     int maxSeed = 107374182;
     gSeededModeState.seed = std::clamp(gSeededModeState.seed, 1, maxSeed);
+  }
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
+  if (ImGui::Checkbox("Use Daily Seeding##SeededMode",
+                      &gSeededModeState.useDailySeeding)) {
+    if (gModsState.SeededMode && gSeededModeState.useDailySeeding) {
+      applyPatches(gSeededModeDailySeedingPatches);
+    } else {
+      applyPatches(gSeededModeDailySeedingPatches, true);
+    }
   }
 }
 
