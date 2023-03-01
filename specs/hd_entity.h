@@ -35,7 +35,7 @@ public:
   int field7_0x1c;
   int field8_0x20;
   int field9_0x24;
-  int field10_0x28;
+  int z_depth_as_int;
   float x;
   float y;
   float width;
@@ -102,6 +102,8 @@ public:
   const char *TypeName();
   void PlaySound(const char *audioName);
 };
+const char *EntityTypeName(uint32_t);
+
 class EntityActive : public Entity {
 public:
   int field1_0x130;

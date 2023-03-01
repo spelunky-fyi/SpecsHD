@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Overlay that shows seeded crate contents in Debug Tab
+
 ## [0.0.35] - 2023-02-24
 
 ### Added

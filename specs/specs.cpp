@@ -134,6 +134,7 @@ struct DebugState {
   bool EnableBinBorders = false;
   bool EnableRoomBorders = false;
   bool EnablePacifistOverlay = false;
+  bool EnableSeededCrateOverlay = false;
   bool DrawEnemyDetection = false;
   bool BlackMarketTrainer = false;
   bool IncludeHitboxOrigins = false;
@@ -1031,6 +1032,101 @@ void drawPacifistOverlay() {
   }
 }
 
+uint32_t getCrateItemForSeed(uint32_t seed) {
+  mersenne_init_and_twist(seed);
+
+  if (mersenne_random() % 10000 == 0)
+    return 517; // Plasma Cannon
+
+  if (mersenne_random() % 500 == 0)
+    return 522; // Jetpack
+
+  if (mersenne_random() % 200 == 0)
+    return 516; // Freeze Ray
+
+  if (mersenne_random() % 200 == 0)
+    return 521; // Cape
+
+  if (mersenne_random() % 100 == 0)
+    return 515; // Shotgun
+
+  if (mersenne_random() % 100 == 0)
+    return 510; // MATTOCK
+
+  if (mersenne_random() % 100 == 0)
+    return 519; // TELEPORTER
+
+  if (mersenne_random() % 0x5a == 0)
+    return 504; // CLIMBING_GLOVES
+
+  if (mersenne_random() % 0x5a == 0)
+    return 503; // SPECTACLE
+
+  if (mersenne_random() % 0x50 == 0)
+    return 514; // WEB_GUN
+
+  if (mersenne_random() % 0x50 == 0)
+    return 518; // CAMERA
+
+  if (mersenne_random() % 0x50 == 0)
+    return 505; // PITCHERS_MITT
+
+  if (mersenne_random() % 0x3c == 0)
+    return 508; // BOMB_PASTE
+
+  if (mersenne_random() % 0x3c == 0)
+    return 506; // SPRING_SHOES
+
+  if (mersenne_random() % 0x3c == 0)
+    return 507; // SPIKE_SHOES
+
+  if (mersenne_random() % 0x3c == 0)
+    return 511; // BOOMERANG
+
+  if (mersenne_random() % 0x28 == 0)
+    return 512; // MACHETE
+
+  if (mersenne_random() % 0x28 == 0)
+    return 502; // BOMB_BOX
+
+  if (mersenne_random() % 0x14 == 0)
+    return 509; // COMPASS
+
+  if (mersenne_random() % 10 == 0)
+    return 520; // PARACHUTE
+
+  if ((mersenne_random() & 1) == 0)
+    return 500; // Ropes
+
+  return 501; // Bomb Bag
+}
+
+// 229001 - Min
+// 229002
+// ...
+// 229999
+// 230000 - Max
+
+void drawSeededCrateOverlay() {
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_type != 101) {
+      continue;
+    }
+
+    auto screen = gameToScreen({ent->x, ent->y});
+    auto entity_type = getCrateItemForSeed(ent->z_depth_as_int);
+    gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
+                              ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
+                              EntityTypeName(entity_type));
+  }
+}
+
 void drawBinBorders() {
   for (auto x = -4.f; x < 12.f * 4.f; x += 4.f) {
     gOverlayDrawList->AddLine(gameToScreen({x, -4.f}), gameToScreen({x, 120.f}),
@@ -1525,6 +1621,10 @@ void drawOverlayWindow() {
 
   if (gDebugState.EnablePacifistOverlay) {
     drawPacifistOverlay();
+  }
+
+  if (gDebugState.EnableSeededCrateOverlay) {
+    drawSeededCrateOverlay();
   }
 
   forEnabledEntities(gDebugState.Hitboxes, &drawEntityHitboxDefault);
@@ -3810,6 +3910,8 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Room Borders", &gDebugState.EnableRoomBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
+  ImGui::Checkbox("Draw Seeded Crate Contents",
+                  &gDebugState.EnableSeededCrateOverlay);
   ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
   if (ImGui::Checkbox("Black Market Trainer",
                       &gDebugState.BlackMarketTrainer)) {

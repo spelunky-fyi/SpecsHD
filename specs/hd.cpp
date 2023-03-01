@@ -58,8 +58,10 @@ const char *Entity::KindName() {
   }
 }
 
-const char *Entity::TypeName() {
-  switch (this->entity_type) {
+const char *Entity::TypeName() { return EntityTypeName(this->entity_type); }
+
+const char *EntityTypeName(uint32_t entity_type) {
+  switch (entity_type) {
   case 0:
     return "Player/HH";
   case 11:
@@ -560,6 +562,34 @@ void LoadTexture(_34Struct *_34_struct, const char *texture_name) {
   return LoadTexture(_34_struct, texture_name);
 }
 
+DWORD gMersenneInitAndTwist;
+void mersenne_init_and_twist(uint32_t seed) {
+  __asm {
+      pushad
+
+      mov eax, seed
+      call gMersenneInitAndTwist
+
+      popad
+  }
+}
+
+DWORD gMersenneRandom;
+uint32_t mersenne_random() {
+  uint32_t val;
+
+  __asm {
+      pushad
+
+      call gMersenneRandom
+      mov val, eax
+
+      popad
+  }
+
+  return val;
+};
+
 void setupOffsets(DWORD baseAddress) {
   gSpawnEntityOffset = baseAddress + 0x70AB0;
 
@@ -575,6 +605,9 @@ void setupOffsets(DWORD baseAddress) {
   gLoadCoffinTexture = baseAddress + 0xeef60;
 
   gGenerateRoomOffset = baseAddress + 0xd6690;
+
+  gMersenneInitAndTwist = baseAddress + 0x11420;
+  gMersenneRandom = baseAddress + 0x07d10;
 }
 
 TextureId charIdToTextureId(CharacterIndex id) {
