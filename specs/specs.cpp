@@ -135,6 +135,7 @@ struct DebugState {
   bool EnableRoomBorders = false;
   bool EnablePacifistOverlay = false;
   bool EnableSeededCrateOverlay = false;
+  bool EnableSeededPotOverlay = false;
   bool EnableSeededKaliRewards = false;
   bool DrawEnemyDetection = false;
   bool BlackMarketTrainer = false;
@@ -1060,6 +1061,67 @@ uint32_t getKaliRewardForSeed(uint32_t seed) {
   return 0;
 }
 
+uint32_t getPotItemForSeed(uint32_t seed, bool sfx = true, bool rubble = true) {
+  mersenne_init_and_twist(seed);
+
+  // SFX
+  if (sfx)
+    mersenne_random();
+
+  // Rubble
+  if (rubble) {
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+    mersenne_random();
+  }
+
+  if (mersenne_random() % 5000 == 0)
+    return 1026; // Alien
+
+  if (mersenne_random() % 128 == 0)
+    return 1029; // Scorpion
+
+  if (mersenne_random() % 64 == 0)
+    return 1036; // Cobra
+
+  if (mersenne_random() % 12 == 0)
+    return 1001; // Snake
+
+  if (mersenne_random() % 8 == 0)
+    return 1002; // Spider
+
+  if (mersenne_random() % 16 == 0)
+    return 106; // Large Ruby
+
+  if (mersenne_random() % 12 == 0)
+    return 105; // Large Saphire
+
+  if (mersenne_random() % 8 == 0)
+    return 104; // Large Emerald
+
+  if (mersenne_random() % 8 == 0)
+    return 118; // Large Gold Nugget
+
+  if (mersenne_random() % 4 == 0)
+    return 124; // Small Gold Nugget
+
+  return 0;
+}
+
 uint32_t getCrateItemForSeed(uint32_t seed) {
   mersenne_init_and_twist(seed);
 
@@ -1152,6 +1214,39 @@ void drawSeededCrateOverlay() {
     gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                               EntityTypeName(entity_type));
+  }
+}
+
+void drawSeededPotOverlay() {
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_type != 113) {
+      continue;
+    }
+
+    auto screen = gameToScreen({ent->x - ent->hitbox_x, ent->y});
+    auto fontSize = ImGui::GetFontSize() + 2.f;
+
+    uint32_t entity_type = 0;
+    entity_type = getPotItemForSeed(ent->z_depth_as_int);
+    if (entity_type > 0) {
+      gOverlayDrawList->AddText(ImGui::GetFont(), fontSize,
+                                ImVec2{screen.x, screen.y - (fontSize + 2.f)},
+                                IM_COL32_WHITE, EntityTypeName(entity_type));
+    }
+
+    entity_type = getPotItemForSeed(ent->z_depth_as_int, false, true);
+    if (entity_type > 0) {
+      gOverlayDrawList->AddText(
+          ImGui::GetFont(), fontSize, ImVec2{screen.x, screen.y},
+          IM_COL32_WHITE,
+          std::format("Dupe: {}", EntityTypeName(entity_type)).c_str());
+    }
   }
 }
 
@@ -1672,6 +1767,10 @@ void drawOverlayWindow() {
 
   if (gDebugState.EnableSeededCrateOverlay) {
     drawSeededCrateOverlay();
+  }
+
+  if (gDebugState.EnableSeededPotOverlay) {
+    drawSeededPotOverlay();
   }
 
   if (gDebugState.EnableSeededKaliRewards) {
@@ -3963,21 +4062,32 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
   ImGui::Checkbox("Draw Seeded Crate Contents",
                   &gDebugState.EnableSeededCrateOverlay);
+  ImGui::Checkbox("Draw Seeded Pot Contents",
+                  &gDebugState.EnableSeededPotOverlay);
   ImGui::Checkbox("Draw Seeded Kali Rewards",
                   &gDebugState.EnableSeededKaliRewards);
 
   // if (ImGui::Button("Copy to Clipboard")) {
   //   ImGui::LogToClipboard();
   //   gGlobalState->insertion_point = 0.000;
-  //   for (size_t i = 1600000; i > 1590000; i = i - 10) {
+  //   for (size_t i = 2200000; i > 2190000; i = i - 10) {
   //     auto insertion = gGlobalState->insertion_point;
 
-  //     auto ent = gGlobalState->SpawnEntity(0.0, 0.0, 35, 0);
-  //     auto reward = getKaliRewardForSeed(ent->z_depth_as_int);
+  //     auto ent = gGlobalState->SpawnEntity(0.0, 0.0, 113, 0);
+  //     auto result = getPotItemForSeed(ent->z_depth_as_int);
+  //     auto name = "";
+  //     if (result > 0) {
+  //       name = EntityTypeName(result);
+  //     }
+  //     auto result2 = getPotItemForSeed(ent->z_depth_as_int, false);
+  //     auto name2 = "";
+  //     if (result2 > 0) {
+  //       name2 = EntityTypeName(result2);
+  //     }
   //     ent->flag_deletion = 1;
 
-  //     ImGui::LogText("%d, %d, %06f, %d, %s\n", i, ent->z_depth_as_int,
-  //                    insertion, reward, EntityTypeName(reward));
+  //     ImGui::LogText("%d, %d, %06f, %s, %s\n", i, ent->z_depth_as_int,
+  //                    insertion, name, name2);
   //   }
   //   ImGui::LogFinish();
   // }

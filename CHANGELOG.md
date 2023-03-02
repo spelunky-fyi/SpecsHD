@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Overlay that shows seeded crate contents in Debug Tab
 - Overlay that shows seeded Kali Rewards in Debug Tab
+- Overlay that shows seeded Pot drops in Debug Tab
 
 ## [0.0.35] - 2023-02-24
 
