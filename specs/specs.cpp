@@ -135,6 +135,7 @@ struct DebugState {
   bool EnableRoomBorders = false;
   bool EnablePacifistOverlay = false;
   bool EnableSeededCrateOverlay = false;
+  bool EnableSeededKaliRewards = false;
   bool DrawEnemyDetection = false;
   bool BlackMarketTrainer = false;
   bool IncludeHitboxOrigins = false;
@@ -1032,6 +1033,33 @@ void drawPacifistOverlay() {
   }
 }
 
+uint32_t getKaliRewardForSeed(uint32_t seed) {
+  mersenne_init_and_twist(seed);
+  auto val = (mersenne_random() & 7) + 1;
+
+  switch (val) {
+  case 1:
+    return 521; // Cape
+  case 2:
+    return 504; // Climbers
+  case 3:
+    return 503; // Specs
+  case 4:
+    return 505; // Pitchers
+  case 5:
+    return 506; // Spring Shoes
+  case 6:
+    return 507; // Spike Shoes
+  case 7:
+    return 508; // Paste
+  case 8:
+    return 509; // Compass
+  }
+
+  // should never happen
+  return 0;
+}
+
 uint32_t getCrateItemForSeed(uint32_t seed) {
   mersenne_init_and_twist(seed);
 
@@ -1121,6 +1149,25 @@ void drawSeededCrateOverlay() {
 
     auto screen = gameToScreen({ent->x, ent->y});
     auto entity_type = getCrateItemForSeed(ent->z_depth_as_int);
+    gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
+                              ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
+                              EntityTypeName(entity_type));
+  }
+}
+
+void drawSeededKaliRewardsOverlay() {
+  for (auto idx = 0; idx < 4692; idx++) {
+    auto ent = gGlobalState->level_state->entity_floors[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_type != 35) {
+      continue;
+    }
+
+    auto screen = gameToScreen({ent->x - (ent->hitbox_x / 2), ent->y});
+    auto entity_type = getKaliRewardForSeed(ent->z_depth_as_int);
     gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                               EntityTypeName(entity_type));
@@ -1625,6 +1672,10 @@ void drawOverlayWindow() {
 
   if (gDebugState.EnableSeededCrateOverlay) {
     drawSeededCrateOverlay();
+  }
+
+  if (gDebugState.EnableSeededKaliRewards) {
+    drawSeededKaliRewardsOverlay();
   }
 
   forEnabledEntities(gDebugState.Hitboxes, &drawEntityHitboxDefault);
@@ -3912,6 +3963,25 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
   ImGui::Checkbox("Draw Seeded Crate Contents",
                   &gDebugState.EnableSeededCrateOverlay);
+  ImGui::Checkbox("Draw Seeded Kali Rewards",
+                  &gDebugState.EnableSeededKaliRewards);
+
+  // if (ImGui::Button("Copy to Clipboard")) {
+  //   ImGui::LogToClipboard();
+  //   gGlobalState->insertion_point = 0.000;
+  //   for (size_t i = 1600000; i > 1590000; i = i - 10) {
+  //     auto insertion = gGlobalState->insertion_point;
+
+  //     auto ent = gGlobalState->SpawnEntity(0.0, 0.0, 35, 0);
+  //     auto reward = getKaliRewardForSeed(ent->z_depth_as_int);
+  //     ent->flag_deletion = 1;
+
+  //     ImGui::LogText("%d, %d, %06f, %d, %s\n", i, ent->z_depth_as_int,
+  //                    insertion, reward, EntityTypeName(reward));
+  //   }
+  //   ImGui::LogFinish();
+  // }
+
   ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
   if (ImGui::Checkbox("Black Market Trainer",
                       &gDebugState.BlackMarketTrainer)) {
