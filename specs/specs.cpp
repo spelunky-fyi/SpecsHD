@@ -3184,9 +3184,14 @@ std::vector<Patch> gSeededModePatches = {
 
     // Never allow coffins
     {0xe887c, {0x0}, {0x1}},
+
+    // Force Dark Levels
+    {0x6afa6, {0x90, 0x90}, {0x74, 0x10}},
+    {0x6bae1, {0x0}, {0x1}},
 };
 
 std::vector<Patch> gSeededModeDailySeedingPatches = {
+    // Remove Roulette Wheel
     {0xdeef8,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x84, 0x78, 0x00, 0x00, 0x00}},
@@ -4060,37 +4065,6 @@ void drawDebugTab() {
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
   ImGui::Checkbox("Draw Room Borders", &gDebugState.EnableRoomBorders);
   ImGui::Checkbox("Draw Owned Entities", &gDebugState.EnablePacifistOverlay);
-  ImGui::Checkbox("Draw Seeded Crate Contents",
-                  &gDebugState.EnableSeededCrateOverlay);
-  ImGui::Checkbox("Draw Seeded Pot Contents",
-                  &gDebugState.EnableSeededPotOverlay);
-  ImGui::Checkbox("Draw Seeded Kali Rewards",
-                  &gDebugState.EnableSeededKaliRewards);
-
-  // if (ImGui::Button("Copy to Clipboard")) {
-  //   ImGui::LogToClipboard();
-  //   gGlobalState->insertion_point = 0.000;
-  //   for (size_t i = 2200000; i > 2190000; i = i - 10) {
-  //     auto insertion = gGlobalState->insertion_point;
-
-  //     auto ent = gGlobalState->SpawnEntity(0.0, 0.0, 113, 0);
-  //     auto result = getPotItemForSeed(ent->z_depth_as_int);
-  //     auto name = "";
-  //     if (result > 0) {
-  //       name = EntityTypeName(result);
-  //     }
-  //     auto result2 = getPotItemForSeed(ent->z_depth_as_int, false);
-  //     auto name2 = "";
-  //     if (result2 > 0) {
-  //       name2 = EntityTypeName(result2);
-  //     }
-  //     ent->flag_deletion = 1;
-
-  //     ImGui::LogText("%d, %d, %06f, %s, %s\n", i, ent->z_depth_as_int,
-  //                    insertion, name, name2);
-  //   }
-  //   ImGui::LogFinish();
-  // }
 
   ImGui::Checkbox("Draw Detection Boxes", &gDebugState.DrawEnemyDetection);
   if (ImGui::Checkbox("Black Market Trainer",
@@ -4105,6 +4079,8 @@ void drawDebugTab() {
   };
   ImGui::Checkbox("Include Hitbox Origins", &gDebugState.IncludeHitboxOrigins);
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
+
+  ImGui::Separator();
   if (ImGui::Checkbox("Disable Olmec Spawns",
                       &gDebugState.DisableOlmecSpawns)) {
     auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
@@ -4152,6 +4128,40 @@ void drawDebugTab() {
     CloseHandle(process);
   }
   ImGui::Checkbox("Show Olmec Crush Probes", &gDebugState.ShowOlmecCrushProbes);
+  ImGui::Separator();
+
+  ImGui::Checkbox("Draw Seeded Crate Contents",
+                  &gDebugState.EnableSeededCrateOverlay);
+  ImGui::Checkbox("Draw Seeded Pot Contents",
+                  &gDebugState.EnableSeededPotOverlay);
+  ImGui::Checkbox("Draw Seeded Kali Rewards",
+                  &gDebugState.EnableSeededKaliRewards);
+  ImGui::Separator();
+
+  // if (ImGui::Button("Copy to Clipboard")) {
+  //   ImGui::LogToClipboard();
+  //   gGlobalState->insertion_point = 0.000;
+  //   for (size_t i = 2200000; i > 2190000; i = i - 10) {
+  //     auto insertion = gGlobalState->insertion_point;
+
+  //     auto ent = gGlobalState->SpawnEntity(0.0, 0.0, 113, 0);
+  //     auto result = getPotItemForSeed(ent->z_depth_as_int);
+  //     auto name = "";
+  //     if (result > 0) {
+  //       name = EntityTypeName(result);
+  //     }
+  //     auto result2 = getPotItemForSeed(ent->z_depth_as_int, false);
+  //     auto name2 = "";
+  //     if (result2 > 0) {
+  //       name2 = EntityTypeName(result2);
+  //     }
+  //     ent->flag_deletion = 1;
+
+  //     ImGui::LogText("%d, %d, %06f, %s, %s\n", i, ent->z_depth_as_int,
+  //                    insertion, name, name2);
+  //   }
+  //   ImGui::LogFinish();
+  // }
 
   if (ImGui::CollapsingHeader("Draw Hitboxes")) {
     drawToggleEntityTab("Show", gDebugState.Hitboxes);

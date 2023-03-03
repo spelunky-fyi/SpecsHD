@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.36] - 2023-03-02
+
 ### Added
 
 - Overlay that shows seeded crate contents in Debug Tab
 - Overlay that shows seeded Kali Rewards in Debug Tab
 - Overlay that shows seeded Pot drops in Debug Tab
+
+### Fixed
+
+- Seeded Mode now properly (famous last words) dark levels.
 
 ## [0.0.35] - 2023-02-24
 
