@@ -124,7 +124,7 @@ struct FullSpelunkyState {
 FullSpelunkyState gFullSpelunkyState = {};
 
 struct SeededModeState {
-  int seed = 1;
+  uint32_t seed = 1;
   bool useDailySeeding = false;
 };
 SeededModeState gSeededModeState = {};
@@ -3994,10 +3994,10 @@ void drawModsTab() {
   }
   ImGui::Text("");
   ImGui::SameLine(20.0f * io.FontGlobalScale);
-  if (ImGui::InputInt("Seed##SeededMode", &gSeededModeState.seed)) {
-    // Uses floor(INT_MAX / 20) to allow for multiplying by level
-    int maxSeed = 107374182;
-    gSeededModeState.seed = std::clamp(gSeededModeState.seed, 1, maxSeed);
+  if (ImGui::InputScalar("Seed##SeededMode", ImGuiDataType_U32,
+                         &gSeededModeState.seed)) {
+    gSeededModeState.seed =
+        std::clamp(gSeededModeState.seed, (uint32_t)0, UINT32_MAX);
   }
 
   ImGui::Text("");
