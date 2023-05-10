@@ -4,6 +4,7 @@
 
 #include "Windows.h"
 #include "hd_entity.h"
+#include "3rdparty/imgui/imgui.h"
 
 class CameraState {
 public:
