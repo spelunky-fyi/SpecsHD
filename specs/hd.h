@@ -24,6 +24,52 @@ public:
   char pad_003C[32];        // 0x003C
 };
 
+enum CharacterIndex : int32_t {
+  CHARACTER_GUY = 0,
+  CHARACTER_RED = 1,
+  CHARACTER_GREEN = 2,
+  CHARACTER_BLUE = 3,
+  CHARACTER_YANG = 4,
+  CHARACTER_MEATBOY = 5,
+  CHARACTER_YELLOW = 6,
+  CHARACTER_JUNGLE_WARRIOR = 7,
+  CHARACTER_PURPLE = 8,
+  CHARACTER_VAN_HELSING = 9,
+  CHARACTER_CYAN = 10,
+  CHARACTER_LIME = 11,
+  CHARACTER_INUK = 12,
+  CHARACTER_ROUND_GIRL = 13,
+  CHARACTER_NINJA = 14,
+  CHARACTER_VIKING = 15,
+  CHARACTER_ROUND_BOY = 16,
+  CHARACTER_CARL = 17,
+  CHARACTER_ROBOT = 18,
+  CHARACTER_MONK = 19,
+};
+
+enum TextureId : int32_t {
+  TEXTURE_ID_GUY = 50,            // char_orange.png
+  TEXTURE_ID_RED = 51,            // char_red.png
+  TEXTURE_ID_GREEN = 52,          // char_green.png
+  TEXTURE_ID_BLUE = 53,           // char_blue.png
+  TEXTURE_ID_YANG = 54,           // char_white.png
+  TEXTURE_ID_MEATBOY = 55,        // char_pink.png
+  TEXTURE_ID_YELLOW = 56,         // char_yellow.png
+  TEXTURE_ID_JUNGLE_WARRIOR = 57, // char_brown.png
+  TEXTURE_ID_PURPLE = 58,         // char_purple.png
+  TEXTURE_ID_VAN_HELSING = 59,    // char_black.png
+  TEXTURE_ID_CYAN = 60,           // char_cyan.png
+  TEXTURE_ID_LIME = 61,           // char_lime.png
+  TEXTURE_ID_INUK = 1062,         // char_dlc1.png
+  TEXTURE_ID_ROUND_GIRL = 1063,   // char_dlc2.png
+  TEXTURE_ID_NINJA = 1064,        // char_dlc3.png
+  TEXTURE_ID_VIKING = 1065,       // char_dlc4.png
+  TEXTURE_ID_ROUND_BOY = 1066,    // char_dlc5.png
+  TEXTURE_ID_CARL = 1067,         // char_dlc6.png
+  TEXTURE_ID_ROBOT = 1068,        // char_dlc7.png
+  TEXTURE_ID_MONK = 1069,         // char_dlc8.png
+};
+
 enum class DamselChoice : int32_t {
   Damsel = 0,
   Mansel = 1,
@@ -237,6 +283,19 @@ enum class ROOM_TYPE {
   SHOP_PRIZE_OR_ANKH_FLIPPED = 0x277b,
   UNSET = -1,
 };
+class TextureDefinition {
+public:
+  int32_t texture_id;     // 0x0000
+  char name[128];         // 0x0004
+  char name_normal[128];  // 0x0084
+  char pad_0104[8];       // 0x0104
+  uint32_t sheet_width;   // 0x010C
+  uint32_t sheet_height;  // 0x0110
+  uint32_t sprite_width;  // 0x0114
+  uint32_t sprite_height; // 0x0118
+  uint32_t loaded;        // 0x011C
+};                        // Size: 0x0120
+static_assert(sizeof(TextureDefinition) == 0x120);
 
 class PlayerData {
 public:
@@ -248,8 +307,8 @@ public:
   int32_t ropes;                // 0x0014
   uint32_t N00008C1D;           // 0x0018
   char pad_001C[4];             // 0x001C
-  uint32_t hh_count;            // 0x0020
-  uint32_t N00008C20[8];        // 0x0024
+  int32_t hh_count;             // 0x0020
+  uint32_t hh_texture_id[8];    // 0x0024
   uint32_t N00008C28[8];        // 0x0044
   char pad_0064[8];             // 0x0064
   float classic_HUD_heart_size; // 0x006C
@@ -351,7 +410,7 @@ public:
   uint32_t entities_light_emitting_count;                 // 0x7808
   uint32_t array_1400_count;                              // 0x780C
   uint32_t entities_active_count;                         // 0x7810
-  uint32_t N0007A2EB;                                     // 0x7814
+  uint32_t angered_shopkeeper_count;                      // 0x7814
   Entity *entities_active_by_bin[312][128];               // 0x7818
   uint32_t entities_active_by_bin_count[312];             // 0x2E818
   uint32_t entities_active_pushable_by_bin[312];          // 0x2ECF8
@@ -364,6 +423,16 @@ public:
   Entity *entities[160];
 };
 
+class _34Struct {
+public:
+  TextureDefinition texture_defs[256]; // 0x0000
+  char pad_12000[1060];                // 0x12000
+  uint32_t char_id_to_texture_id[20];  // 0x12424
+  char pad_12474[16];                  // 0x12474
+  int32_t coffin_char;                 // 0x12484
+};
+static_assert(sizeof(_34Struct) == 0x12488);
+
 class GlobalState {
 public:
   char pad_0000[4];             // 0x0000
@@ -374,7 +443,7 @@ public:
       lang2; // 0x0010 Not sure why two languages. both updated as same time.
   char pad_0014[28];                                  // 0x0014
   EntityStruct *entities;                             // 0x0030
-  void *textures;                                     // 0x0034
+  _34Struct *_34struct;                               // 0x0034
   void *_38struct;                                    // 0x0038
   LevelState *level_state;                            // 0x003C
   class Controls *controls;                           // 0x0040
@@ -387,118 +456,135 @@ public:
   uint32_t play_state;                                // 0x005C
   char pad_0060[8];                                   // 0x0060
   uint8_t pause_update;                               // 0x0068
-  char pad_0069[63];       // 0x0069                                // 0x0060
-  uint32_t flag_player;    // 0x00A8
-  char pad_00AC[24];       // 0x00AC
-  uint16_t N000001A7;      // 0x00C4
-  wchar_t level_name[640]; // 0x00C6
-  class StringEntry string_table[2048];    // 0x05C6
-  uint16_t padding;                        // 0x4405C6
-  uint32_t N0007A29D;                      // 0x4405C8
-  uint32_t N0007A29F;                      // 0x4405CC
-  char pad_4405D0[4];                      // 0x4405D0
-  uint32_t level;                          // 0x4405D4
-  uint32_t level_track;                    // 0x4405D8
-  uint32_t N0007A29A;                      // 0x4405DC
-  uint32_t N0007A29B;                      // 0x4405E0
-  uint8_t dark_level;                      // 0x4405E4
-  uint8_t altar_spawned;                   // 0x4405E5
-  uint8_t idol_spawned;                    // 0x4405E6
-  uint8_t damsel_spawned;                  // 0x4405E7
-  uint8_t unknown_flag;                    // 0x4405E8
-  uint8_t moai_unopened;                   // 0x4405E9
-  uint8_t moai_broke_in;                   // 0x4405EA
-  uint8_t ghost_spawned;                   // 0x4405EB
-  uint8_t rescued_damsel;                  // 0x4405EC
-  uint8_t shopkeeper_triggered;            // 0x4405ED
-  uint8_t area_had_dark_level;             // 0x4405EE
-  uint8_t level_has_udjat;                 // 0x4405EF
-  uint8_t has_spawned_udjat;               // 0x4405F0
-  uint8_t unused_flag;                     // 0x4405F1
-  uint8_t vault_spawned_in_area;           // 0x4405F2
-  uint8_t flooded_mines;                   // 0x4405F3
-  uint8_t skin_is_crawling;                // 0x4405F4
-  uint8_t dead_are_restless;               // 0x4405F5
-  uint8_t rushing_water;                   // 0x4405F6
-  uint8_t is_haunted_castle;               // 0x4405F7
-  uint8_t at_haunted_castle_exit;          // 0x4405F8
-  uint8_t tiki_village;                    // 0x4405F9
-  uint8_t spawned_black_market_entrance;   // 0x4405FA
-  uint8_t unused_flag2;                    // 0x4405FB
-  uint8_t spawned_haunted_castle_entrance; // 0x4405FC
-  uint8_t mothership_spawned;              // 0x4405FD
-  uint8_t moai_spawned;                    // 0x4405FE
-  uint8_t is_blackmarket;                  // 0x4405FF
-  uint8_t at_blackmarket_exit;             // 0x440600
-  uint8_t is_wet_fur;                      // 0x440601
-  uint8_t is_mothership;                   // 0x440602
-  uint8_t at_mothership_exit;              // 0x440603
-  uint8_t is_city_of_gold;                 // 0x440604
-  uint8_t at_city_of_gold_exit;            // 0x440605
-  uint8_t is_worm;                         // 0x440606
-  uint8_t N00000886;                       // 0x440607
-  uint8_t N000002D8;                       // 0x440608
-  uint8_t N00000FB0;                       // 0x440609
-  uint8_t N00000FDD;                       // 0x44060A
-  uint8_t N00000FB1;                       // 0x44060B
-  uint8_t N000002D9;                       // 0x44060C
-  uint8_t N00000FB3;                       // 0x44060D
-  uint8_t N00000FE0;                       // 0x44060E
-  uint8_t N00000FB4;                       // 0x44060F
-  uint8_t N000002DA;                       // 0x440610
-  uint8_t N00000FB6;                       // 0x440611
-  uint8_t N00000FE3;                       // 0x440612
-  uint8_t N00000FB7;                       // 0x440613
-  uint8_t N000002DB;                       // 0x440614
-  uint8_t N00000FB9;                       // 0x440615
-  uint8_t N00000FE6;                       // 0x440616
-  uint8_t N00000FBA;                       // 0x440617
-  uint8_t N000002DC;                       // 0x440618
-  uint8_t N00000FBC;                       // 0x440619
-  uint8_t N00000FE9;                       // 0x44061A
-  uint8_t N00000FBD;                       // 0x44061B
-  uint8_t N000002DD;                       // 0x44061C
-  uint8_t N00000FBF;                       // 0x44061D
-  uint8_t N00000FEC;                       // 0x44061E
-  uint8_t N00000FC0;                       // 0x44061F
-  uint8_t N000002DE;                       // 0x440620
-  uint8_t N00000FFE;                       // 0x440621
-  uint8_t N00001007;                       // 0x440622
-  uint8_t N00000FFF;                       // 0x440623
-  uint8_t N000002DF;                       // 0x440624
-  uint8_t N00001001;                       // 0x440625
-  uint8_t N0000100A;                       // 0x440626
-  uint8_t N00001002;                       // 0x440627
-  uint8_t N000002E0;                       // 0x440628
-  uint8_t N00001004;                       // 0x440629
-  uint8_t N0000100D;                       // 0x44062A
-  uint8_t N00001005;                       // 0x44062B
-  char pad_44062C[88];                     // 0x44062C
-  EntityPlayer *player1;                   // 0x440684
-  EntityPlayer *player2;                   // 0x440688
-  EntityPlayer *player3;                   // 0x44068C
-  EntityPlayer *player4;                   // 0x440690
-  PlayerData player1_data;                 // 0x440694
-  PlayerData player2_data;                 // 0x441B38
-  PlayerData player3_data;                 // 0x442FDC
-  PlayerData player4_data;                 // 0x444480
-  char pad_445924[28];                     // 0x445924
-  uint32_t total_minutes;                  // 0x445940
-  uint32_t total_seconds;                  // 0x445944
-  double total_ms;                         // 0x445948
-  uint32_t level_minutes;                  // 0x445950
-  uint32_t level_seconds;                  // 0x445954
-  double level_ms;                         // 0x445958
-  uint32_t prev_level_ms_total;            // 0x445960 Actual ms trimmed
-  uint32_t total_ms_snapshot;              // 0x445964
-  char pad_445968[1728];                   // 0x445968
-  uint8_t N000020E4;                       // 0x446028
-  uint8_t N0007A565;                       // 0x446029
-  char pad_44602A[126];                    // 0x44602A
+  char pad_0069[63];                                  // 0x0069
+  uint32_t flag_player;                               // 0x00A8
+  char pad_00AC[24];                                  // 0x00AC
+  uint16_t N000001A7;                                 // 0x00C4
+  wchar_t level_name[640];                            // 0x00C6
+  class StringEntry string_table[2048];               // 0x05C6
+  uint16_t padding;                                   // 0x4405C6
+  uint8_t N0007A29D;                                  // 0x4405C8
+  uint8_t N0005953F;                                  // 0x4405C9
+  uint8_t redraw_tiles;                               // 0x4405CA
+  uint8_t N00059540;                                  // 0x4405CB
+  uint32_t N0007A29F;                                 // 0x4405CC
+  char pad_4405D0[4];                                 // 0x4405D0
+  uint32_t level;                                     // 0x4405D4
+  uint32_t level_track;                               // 0x4405D8
+  uint32_t N0007A29A;                                 // 0x4405DC
+  uint32_t N0007A29B;                                 // 0x4405E0
+  uint8_t dark_level;                                 // 0x4405E4
+  uint8_t altar_spawned;                              // 0x4405E5
+  uint8_t idol_spawned;                               // 0x4405E6
+  uint8_t damsel_spawned;                             // 0x4405E7
+  uint8_t unknown_flag;                               // 0x4405E8
+  uint8_t moai_unopened;                              // 0x4405E9
+  uint8_t moai_broke_in;                              // 0x4405EA
+  uint8_t ghost_spawned;                              // 0x4405EB
+  uint8_t rescued_damsel;                             // 0x4405EC
+  uint8_t shopkeeper_triggered;                       // 0x4405ED
+  uint8_t area_had_dark_level;                        // 0x4405EE
+  uint8_t level_has_udjat;                            // 0x4405EF
+  uint8_t has_spawned_udjat;                          // 0x4405F0
+  uint8_t unused_flag;                                // 0x4405F1
+  uint8_t vault_spawned_in_area;                      // 0x4405F2
+  uint8_t flooded_mines;                              // 0x4405F3
+  uint8_t skin_is_crawling;                           // 0x4405F4
+  uint8_t dead_are_restless;                          // 0x4405F5
+  uint8_t rushing_water;                              // 0x4405F6
+  uint8_t is_haunted_castle;                          // 0x4405F7
+  uint8_t at_haunted_castle_exit;                     // 0x4405F8
+  uint8_t tiki_village;                               // 0x4405F9
+  uint8_t spawned_black_market_entrance;              // 0x4405FA
+  uint8_t unused_flag2;                               // 0x4405FB
+  uint8_t spawned_haunted_castle_entrance;            // 0x4405FC
+  uint8_t mothership_spawned;                         // 0x4405FD
+  uint8_t moai_spawned;                               // 0x4405FE
+  uint8_t is_blackmarket;                             // 0x4405FF
+  uint8_t at_blackmarket_exit;                        // 0x440600
+  uint8_t is_wet_fur;                                 // 0x440601
+  uint8_t is_mothership;                              // 0x440602
+  uint8_t at_mothership_exit;                         // 0x440603
+  uint8_t is_city_of_gold;                            // 0x440604
+  uint8_t at_city_of_gold_exit;                       // 0x440605
+  uint8_t is_worm;                                    // 0x440606
+  uint8_t N00000886;                                  // 0x440607
+  uint8_t N000002D8;                                  // 0x440608
+  uint8_t placed_coffin;                              // 0x440609
+  uint8_t is_snow_level;                              // 0x44060A
+  uint8_t N00000FB1;                                  // 0x44060B
+  uint32_t wanted_level;                              // 0x44060C
+  uint8_t shopkeeper_music_triggered;                 // 0x440610
+  uint8_t N00000FB6;                                  // 0x440611
+  uint8_t N00000FE3;                                  // 0x440612
+  uint8_t N00000FB7;                                  // 0x440613
+  uint8_t N000002DB;                                  // 0x440614
+  uint8_t N00000FB9;                                  // 0x440615
+  uint8_t N00000FE6;                                  // 0x440616
+  uint8_t N00000FBA;                                  // 0x440617
+  uint32_t punishment_amount;                         // 0x440618
+  uint8_t broke_altar_this_level;                     // 0x44061C
+  uint8_t N00000FBF;                                  // 0x44061D
+  uint8_t N00000FEC;                                  // 0x44061E
+  uint8_t N00000FC0;                                  // 0x44061F
+  uint8_t N000002DE;                                  // 0x440620
+  uint8_t N00000FFE;                                  // 0x440621
+  uint8_t N00001007;                                  // 0x440622
+  uint8_t N00000FFF;                                  // 0x440623
+  uint8_t N000002DF;                                  // 0x440624
+  uint8_t N00001001;                                  // 0x440625
+  uint8_t N0000100A;                                  // 0x440626
+  uint8_t N00001002;                                  // 0x440627
+  uint8_t N000002E0;                                  // 0x440628
+  uint8_t N00001004;                                  // 0x440629
+  uint8_t N0000100D;                                  // 0x44062A
+  uint8_t N00001005;                                  // 0x44062B
+  char pad_44062C[52];                                // 0x44062C
+  float insertion_point;                              // 0x440660
+  char pad_440664[32];                                // 0x440664
+  EntityPlayer *player1;                              // 0x440684
+  EntityPlayer *player2;                              // 0x440688
+  EntityPlayer *player3;                              // 0x44068C
+  EntityPlayer *player4;                              // 0x440690
+  PlayerData player1_data;                            // 0x440694
+  PlayerData player2_data;                            // 0x441B38
+  PlayerData player3_data;                            // 0x442FDC
+  PlayerData player4_data;                            // 0x444480
+  char pad_445924[28];                                // 0x445924
+  uint32_t total_minutes;                             // 0x445940
+  uint32_t total_seconds;                             // 0x445944
+  double total_ms;                                    // 0x445948
+  uint32_t level_minutes;                             // 0x445950
+  uint32_t level_seconds;                             // 0x445954
+  double level_ms;                                    // 0x445958
+  uint32_t prev_level_ms_total; // 0x445960 Actual ms trimmed
+  uint32_t total_ms_snapshot;   // 0x445964
+  char pad_445968[1728];        // 0x445968
+  uint8_t N000020E4;            // 0x446028
+  uint8_t N0007A565;            // 0x446029
+  char pad_44602A[4898];        // 0x44602A
+  uint32_t respawn_level;       // 0x44734C
+  char pad_447350[504];         // 0x447350
 
   Entity *SpawnEntity(float x, float y, uint32_t entity_type, bool active);
+  void PlayOlmecMusic(const char *audioName);
 
-}; // Size: 0x4460A8
-static_assert(sizeof(GlobalState) == 0x4460A8);
+}; // Size: 0x447548
+static_assert(sizeof(GlobalState) == 0x447548);
+
+uint32_t GetRoomForPosition(float x, float y);
+bool DestroyFloor(LevelState *level_state, EntityFloor *floor);
+
+void LoadTexture(_34Struct *_34_struct, const char *texture_name);
+void LoadCoffinTexture(_34Struct *_34_struct);
 
 void setupOffsets(DWORD baseAddress);
+
+TextureId charIdToTextureId(CharacterIndex);
+ImU32 charIdToColor(CharacterIndex, float);
+CharacterIndex TextureIdToCharId(TextureId);
+void GenerateRoom(int32_t entrance_or_exit, LevelState *level_state,
+                  int32_t x_start, int32_t y_start, int32_t room_idx);
+
+void mersenne_init_and_twist(uint32_t seed);
+uint32_t mersenne_random();

@@ -1,6 +1,8 @@
 {
   "cmake.sourceDirectory": "${workspaceFolder}/specs",
   "files.associations": {
+    "*.inc": "php",
+    "*.h": "cpp",
     "algorithm": "cpp",
     "array": "cpp",
     "atomic": "cpp",
@@ -76,4 +78,8 @@
     "set": "cpp",
     "regex": "cpp"
   }
+    "mutex": "cpp"
+  },
+  "C_Cpp.default.cppStandard": "c++20",
+  "C_Cpp.default.intelliSenseMode": "windows-msvc-x86"
 }

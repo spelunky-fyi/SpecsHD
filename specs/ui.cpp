@@ -160,6 +160,8 @@ void ui::Destroy() noexcept {
   SetWindowLongPtr(window, GWLP_WNDPROC,
                    reinterpret_cast<LONG_PTR>(originalWindowProcess));
 
+  specsOnDestroy();
+
   DestroyDirectX();
 }
 

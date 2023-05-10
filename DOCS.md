@@ -32,7 +32,7 @@ should never be changed as Specs expects all of them to exist.
 `KeyModifiers` is a bit mask of which modifier keys should be held with `0` meaning none. The values for different modifier keys are as follows:
 
 ```
-None  =
+None  = 0
 Ctrl  = 1
 Shift = 2
 Alt   = 4
