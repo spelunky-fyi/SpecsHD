@@ -9,8 +9,6 @@
 #include "3rdparty/imgui/backends/imgui_impl_win32.h"
 #include "3rdparty/imgui/imgui.h"
 
-#include "level.h"
-
 void hooks::Setup() {
 
   if (MH_Initialize()) {
@@ -25,16 +23,6 @@ void hooks::Setup() {
   if (MH_CreateHook(VirtualFunction(ui::device, 16), &Reset,
                     reinterpret_cast<void **>(&ResetOriginal))) {
     throw std::runtime_error("Unable to hook Reset");
-  }
-
-  if (MH_CreateHook(spawnRoomPtr, spawnLevelTilesHook,
-                    reinterpret_cast<void **>(&spawnRoomOriginal))) {
-    throw std::runtime_error("Unable to hook spawnRoom");
-  }
-
-  if (MH_CreateHook(spawnLevelTilesPtr, preSpawnRoomsHook,
-                    reinterpret_cast<void **>(&spawnLevelTilesOriginal))) {
-    throw std::runtime_error("Unable to hook spawnLevelTiles");
   }
 
   if (MH_EnableHook(MH_ALL_HOOKS)) {

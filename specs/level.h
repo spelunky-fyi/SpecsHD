@@ -134,32 +134,17 @@ const std::map<std::string, ROOM_TYPE> roomMap = {{
     {"shop_prize_or_ankh_flipped", ROOM_TYPE::SHOP_PRIZE_OR_ANKH_FLIPPED},
 }};
 
-const DWORD GETROOM_OFFSET = 0xd6690;
-const DWORD GETROOM_GET_ROOM_OFF = GETROOM_OFFSET + 0x2d;
-const DWORD GETROOM_SPAWN_ROOM_OFF = GETROOM_OFFSET + 0x174;
-const DWORD SPAWN_LEVEL_TILES_OFF = 0xdd760;
+const DWORD GEN_ROOM_OFFSET = 0xd6690;
+const DWORD GEN_ROOM_SPAWN_OFF = GEN_ROOM_OFFSET + 0x174;
 
 using spawnLevelTilesFn = void(__stdcall *)(LevelState *levelState);
 using RoomList = std::map<ROOM_TYPE, std::vector<std::string>>;
 
-DWORD GetBaseAddress();
-
 // Spawn bordertiles, does other stuff and then calls spawnRoom
 // It's after the room types are decided and probably before spawning anything
 // (spawn_rooms_bordertiles_etc in ghidra)
-inline spawnLevelTilesFn spawnLevelTilesOriginal = nullptr;
-inline spawnLevelTilesFn spawnLevelTilesPtr{
-    (spawnLevelTilesFn)(GetBaseAddress() + SPAWN_LEVEL_TILES_OFF)};
 
-// get room string and spawn tilecodes (tilecode_gen_and_spawning in ghidra)
-inline void *spawnRoomOriginal = nullptr;
-inline void *spawnRoomPtr{(void *)(GetBaseAddress() + GETROOM_OFFSET)};
-
-void readFileLevel(std::string filename, RoomList &ret);
+void readCustomLevelFile();
 bool trySetRoom(ROOM_TYPE roomType, char *roomOut);
-bool __stdcall customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
+bool customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
                              LevelState *levelState);
-bool __stdcall customRoomGet2(int doorRoomType, int roomIndex, char *roomOut,
-                              LevelState *levelState);
-void __stdcall preSpawnRoomsHook(LevelState *levelState);
-void __declspec() spawnLevelTilesHook();

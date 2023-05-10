@@ -7,16 +7,7 @@
 #include <string>
 #include <vector>
 
-DWORD GetBaseAddress() { return (DWORD)GetModuleHandleW(NULL); }
-
-using PreSpawnRoomsFunc = void *__stdcall(LevelState *levelState);
 using RoomList = std::map<ROOM_TYPE, std::vector<std::string>>;
-
-PreSpawnRoomsFunc *spawnBordertilesRoomsEtc = {nullptr};
-DWORD getRoomGet = {GETROOM_GET_ROOM_OFF + GetBaseAddress()};
-DWORD getRoomSpawn = {GETROOM_SPAWN_ROOM_OFF + GetBaseAddress()};
-// GlobalState* globalState = { (GlobalState*)(*(DWORD*)(GLOBAL_STATE_OFF +
-// GetBaseAddress())) };
 
 RoomList rooms;
 
@@ -74,7 +65,7 @@ bool trySetRoom(ROOM_TYPE roomType, char *roomOut) {
   return false;
 }
 
-bool __stdcall customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
+bool customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
                              LevelState *levelState) {
   ROOM_TYPE roomType = (ROOM_TYPE)levelState->room_types[roomIndex];
   ROOM_TYPE aboveRoom =
@@ -160,40 +151,6 @@ bool __stdcall customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
   return false;
 }
 
-void __stdcall preSpawnRoomsHook(LevelState *levelState) {
+void readCustomLevelFile() {
   readFileLevel("level.lvl", rooms);
-  spawnLevelTilesOriginal(levelState);
-}
-
-void __declspec(naked) spawnLevelTilesHook() {
-  __asm {
-        ; // original func code {
-        sub esp, 0xbc
-        push ebx
-        mov ebx, dword ptr ss : [esp + 0xD0]
-        push ebp
-        mov ebp, dword ptr ss : [esp + 0xC8]
-        mov eax, dword ptr ss : [ebp + ebx * 0x4 + 0xA5EC]
-        push esi
-        mov esi, dword ptr ss : [ebp + 0x1715C]
-        push edi
-        mov dword ptr ss : [esp + 0x30], eax
-        ; //}
-        lea edi, dword ptr ss : [esp + 0x74] // room_dest
-        push eax
-
-        push ebp ; // level_state
-        push edi ; // room_dest
-        push ebx ; // room_index
-        push edx ; // entrance_or_exit
-        call customRoomGet
-        ; // add esp, 0x10
-        test al, al
-        pop eax
-        jz ifZero
-        jmp getRoomSpawn
-        ifZero:
-        cmp dword ptr ds : [esi + 0x5C] , 0x16 ; // original func code
-        jmp getRoomGet
-  }
 }

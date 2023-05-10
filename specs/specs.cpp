@@ -15,6 +15,7 @@
 #include "inputs.h"
 #include "sounds.h"
 #include "ui.h"
+#include "level.h"
 
 // Global States
 DWORD gBaseAddress = NULL;
@@ -408,6 +409,16 @@ void __declspec(naked) hookPrePlaceRooms() {
   }
 }
 
+bool __stdcall preGenerateRoom(int doorRoomType, int roomIndex, char *roomOut,
+                               LevelState *levelState) {
+  if (gModsState.Biglunky) {
+    preGenerateRoomBiglunky();
+  }
+  return customRoomGet(doorRoomType, roomIndex, roomOut, levelState);
+}
+
+DWORD genRoomSpawn = NULL; // Spawns the entities of the room
+
 DWORD hookPreGenerateRoomJmpBackAddr = NULL;
 void __declspec(naked) hookPreGenerateRoom() {
 
@@ -416,19 +427,27 @@ void __declspec(naked) hookPreGenerateRoom() {
     ; Stolen Bytes
     mov  eax,dword ptr [ebp + ebx*0x4 + 0xa5ec]
 
-    ; Save all registers
-    pushad
-  }
+    pushad ; // + 0x20
+    lea edi, dword ptr ss : [esp + 0x6c + 0x20] ; // room_dest
 
-  if (gModsState.Biglunky) {
-    preGenerateRoomBiglunky();
-  }
-
-  __asm {
-    ; Restore all registers
+    push ebp ; // level_state
+    push edi ; // room_dest
+    push ebx ; // room_index
+    push edx ; // entrance_or_exit
+    call preGenerateRoom
+    ; // add esp, 0x10
+    test al, al
+  
     popad
-
-    ; Jump back to previous location
+    jz ifZero
+    ; // Got a custom room, use some needed instructions and jump to spawn stuff part
+    push esi
+    mov esi, dword ptr ss : [ebp + 0x1715C]
+    push edi
+    mov dword ptr ss : [esp + 0x30], eax
+    lea edi, dword ptr ss : [esp + 0x74] ; // room_dest
+    jmp genRoomSpawn
+    ifZero:
     jmp [hookPreGenerateRoomJmpBackAddr]
   }
 }
@@ -481,6 +500,7 @@ void __declspec(naked) hookPreSpawnTiles() {
   if (gModsState.Biglunky) {
     preSpawnTilesBiglunky();
   }
+  readCustomLevelFile();
 
   __asm {
     ; Restore all registers
@@ -674,6 +694,7 @@ void __declspec(naked) hookPostSpawnEntity() {
 void initHooks() {
   int hookLen;
   DWORD hookAddr;
+  genRoomSpawn = GEN_ROOM_SPAWN_OFF + gBaseAddress;
 
   // Hook Reset For Run
   hookLen = 6;
