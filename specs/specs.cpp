@@ -13,9 +13,9 @@
 #include "entities.h"
 #include "hd.h"
 #include "inputs.h"
+#include "level.h"
 #include "sounds.h"
 #include "ui.h"
-#include "level.h"
 
 // Global States
 DWORD gBaseAddress = NULL;
@@ -440,7 +440,8 @@ void __declspec(naked) hookPreGenerateRoom() {
   
     popad
     jz ifZero
-    ; // Got a custom room, use some needed instructions and jump to spawn stuff part
+    ; // Got a custom room, use some needed instructions and
+    ; // jump to spawn stuff part
     push esi
     mov esi, dword ptr ss : [ebp + 0x1715C]
     push edi
@@ -3557,15 +3558,21 @@ void preSpawnTilesBiglunky() {
           gGlobalState->level_state->exit_room_y - 2;
 
       // Lake Islands
-      gGlobalState->level_state->room_types[36] = ROOM_TYPE::RUSHING_WATER_ISLANDS;
-      gGlobalState->level_state->room_types[37] = ROOM_TYPE::RUSHING_WATER_ISLANDS;
-      gGlobalState->level_state->room_types[38] = ROOM_TYPE::RUSHING_WATER_ISLANDS;
-      gGlobalState->level_state->room_types[39] = ROOM_TYPE::RUSHING_WATER_ISLANDS;
+      gGlobalState->level_state->room_types[36] =
+          ROOM_TYPE::RUSHING_WATER_ISLANDS;
+      gGlobalState->level_state->room_types[37] =
+          ROOM_TYPE::RUSHING_WATER_ISLANDS;
+      gGlobalState->level_state->room_types[38] =
+          ROOM_TYPE::RUSHING_WATER_ISLANDS;
+      gGlobalState->level_state->room_types[39] =
+          ROOM_TYPE::RUSHING_WATER_ISLANDS;
 
       // Middle Lake
       gGlobalState->level_state->room_types[40] = ROOM_TYPE::RUSHING_WATER_LAKE;
-      gGlobalState->level_state->room_types[41] = ROOM_TYPE::RUSHING_WATER_LAKE_BITEY;
-      gGlobalState->level_state->room_types[42] = ROOM_TYPE::RUSHING_WATER_LAKE_BITEY;
+      gGlobalState->level_state->room_types[41] =
+          ROOM_TYPE::RUSHING_WATER_LAKE_BITEY;
+      gGlobalState->level_state->room_types[42] =
+          ROOM_TYPE::RUSHING_WATER_LAKE_BITEY;
       gGlobalState->level_state->room_types[43] = ROOM_TYPE::RUSHING_WATER_LAKE;
 
       // Bottom Lake
@@ -3687,9 +3694,11 @@ void preSpawnTilesBiglunky() {
     } else if (gGlobalState->level == 20) {
       for (auto idx = 12; idx < 44; idx++) {
         if (idx % 4 < 2) {
-          gGlobalState->level_state->room_types[idx] = ROOM_TYPE::YAMA_MIDDLE_LEFT;
+          gGlobalState->level_state->room_types[idx] =
+              ROOM_TYPE::YAMA_MIDDLE_LEFT;
         } else {
-          gGlobalState->level_state->room_types[idx] = ROOM_TYPE::YAMA_MIDDLE_RIGHT;
+          gGlobalState->level_state->room_types[idx] =
+              ROOM_TYPE::YAMA_MIDDLE_RIGHT;
         }
       }
 
@@ -3708,7 +3717,8 @@ void preSpawnTilesFullSpelunky() {
       bool found_hc_entrance = false;
       bool placed_hc_entrance = false;
       for (auto idx = 0; idx < 48; idx++) {
-        if (gGlobalState->level_state->room_types[idx] == ROOM_TYPE::DAR_CASTLE_ENTRANCE) {
+        if (gGlobalState->level_state->room_types[idx] ==
+            ROOM_TYPE::DAR_CASTLE_ENTRANCE) {
           found_hc_entrance = true;
           break;
         }
@@ -3716,7 +3726,8 @@ void preSpawnTilesFullSpelunky() {
       if (!found_hc_entrance) {
         for (auto idx = 4; idx < 48; idx++) {
           if (gGlobalState->level_state->room_types[idx] == ROOM_TYPE::SIDE) {
-            gGlobalState->level_state->room_types[idx] = ROOM_TYPE::DAR_CASTLE_ENTRANCE;
+            gGlobalState->level_state->room_types[idx] =
+                ROOM_TYPE::DAR_CASTLE_ENTRANCE;
             placed_hc_entrance = true;
             break;
           }
@@ -3726,8 +3737,10 @@ void preSpawnTilesFullSpelunky() {
         if (!placed_hc_entrance) {
           for (auto idx = 4; idx < 48; idx++) {
             auto roomType = gGlobalState->level_state->room_types[idx];
-            if (roomType == ROOM_TYPE::PATH_DROP || roomType == ROOM_TYPE::PATH_NOTOP) {
-              gGlobalState->level_state->room_types[idx] = ROOM_TYPE::DAR_CASTLE_ENTRANCE;
+            if (roomType == ROOM_TYPE::PATH_DROP ||
+                roomType == ROOM_TYPE::PATH_NOTOP) {
+              gGlobalState->level_state->room_types[idx] =
+                  ROOM_TYPE::DAR_CASTLE_ENTRANCE;
               placed_hc_entrance = true;
               break;
             }
@@ -3762,15 +3775,17 @@ void preSpawnTilesFullSpelunky() {
     } else if (gGlobalState->level == 15 && gGlobalState->is_city_of_gold) {
       bool found_coffin = false;
       for (auto idx = 0; idx < 48; idx++) {
-        if (gGlobalState->level_state->room_types[idx] == ROOM_TYPE::COFFIN_DROP && idx < 4 &&
-            gGlobalState->level_state->entrance_room_x != idx) {
+        if (gGlobalState->level_state->room_types[idx] ==
+                ROOM_TYPE::COFFIN_DROP &&
+            idx < 4 && gGlobalState->level_state->entrance_room_x != idx) {
           found_coffin = true;
           break;
         }
       }
       if (!found_coffin) {
         for (auto idx = 4; idx < 48; idx++) {
-          if (gGlobalState->level_state->room_types[idx] == ROOM_TYPE::PATH_DROP) {
+          if (gGlobalState->level_state->room_types[idx] ==
+              ROOM_TYPE::PATH_DROP) {
             gGlobalState->level_state->room_types[idx] = ROOM_TYPE::COFFIN_DROP;
             break;
           }
@@ -3790,7 +3805,8 @@ void preSpawnTilesFullSpelunky() {
         if (!found_coffin) {
           for (auto idx = 4; idx < 48; idx++) {
             if (gGlobalState->level_state->room_types[idx] == ROOM_TYPE::SIDE) {
-              gGlobalState->level_state->room_types[idx] = ROOM_TYPE::COFFIN_EXIT_RIGHT;
+              gGlobalState->level_state->room_types[idx] =
+                  ROOM_TYPE::COFFIN_EXIT_RIGHT;
               break;
             }
           }
@@ -4869,7 +4885,8 @@ void onLevelStart() {
 
         auto room = GetRoomForPosition(ent->x, ent->y);
         auto roomType = gGlobalState->level_state->room_types[room];
-        if (roomType != ROOM_TYPE::COFFIN_EXIT_RIGHT && roomType != ROOM_TYPE::COFFIN_EXIT_LEFT) {
+        if (roomType != ROOM_TYPE::COFFIN_EXIT_RIGHT &&
+            roomType != ROOM_TYPE::COFFIN_EXIT_LEFT) {
           continue;
         }
 
@@ -4896,7 +4913,9 @@ void onLevelStart() {
 
         auto room = GetRoomForPosition(ent->x, ent->y);
         auto roomType = gGlobalState->level_state->room_types[room];
-        if (roomType == ROOM_TYPE::COFFIN || roomType == ROOM_TYPE::COFFIN_DROP || roomType == ROOM_TYPE::COFFIN_NOTOP) {
+        if (roomType == ROOM_TYPE::COFFIN ||
+            roomType == ROOM_TYPE::COFFIN_DROP ||
+            roomType == ROOM_TYPE::COFFIN_NOTOP) {
           if (gFullSpelunkyState.randoms.size() > 2) {
             ent->field5_0x140 =
                 charIdToTextureId(gFullSpelunkyState.randoms[0]);

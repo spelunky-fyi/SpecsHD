@@ -66,7 +66,7 @@ bool trySetRoom(ROOM_TYPE roomType, char *roomOut) {
 }
 
 bool customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
-                             LevelState *levelState) {
+                   LevelState *levelState) {
   ROOM_TYPE roomType = (ROOM_TYPE)levelState->room_types[roomIndex];
   ROOM_TYPE aboveRoom =
       roomIndex > 3 ? levelState->room_types[roomIndex - 4] : ROOM_TYPE::UNSET;
@@ -151,6 +151,4 @@ bool customRoomGet(int doorRoomType, int roomIndex, char *roomOut,
   return false;
 }
 
-void readCustomLevelFile() {
-  readFileLevel("level.lvl", rooms);
-}
+void readCustomLevelFile() { readFileLevel("level.lvl", rooms); }
