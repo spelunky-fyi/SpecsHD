@@ -2064,6 +2064,42 @@ void drawOverlayWindow() {
           drawEntityCircle(ent, 8.f, color);
         } else if (ent->entity_type == 1055) { // Olmec
           drawEntityCircle(ent, 10.f, color);
+        } else if (ent->entity_type == 1056) { // Yama Head
+          if (ent->field75_0x207 == 0) {
+
+            drawEntityCircle(ent, 6.f, color);
+          } else {
+
+            // Above Yama Slam
+            gOverlayDrawList->AddQuad(gameToScreen({ent->x - 1.0f, 200.0}),
+                                      gameToScreen({ent->x + 1.0f, 200.0}),
+                                      gameToScreen({ent->x + 1.0f, ent->y}),
+                                      gameToScreen({ent->x - 1.0f, ent->y}),
+                                      color, 1.f);
+
+            // Pursue Zone
+            gOverlayDrawList->AddQuad(gameToScreen({14.0, 110.0}),
+                                      gameToScreen({31.0, 110.0}),
+                                      gameToScreen({31.0, 88.0}),
+                                      gameToScreen({14.0, 88.0}), color, 1.f);
+
+            // Slam Zones
+            gOverlayDrawList->AddQuad(gameToScreen({-10.0, 110.0}),
+                                      gameToScreen({14.0, 110.0}),
+                                      gameToScreen({14.0, 93.0}),
+                                      gameToScreen({-10.0, 93.0}), color, 1.f);
+            gOverlayDrawList->AddQuad(gameToScreen({31.0, 110.0}),
+                                      gameToScreen({60.0, 110.0}),
+                                      gameToScreen({60.0, 93.0}),
+                                      gameToScreen({31.0, 93.0}), color, 1.f);
+          }
+        } else if (ent->entity_type == 1057) { // Yama Hand
+          drawEntityCircle(ent, 6.f, color);
+
+          // Slam Line
+          gOverlayDrawList->AddLine(gameToScreen({-10.0f, ent->y - 2.0f}),
+                                    gameToScreen({60.0f, ent->y - 2.0f}),
+                                    color);
         } else if (ent->entity_type == 1058) { // Turret
           drawEntityCircle(ent, 6.f, color);
           gOverlayDrawList->AddLine(gameToScreen({ent->x - 6.0f, ent->y}),

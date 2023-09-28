@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.38] - 2023-09-28
+
+### Added
+
+- Detection boxes for yama's head and hands
+
 ## [0.0.37] - 2023-03-07
 
 ### Changed
