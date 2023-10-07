@@ -2,7 +2,8 @@
 #include <vector>
 
 const std::vector<std::pair<std::string, int>> gEntities = {
-    {"None", 0},
+    {"None", -1},
+    {"Player / Hired Hand", 0},
     {"Landmine", 92},
     {"Chest", 100},
     {"Crate", 101},

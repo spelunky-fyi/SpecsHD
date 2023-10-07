@@ -22,6 +22,22 @@ Entity *GlobalState::SpawnEntity(float x, float y, uint32_t entityType,
   return reinterpret_cast<Entity *>(entityAddress);
 }
 
+DWORD gSpawnHiredHandOffset;
+
+EntityPlayer *GlobalState::SpawnHiredHand(float x, float y,
+                                          uint32_t textureId) {
+
+  using SpawnHiredHandPtr =
+      DWORD(__stdcall *)(DWORD thisPtr, float x, float y, uint32_t textureId);
+  SpawnHiredHandPtr SpawnHiredHand = (SpawnHiredHandPtr)(gSpawnHiredHandOffset);
+  DWORD entityAddress = SpawnHiredHand((DWORD)this, x, y, textureId);
+  if (entityAddress == NULL) {
+    return NULL;
+  }
+
+  return reinterpret_cast<EntityPlayer *>(entityAddress);
+}
+
 DWORD gGenerateRoomOffset;
 void GenerateRoom(int32_t entrance_or_exit, LevelState *level_state,
                   int32_t x_start, int32_t y_start, int32_t room_idx) {
@@ -592,6 +608,7 @@ uint32_t mersenne_random() {
 
 void setupOffsets(DWORD baseAddress) {
   gSpawnEntityOffset = baseAddress + 0x70AB0;
+  gSpawnHiredHandOffset = baseAddress + 0x65330;
 
   gEntityPlaySoundOffset = baseAddress + 0x16A95;
 

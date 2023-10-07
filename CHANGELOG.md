@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.39] - 2023-10-07
+
+### Added
+
+- Ability to Spawn HH
+
 ## [0.0.38] - 2023-09-28
 
 ### Added

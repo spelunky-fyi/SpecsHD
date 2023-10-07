@@ -168,7 +168,7 @@ struct DebugState {
 DebugState gDebugState = {};
 
 struct SpawnEntityConfig {
-  int entityType;
+  int entityType = -1;
   bool activeEntity;
 };
 
@@ -1638,12 +1638,19 @@ void drawOverlayWindow() {
       gSpawnState.Clicking = false;
 
       for (auto const &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
-        if (spawnEntityConfig.entityType > 0) {
+        if (spawnEntityConfig.entityType >= 0) {
           if (io.MouseDownDurationPrev[spawnMouseConfig.Button] > 0.1f) {
             auto gamePos = screenToGame(gSpawnState.ClickedAt);
-            auto ent = gGlobalState->SpawnEntity(
-                gamePos.x, gamePos.y, spawnEntityConfig.entityType,
-                spawnEntityConfig.activeEntity);
+            Entity *ent;
+
+            if (spawnEntityConfig.entityType == 0) {
+              ent = gGlobalState->SpawnHiredHand(gamePos.x, gamePos.y, 90);
+            } else {
+              ent = gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
+                                              spawnEntityConfig.entityType,
+                                              spawnEntityConfig.activeEntity);
+            }
+
             if ((uint32_t)ent->entity_kind > 0 &&
                 (uint32_t)ent->entity_kind < 5) {
 
@@ -1657,9 +1664,13 @@ void drawOverlayWindow() {
             }
           } else {
             auto gamePos = screenToGame(io.MousePos);
-            gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
-                                      spawnEntityConfig.entityType,
-                                      spawnEntityConfig.activeEntity);
+            if (spawnEntityConfig.entityType == 0) {
+              gGlobalState->SpawnHiredHand(gamePos.x, gamePos.y, 90);
+            } else {
+              gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
+                                        spawnEntityConfig.entityType,
+                                        spawnEntityConfig.activeEntity);
+            }
           }
         }
       }
@@ -2190,7 +2201,7 @@ void drawSpawnTab() {
   auto scrollLock = true;
 
   if (gSpawnState.SpawnEntityInputs.empty()) {
-    gSpawnState.SpawnEntityInputs.push_back(SpawnEntityConfig{0, true});
+    gSpawnState.SpawnEntityInputs.push_back(SpawnEntityConfig{-1, true});
   }
 
   for (auto idx = 0; auto &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
@@ -2224,7 +2235,7 @@ void drawSpawnTab() {
   }
 
   if (ImGui::Button("Add Additional Entity")) {
-    gSpawnState.SpawnEntityInputs.push_back(SpawnEntityConfig{0, true});
+    gSpawnState.SpawnEntityInputs.push_back(SpawnEntityConfig{-1, true});
   }
 
   ImGui::Separator();
@@ -2232,10 +2243,15 @@ void drawSpawnTab() {
   if (ImGui::Button("Spawn")) {
     for (auto const &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
 
-      if (spawnEntityConfig.entityType > 0) {
-        gGlobalState->SpawnEntity(
-            gGlobalState->player1->x, gGlobalState->player1->y,
-            spawnEntityConfig.entityType, spawnEntityConfig.activeEntity);
+      if (spawnEntityConfig.entityType >= 0) {
+        if (spawnEntityConfig.entityType == 0) {
+          gGlobalState->SpawnHiredHand(gGlobalState->player1->x,
+                                       gGlobalState->player1->y, 90);
+        } else {
+          gGlobalState->SpawnEntity(
+              gGlobalState->player1->x, gGlobalState->player1->y,
+              spawnEntityConfig.entityType, spawnEntityConfig.activeEntity);
+        }
       }
     }
   }
