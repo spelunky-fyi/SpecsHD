@@ -140,6 +140,8 @@ struct DebugState {
   bool DrawEnemyDetection = false;
   bool BlackMarketTrainer = false;
   bool IncludeHitboxOrigins = false;
+  bool DrawHHFollowerLink = false;
+  bool DrawHHFollowingLink = false;
 
   EnabledEntities Ids;
   EnabledEntities Hitboxes;
@@ -1855,6 +1857,39 @@ void drawOverlayWindow() {
         }
 
         drawEntityHitbox(floor, color, true);
+      }
+    }
+  }
+
+  if (gDebugState.DrawHHFollowerLink || gDebugState.DrawHHFollowingLink) {
+
+    for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+         idx++) {
+      auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+
+      if (!ent)
+        continue;
+      if (ent->entity_kind != EntityKind::KIND_PLAYER)
+        continue;
+
+      auto player = (EntityPlayer *)ent;
+
+      if (gDebugState.DrawHHFollowerLink && player->follower) {
+        auto follower_color = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.9f});
+        auto start = gameToScreen({player->x, player->y});
+        auto end = gameToScreen({player->follower->x, player->follower->y});
+        start.y += 4;
+        end.y += 4;
+        gOverlayDrawList->AddLine(start, end, follower_color, 1.f);
+      }
+
+      if (gDebugState.DrawHHFollowingLink && player->following) {
+        auto following_color = ImGui::GetColorU32({0.f, 255.0f, 0.0f, 0.9f});
+        auto start = gameToScreen({player->x, player->y});
+        auto end = gameToScreen({player->following->x, player->following->y});
+        start.y -= 4;
+        end.y -= 4;
+        gOverlayDrawList->AddLine(start, end, following_color, 1.f);
       }
     }
   }
@@ -4133,6 +4168,10 @@ void drawDebugTab() {
   ImGui::Checkbox("Include Floor Decorations", &gDebugState.IncludeFloorDecos);
 
   ImGui::Separator();
+  ImGui::Checkbox("Draw HH Follower Link", &gDebugState.DrawHHFollowerLink);
+  ImGui::Checkbox("Draw HH Following Link", &gDebugState.DrawHHFollowingLink);
+
+  ImGui::Separator();
   if (ImGui::Checkbox("Disable Olmec Spawns",
                       &gDebugState.DisableOlmecSpawns)) {
     auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
@@ -4483,6 +4522,98 @@ size_t sizeofEntityKind(EntityKind entityKind) {
   }
 }
 
+void drawRawBytesTable(const char *str_id, char *start_addr, size_t size) {
+  if (ImGui::BeginTable(str_id, 6, ImGuiTableFlags_RowBg)) {
+
+    ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("Signed", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Unsigned", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Float", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+
+    for (size_t i = 0; i < size; i += 4) {
+
+      ImGui::TableNextRow();
+
+      char *addr = start_addr + i;
+      ImGui::TableNextColumn();
+      ImGui::Text("0x%X", i);
+
+      std::pair<EntityKind, uint32_t> key = {
+          gSelectedEntityState.Entity->entity_kind,
+          gSelectedEntityState.Entity->entity_type};
+
+      {
+        uint32_t a1, a2, a3, a4;
+        a1 = (*(addr)) & (0xFF);
+        a2 = (*(addr + 1)) & (0xFF);
+        a3 = (*(addr + 2)) & (0xFF);
+        a4 = (*(addr + 3)) & (0xFF);
+
+        ImGui::TableNextColumn();
+        if (ImGui::Button(
+                std::format("{:02X}##SelectedEntityRaw-{}", a1, i).c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
+        }
+        ImGui::SameLine();
+
+        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a2, i + 1)
+                              .c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i + 1, DataType_Byte});
+        }
+        ImGui::SameLine();
+
+        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a3, i + 2)
+                              .c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i + 2, DataType_Byte});
+        }
+        ImGui::SameLine();
+
+        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a4, i + 3)
+                              .c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i + 3, DataType_Byte});
+        }
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(
+              std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
+                  .c_str(),
+              {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Signed});
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(
+              std::format("{:d}##SelectedEntityRaw-{}", *(uint32_t *)addr, i)
+                  .c_str(),
+              {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Unsigned});
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(std::format("0x{:08X}##SelectedEntityRaw-{}",
+                                    *(uint32_t *)addr, i)
+                            .c_str(),
+                        {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Hex});
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(
+              std::format("{:f}##SelectedEntityRaw-{}", *(float *)addr, i)
+                  .c_str(),
+              {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Float});
+      }
+    }
+
+    ImGui::EndTable();
+  }
+}
+
 void drawSelectedEntityTab() {
   ImGuiIO &io = ImGui::GetIO();
   if (!gSelectedEntityState.Entity) {
@@ -4543,6 +4674,13 @@ void drawSelectedEntityTab() {
     drawCharBool("flag_23", gSelectedEntityState.Entity->flag_23);
     drawCharBool("flag_24", gSelectedEntityState.Entity->flag_24);
   }
+  if (gSelectedEntityState.Entity->entity_kind == EntityKind::KIND_PLAYER &&
+      ImGui::CollapsingHeader("EntityPlayer")) {
+    auto entityPlayer =
+        reinterpret_cast<EntityPlayer *>(gSelectedEntityState.Entity);
+    ImGui::InputInt("Following", (int *)&entityPlayer->following);
+    ImGui::InputInt("Follower", (int *)&entityPlayer->follower);
+  }
   if ((uint32_t)gSelectedEntityState.Entity->entity_kind > 0 &&
       (uint32_t)gSelectedEntityState.Entity->entity_kind < 5 &&
       ImGui::CollapsingHeader("EntityActive")) {
@@ -4579,101 +4717,10 @@ void drawSelectedEntityTab() {
       }
       ImGui::LogFinish();
     }
-    if (ImGui::BeginTable("Raw Bytes", 6, ImGuiTableFlags_RowBg)) {
 
-      ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
-      ImGui::TableSetupColumn("Signed", ImGuiTableColumnFlags_WidthStretch);
-      ImGui::TableSetupColumn("Unsigned", ImGuiTableColumnFlags_WidthStretch);
-      ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_WidthStretch);
-      ImGui::TableSetupColumn("Float", ImGuiTableColumnFlags_WidthStretch);
-      ImGui::TableHeadersRow();
-
-      for (size_t i = 0;
-           i < sizeofEntityKind(gSelectedEntityState.Entity->entity_kind);
-           i += 4) {
-
-        ImGui::TableNextRow();
-
-        char *addr = ((char *)gSelectedEntityState.Entity) + i;
-        ImGui::TableNextColumn();
-        ImGui::Text("0x%X", i);
-
-        std::pair<EntityKind, uint32_t> key = {
-            gSelectedEntityState.Entity->entity_kind,
-            gSelectedEntityState.Entity->entity_type};
-
-        {
-          uint32_t a1, a2, a3, a4;
-          a1 = (*(addr)) & (0xFF);
-          a2 = (*(addr + 1)) & (0xFF);
-          a3 = (*(addr + 2)) & (0xFF);
-          a4 = (*(addr + 3)) & (0xFF);
-
-          ImGui::TableNextColumn();
-          if (ImGui::Button(
-                  std::format("{:02X}##SelectedEntityRaw-{}", a1, i).c_str())) {
-            gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
-          }
-          ImGui::SameLine();
-
-          if (ImGui::Button(
-                  std::format("{:02X}##SelectedEntityRaw-{}", a2, i + 1)
-                      .c_str())) {
-            gDebugState.DrawEntityOffsets[key].insert({i + 1, DataType_Byte});
-          }
-          ImGui::SameLine();
-
-          if (ImGui::Button(
-                  std::format("{:02X}##SelectedEntityRaw-{}", a3, i + 2)
-                      .c_str())) {
-            gDebugState.DrawEntityOffsets[key].insert({i + 2, DataType_Byte});
-          }
-          ImGui::SameLine();
-
-          if (ImGui::Button(
-                  std::format("{:02X}##SelectedEntityRaw-{}", a4, i + 3)
-                      .c_str())) {
-            gDebugState.DrawEntityOffsets[key].insert({i + 3, DataType_Byte});
-          }
-        }
-
-        ImGui::TableNextColumn();
-        if (ImGui::Button(
-                std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
-                    .c_str(),
-                {-1, 0})) {
-          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Signed});
-        }
-
-        ImGui::TableNextColumn();
-        if (ImGui::Button(
-                std::format("{:d}##SelectedEntityRaw-{}", *(uint32_t *)addr, i)
-                    .c_str(),
-                {-1, 0})) {
-          gDebugState.DrawEntityOffsets[key].insert(
-              {i, DataType_Dword_Unsigned});
-        }
-
-        ImGui::TableNextColumn();
-        if (ImGui::Button(std::format("0x{:08X}##SelectedEntityRaw-{}",
-                                      *(uint32_t *)addr, i)
-                              .c_str(),
-                          {-1, 0})) {
-          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Hex});
-        }
-
-        ImGui::TableNextColumn();
-        if (ImGui::Button(
-                std::format("{:f}##SelectedEntityRaw-{}", *(float *)addr, i)
-                    .c_str(),
-                {-1, 0})) {
-          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Float});
-        }
-      }
-
-      ImGui::EndTable();
-    }
+    drawRawBytesTable(
+        "Entity Raw Bytes", ((char *)gSelectedEntityState.Entity),
+        sizeofEntityKind(gSelectedEntityState.Entity->entity_kind));
   }
   if (gSelectedEntityState.Entity->flag_deletion == 1) {
     gSelectedEntityState.Entity = NULL;
