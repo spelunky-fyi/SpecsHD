@@ -14,6 +14,7 @@ add_library(
     specs SHARED
     ui.h ui.cpp
     hooks.h hooks.cpp
+    level.h level.cpp
     hd.h hd.cpp
     inputs.h inputs.cpp
     config.h config.cpp
