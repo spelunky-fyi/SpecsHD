@@ -4135,6 +4135,143 @@ void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
   }
 }
 
+void drawRawBytesTable(const char *str_id, char *start_addr, size_t size) {
+  if (ImGui::BeginTable(str_id, 6)) {
+
+    ImGui::TableSetupColumn("Offset");
+    ImGui::TableSetupColumn("Bytes");
+    ImGui::TableSetupColumn("Signed");
+    ImGui::TableSetupColumn("Unsigned");
+    ImGui::TableSetupColumn("Hex");
+    ImGui::TableSetupColumn("Float");
+    ImGui::TableHeadersRow();
+
+    for (size_t i = 0; i < size; i += 4) {
+
+      ImGui::TableNextRow();
+
+      char *addr = start_addr + i;
+      ImGui::TableNextColumn();
+      ImGui::Text("0x%X", i);
+      {
+        uint32_t a1, a2, a3, a4;
+        a1 = (*(addr)) & (0xFF);
+        a2 = (*(addr + 1)) & (0xFF);
+        a3 = (*(addr + 2)) & (0xFF);
+        a4 = (*(addr + 3)) & (0xFF);
+        ImGui::TableNextColumn();
+        ImGui::Text("%02X %02X %02X %02X", a1, a2, a3, a4);
+      }
+      ImGui::TableNextColumn();
+      ImGui::Text("%d", *(int32_t *)addr);
+
+      ImGui::TableNextColumn();
+      ImGui::Text("%u", *(uint32_t *)addr);
+
+      ImGui::TableNextColumn();
+      ImGui::Text("0x%08X", *(uint32_t *)addr);
+
+      ImGui::TableNextColumn();
+      ImGui::Text("%f", *(float *)addr);
+    }
+
+    ImGui::EndTable();
+  }
+}
+
+void drawRawBytesTableForSelected(const char *str_id, char *start_addr,
+                                  size_t size) {
+  if (ImGui::BeginTable(str_id, 6, ImGuiTableFlags_RowBg)) {
+
+    ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
+    ImGui::TableSetupColumn("Signed", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Unsigned", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableSetupColumn("Float", ImGuiTableColumnFlags_WidthStretch);
+    ImGui::TableHeadersRow();
+
+    for (size_t i = 0; i < size; i += 4) {
+
+      ImGui::TableNextRow();
+
+      char *addr = start_addr + i;
+      ImGui::TableNextColumn();
+      ImGui::Text("0x%X", i);
+
+      std::pair<EntityKind, uint32_t> key = {
+          gSelectedEntityState.Entity->entity_kind,
+          gSelectedEntityState.Entity->entity_type};
+
+      {
+        uint32_t a1, a2, a3, a4;
+        a1 = (*(addr)) & (0xFF);
+        a2 = (*(addr + 1)) & (0xFF);
+        a3 = (*(addr + 2)) & (0xFF);
+        a4 = (*(addr + 3)) & (0xFF);
+
+        ImGui::TableNextColumn();
+        if (ImGui::Button(
+                std::format("{:02X}##SelectedEntityRaw-{}", a1, i).c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
+        }
+        ImGui::SameLine();
+
+        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a2, i + 1)
+                              .c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i + 1, DataType_Byte});
+        }
+        ImGui::SameLine();
+
+        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a3, i + 2)
+                              .c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i + 2, DataType_Byte});
+        }
+        ImGui::SameLine();
+
+        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a4, i + 3)
+                              .c_str())) {
+          gDebugState.DrawEntityOffsets[key].insert({i + 3, DataType_Byte});
+        }
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(
+              std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
+                  .c_str(),
+              {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Signed});
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(
+              std::format("{:d}##SelectedEntityRaw-{}", *(uint32_t *)addr, i)
+                  .c_str(),
+              {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Unsigned});
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(std::format("0x{:08X}##SelectedEntityRaw-{}",
+                                    *(uint32_t *)addr, i)
+                            .c_str(),
+                        {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Hex});
+      }
+
+      ImGui::TableNextColumn();
+      if (ImGui::Button(
+              std::format("{:f}##SelectedEntityRaw-{}", *(float *)addr, i)
+                  .c_str(),
+              {-1, 0})) {
+        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Float});
+      }
+    }
+
+    ImGui::EndTable();
+  }
+}
+
 void drawDebugTab() {
   ImGuiIO &io = ImGui::GetIO();
 
@@ -4385,47 +4522,7 @@ void drawDebugTab() {
                        &gCameraState->camera_speed);
 
     if (ImGui::CollapsingHeader("Camera Raw")) {
-      if (ImGui::BeginTable("Raw Bytes##CameraState", 6)) {
-
-        ImGui::TableSetupColumn("Offset");
-        ImGui::TableSetupColumn("Bytes");
-        ImGui::TableSetupColumn("Signed");
-        ImGui::TableSetupColumn("Unsigned");
-        ImGui::TableSetupColumn("Hex");
-        ImGui::TableSetupColumn("Float");
-        ImGui::TableHeadersRow();
-
-        for (size_t i = 0; i < 92; i += 4) {
-
-          ImGui::TableNextRow();
-
-          char *addr = ((char *)gCameraState) + i;
-          ImGui::TableNextColumn();
-          ImGui::Text("0x%X", i);
-          {
-            uint32_t a1, a2, a3, a4;
-            a1 = (*(addr)) & (0xFF);
-            a2 = (*(addr + 1)) & (0xFF);
-            a3 = (*(addr + 2)) & (0xFF);
-            a4 = (*(addr + 3)) & (0xFF);
-            ImGui::TableNextColumn();
-            ImGui::Text("%02X %02X %02X %02X", a1, a2, a3, a4);
-          }
-          ImGui::TableNextColumn();
-          ImGui::Text("%d", *(int32_t *)addr);
-
-          ImGui::TableNextColumn();
-          ImGui::Text("%u", *(uint32_t *)addr);
-
-          ImGui::TableNextColumn();
-          ImGui::Text("0x%08X", *(uint32_t *)addr);
-
-          ImGui::TableNextColumn();
-          ImGui::Text("%f", *(float *)addr);
-        }
-
-        ImGui::EndTable();
-      }
+      drawRawBytesTable("Raw Bytes##CameraState", (char *)gCameraState, 92);
     }
   }
 
@@ -4519,98 +4616,6 @@ size_t sizeofEntityKind(EntityKind entityKind) {
     return sizeof(Entity);
   default:
     return 0;
-  }
-}
-
-void drawRawBytesTable(const char *str_id, char *start_addr, size_t size) {
-  if (ImGui::BeginTable(str_id, 6, ImGuiTableFlags_RowBg)) {
-
-    ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
-    ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
-    ImGui::TableSetupColumn("Signed", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableSetupColumn("Unsigned", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableSetupColumn("Float", ImGuiTableColumnFlags_WidthStretch);
-    ImGui::TableHeadersRow();
-
-    for (size_t i = 0; i < size; i += 4) {
-
-      ImGui::TableNextRow();
-
-      char *addr = start_addr + i;
-      ImGui::TableNextColumn();
-      ImGui::Text("0x%X", i);
-
-      std::pair<EntityKind, uint32_t> key = {
-          gSelectedEntityState.Entity->entity_kind,
-          gSelectedEntityState.Entity->entity_type};
-
-      {
-        uint32_t a1, a2, a3, a4;
-        a1 = (*(addr)) & (0xFF);
-        a2 = (*(addr + 1)) & (0xFF);
-        a3 = (*(addr + 2)) & (0xFF);
-        a4 = (*(addr + 3)) & (0xFF);
-
-        ImGui::TableNextColumn();
-        if (ImGui::Button(
-                std::format("{:02X}##SelectedEntityRaw-{}", a1, i).c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
-        }
-        ImGui::SameLine();
-
-        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a2, i + 1)
-                              .c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i + 1, DataType_Byte});
-        }
-        ImGui::SameLine();
-
-        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a3, i + 2)
-                              .c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i + 2, DataType_Byte});
-        }
-        ImGui::SameLine();
-
-        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a4, i + 3)
-                              .c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i + 3, DataType_Byte});
-        }
-      }
-
-      ImGui::TableNextColumn();
-      if (ImGui::Button(
-              std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
-                  .c_str(),
-              {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Signed});
-      }
-
-      ImGui::TableNextColumn();
-      if (ImGui::Button(
-              std::format("{:d}##SelectedEntityRaw-{}", *(uint32_t *)addr, i)
-                  .c_str(),
-              {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Unsigned});
-      }
-
-      ImGui::TableNextColumn();
-      if (ImGui::Button(std::format("0x{:08X}##SelectedEntityRaw-{}",
-                                    *(uint32_t *)addr, i)
-                            .c_str(),
-                        {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Hex});
-      }
-
-      ImGui::TableNextColumn();
-      if (ImGui::Button(
-              std::format("{:f}##SelectedEntityRaw-{}", *(float *)addr, i)
-                  .c_str(),
-              {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Float});
-      }
-    }
-
-    ImGui::EndTable();
   }
 }
 
@@ -4718,7 +4723,7 @@ void drawSelectedEntityTab() {
       ImGui::LogFinish();
     }
 
-    drawRawBytesTable(
+    drawRawBytesTableForSelected(
         "Entity Raw Bytes", ((char *)gSelectedEntityState.Entity),
         sizeofEntityKind(gSelectedEntityState.Entity->entity_kind));
   }
