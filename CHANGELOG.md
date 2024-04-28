@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.40] - 2023-04-27
+
 ### Added
 
 - Ability to draw lines between follower/following Player/HH links
+- Option for Seeded to choose new seed on reset
 
 ## [0.0.39] - 2023-10-07
 

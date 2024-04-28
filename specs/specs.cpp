@@ -126,6 +126,7 @@ FullSpelunkyState gFullSpelunkyState = {};
 struct SeededModeState {
   uint32_t seed = 1;
   bool useDailySeeding = false;
+  bool randomSeedOnRestart = false;
 };
 SeededModeState gSeededModeState = {};
 
@@ -324,6 +325,7 @@ void preGenerateRoomBiglunky();
 void prePlaceRoomsBiglunky();
 void postPlaceRoomsBiglunky();
 void resetTunnelManState();
+void chooseRandomSeed();
 Entity *postSpawnEntityTunnelMan(Entity *);
 
 TextureDefinition *getTextureById(int32_t texture_id) {
@@ -511,6 +513,9 @@ void __declspec(naked) hookPreResetForRun() {
   }
   if (gModsState.TunnelMan) {
     resetTunnelManState();
+  }
+  if (gModsState.SeededMode && gSeededModeState.randomSeedOnRestart) {
+    chooseRandomSeed();
   }
 
   __asm {
@@ -3299,6 +3304,8 @@ void resetTunnelManState() {
   }
 }
 
+void chooseRandomSeed() { gSeededModeState.seed = mersenne_random(); }
+
 void resetFullSpelunkyState() {
   gFullSpelunkyState.allCharacters = {
       CHARACTER_GUY,
@@ -4097,6 +4104,11 @@ void drawModsTab() {
       applyPatches(gSeededModeDailySeedingPatches, true);
     }
   }
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
+  ImGui::Checkbox("Random Seed On Restart##SeededMode",
+                  &gSeededModeState.randomSeedOnRestart);
 }
 
 void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
