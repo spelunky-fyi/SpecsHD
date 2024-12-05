@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.0.40] - 2023-04-27
+## [0.0.41] - 2024-12-04
+
+### Added
+
+- Beta version of Uplunky (don't expect much here)
+- Ability to set camera to follow selected entity (Only works on enemies currently)
+
+## [0.0.40] - 2024-04-27
 
 ### Added
 

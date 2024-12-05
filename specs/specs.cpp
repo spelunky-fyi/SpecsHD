@@ -72,6 +72,7 @@ struct ModsState {
   bool TheFullSpelunky = false;
   bool Biglunky = false;
   bool DarkMode = false;
+  bool Uplunky = false;
   bool TunnelMan = false;
   bool SeededMode = false;
 };
@@ -315,6 +316,8 @@ bool hook(void *toHook, void *ourFunc, int len) {
   return true;
 }
 
+void prePlaceRoomsUplunky();
+void postPlaceRoomsUplunky();
 void prePlaceRoomsFullSpelunky();
 void postPlaceRoomsFullSpelunky();
 void resetFullSpelunkyState();
@@ -325,6 +328,7 @@ void preGenerateRoomBiglunky();
 void prePlaceRoomsBiglunky();
 void postPlaceRoomsBiglunky();
 void resetTunnelManState();
+void resetUplunkyState();
 void chooseRandomSeed();
 Entity *postSpawnEntityTunnelMan(Entity *);
 
@@ -403,6 +407,10 @@ void __declspec(naked) hookPrePlaceRooms() {
     prePlaceRoomsBiglunky();
   }
 
+  if (gModsState.Uplunky) {
+    prePlaceRoomsUplunky();
+  }
+
   __asm {
     ; Restore all registers
     popad
@@ -455,6 +463,9 @@ void __declspec(naked) hookPostPlaceRooms() {
   }
   if (gModsState.Biglunky) {
     postPlaceRoomsBiglunky();
+  }
+  if (gModsState.Uplunky) {
+    postPlaceRoomsUplunky();
   }
 
   __asm {
@@ -513,6 +524,9 @@ void __declspec(naked) hookPreResetForRun() {
   }
   if (gModsState.TunnelMan) {
     resetTunnelManState();
+  }
+  if (gModsState.Uplunky) {
+    resetUplunkyState();
   }
   if (gModsState.SeededMode && gSeededModeState.randomSeedOnRestart) {
     chooseRandomSeed();
@@ -2996,6 +3010,44 @@ std::vector<Patch> gDarkModePatches = {
     {0x6afbe, {0x1}, {0x0}},
 };
 
+std::vector<Patch> gUplunkyPatches = {
+    // Change Exit Door to Entrance Door
+    {0xd91ba, {0x02}, {0x03}},
+    // Change Entrance Door to Exit Door
+    {0xd929c, {0x03}, {0x02}},
+
+    // Spawn player at exit instead of entrance
+    {0x6651c, {0xa0}, {0x98}},
+    {0x66532, {0x9c}, {0x94}},
+
+    // Spawn shopkeeper at entrance instead of exit
+    {0x6b10c, {0x98}, {0xa0}},
+    {0x6b120, {0x94}, {0x9c}},
+
+    // Open entrance when olmec dies
+    {0x309fa, {0x94}, {0x9c}},
+    {0x309ed, {0x98}, {0xa0}},
+    {0xde7ef, {0x03}, {0x02}},
+    {0xde966, {0x02}, {0x03}},
+};
+
+std::vector<RelativePatch> gUplunkyRelativePatches = {
+    // // Swap entrance/exit on olmec
+    // {0xde7d6, 0x13602c, 0x135b3c},
+    // {0xde94d, 0x135b3c, 0x13602c},
+};
+
+void resetUplunkyState() {
+  gGlobalState->player1_data.ropes = 64;
+  gGlobalState->player1_data.bombs = 6;
+}
+
+void prePlaceRoomsUplunky() {
+  if (!gModsState.DarkMode) {
+    gGlobalState->dark_level = 0;
+  }
+}
+
 // Get bytes for float
 //  ["{:02x}".format(i) for i in bytearray(struct.pack("f", 0.0))]
 //
@@ -3543,6 +3595,66 @@ void postPlaceRoomsBiglunky() {
   }
 }
 
+void postPlaceRoomsUplunky() {
+
+  // auto entrance_x = gGlobalState->level_state->entrance_x;
+  // auto entrance_y = gGlobalState->level_state->entrance_y;
+  // auto exit_x = gGlobalState->level_state->exit_x;
+  // auto exit_y = gGlobalState->level_state->exit_y;
+
+  // auto entrance_room_x = gGlobalState->level_state->entrance_room_x;
+  // auto entrance_room_y = gGlobalState->level_state->entrance_room_y;
+  // auto exit_room_x = gGlobalState->level_state->exit_room_x;
+  // auto exit_room_y = gGlobalState->level_state->exit_room_y;
+
+  // // auto entrance_idx = (int)entrance_y * 42 + (int)entrance_x;
+  // // auto exit_idx = (int)exit_y * 42 + (int)exit_x;
+
+  // // auto entrance_door =
+  // // gGlobalState->level_state->entity_floors[entrance_idx]; auto exit_door =
+  // // gGlobalState->level_state->entity_floors[exit_idx];
+
+  // EntityFloor *entrance_door = nullptr;
+  // EntityFloor *exit_door = nullptr;
+
+  // for (auto idx = 0; idx < 4692; idx++) {
+  //   auto ent = gGlobalState->level_state->entity_floors[idx];
+  //   if (ent && ent->entity_kind == EntityKind::KIND_FLOOR) {
+  //     if (ent->entity_type == 0x2) {
+  //       entrance_door = ent;
+  //     }
+  //     if (ent->entity_type == 0x3) {
+  //       exit_door = ent;
+  //     }
+  //   }
+  // }
+
+  // auto entrance_entity_idx = entrance_door->entity_index;
+  // auto entrance_door_x = entrance_door->x;
+  // auto entrance_door_y = entrance_door->y;
+  // entrance_door->entity_index = exit_door->entity_index;
+  // entrance_door->x = exit_door->x;
+  // entrance_door->y = exit_door->y;
+  // exit_door->entity_index = entrance_entity_idx;
+  // exit_door->x = entrance_door_x;
+  // exit_door->y = entrance_door_x;
+
+  // gGlobalState->level_state->entity_floors[exit_door->entity_index] =
+  // exit_door;
+  // gGlobalState->level_state->entity_floors[entrance_door->entity_index] =
+  //     entrance_door;
+
+  // gGlobalState->level_state->entrance_x = exit_x;
+  // gGlobalState->level_state->entrance_y = exit_y;
+  // gGlobalState->level_state->exit_x = entrance_x;
+  // gGlobalState->level_state->exit_y = entrance_y;
+
+  // gGlobalState->level_state->entrance_room_x = exit_room_x;
+  // gGlobalState->level_state->entrance_room_y = exit_room_y;
+  // gGlobalState->level_state->exit_room_x = entrance_room_x;
+  // gGlobalState->level_state->exit_room_y = entrance_room_y;
+}
+
 void postPlaceRoomsFullSpelunky() {
   // Mines
   if (gGlobalState->level >= 1 && gGlobalState->level <= 4) {
@@ -4040,6 +4152,15 @@ void drawModsTab() {
     } else {
       applyPatches(gBiglunkyPatches, true);
       applyRelativePatches(gBiglunkyRelativePatches, true);
+    }
+  };
+
+  ImGui::Separator();
+  if (ImGui::Checkbox("Uplunky (Beta)", &gModsState.Uplunky)) {
+    applyPatches(gUplunkyPatches, !gModsState.Uplunky);
+    applyRelativePatches(gUplunkyRelativePatches, !gModsState.Uplunky);
+    if (gModsState.Uplunky) {
+      resetUplunkyState();
     }
   };
 
@@ -4642,6 +4763,19 @@ void drawSelectedEntityTab() {
                   (int *)&gSelectedEntityState.Entity->entity_type);
   ImGui::InputInt("Entity kind",
                   (int *)&gSelectedEntityState.Entity->entity_kind);
+
+  if (ImGui::Button(std::format("Follow With Camera##FollowEnt-{}",
+                                (uint32_t)gSelectedEntityState.Entity)
+                        .c_str())) {
+    gCameraState->camera_following = gSelectedEntityState.Entity;
+  }
+
+  if (gCameraState->camera_following == gSelectedEntityState.Entity) {
+    ImGui::SameLine();
+    if (ImGui::Button("Stop Following##FollowEnt")) {
+      gCameraState->camera_following = nullptr;
+    }
+  }
 
   if (ImGui::CollapsingHeader("Position, hitbox, etc.")) {
     ImGui::InputFloat("Entity x", &gSelectedEntityState.Entity->x, 0.0F, 0.0F,
