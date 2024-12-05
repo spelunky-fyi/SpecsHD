@@ -76,6 +76,8 @@
     "fstream": "cpp",
     "numeric": "cpp",
     "set": "cpp",
+    "regex": "cpp"
+  }
     "mutex": "cpp"
   },
   "C_Cpp.default.cppStandard": "c++20",
