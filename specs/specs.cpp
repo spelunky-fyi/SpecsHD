@@ -126,10 +126,71 @@ FullSpelunkyState gFullSpelunkyState = {};
 
 struct SeededModeState {
   uint32_t seed = 1;
+  std::vector<std::tuple<uint32_t, uint32_t>> levelSeeds = {};
   bool useDailySeeding = false;
   bool randomSeedOnRestart = false;
 };
+
 SeededModeState gSeededModeState = {};
+
+const uint8_t MAX_SEED_OVERRIDES = 20;
+
+std::unordered_set<uint8_t> getUsedLevelsForSeed() {
+  std::unordered_set<uint8_t> usedLevels = {};
+  for (auto [level, seed] : gSeededModeState.levelSeeds) {
+    usedLevels.insert(level);
+  }
+
+  return usedLevels;
+}
+
+uint8_t getNextAvailableLevelForSeed() {
+  std::unordered_set<uint8_t> usedLevels = getUsedLevelsForSeed();
+  for (uint8_t i = 1; i <= MAX_SEED_OVERRIDES; i++) {
+    if (usedLevels.find(i) == usedLevels.end()) {
+      return i;
+    }
+  }
+
+  return 0;
+}
+
+std::vector<uint8_t> getAvailableLevelsForSeed() {
+  std::unordered_set<uint8_t> usedLevels = getUsedLevelsForSeed();
+  std::vector<uint8_t> availableLevels = {};
+  for (uint8_t i = 1; i <= MAX_SEED_OVERRIDES; i++) {
+    if (usedLevels.find(i) == usedLevels.end()) {
+      availableLevels.push_back(i);
+    }
+  }
+
+  return availableLevels;
+}
+
+std::string formatLevel(uint8_t levelNumber) {
+
+  auto world = 0;
+  auto level = 0;
+
+  if (levelNumber <= 4) {
+    world = 1;
+    level = levelNumber;
+  } else if (levelNumber <= 8) {
+    world = 2;
+    level = levelNumber - 4;
+  } else if (levelNumber <= 12) {
+    world = 3;
+    level = levelNumber - 8;
+  } else if (levelNumber <= 16) {
+    world = 4;
+    level = levelNumber - 12;
+  } else if (levelNumber <= 20) {
+    world = 5;
+    level = levelNumber - 16;
+  }
+
+  return std::format("{}-{}", world, level);
+}
 
 struct DebugState {
   bool EnableTileBorders = false;
@@ -634,6 +695,18 @@ void __declspec(naked) hookWhip() {
   }
 }
 
+uint32_t getSeedForLevel(int level) {
+  int seed = gSeededModeState.seed;
+  for (auto [level_, seed_] : gSeededModeState.levelSeeds) {
+    if (level_ == level) {
+      seed = seed_;
+      break;
+    }
+  }
+
+  return seed;
+}
+
 DWORD hookSeedLevelJmpBackAddr = NULL;
 void __declspec(naked) hookSeedLevel() {
 
@@ -648,7 +721,7 @@ void __declspec(naked) hookSeedLevel() {
     pushad
   }
 
-  seed = gSeededModeState.seed * gGlobalState->level;
+  seed = getSeedForLevel(gGlobalState->level);
 
   __asm {
     ; Restore all registers
@@ -1748,8 +1821,8 @@ void drawOverlayWindow() {
                             "SpecsHD");
 
   if (gModsState.SeededMode) {
-    auto out =
-        std::format("Seed: {}", gSeededModeState.seed, ImGui::GetFontSize());
+    auto levelSeed = getSeedForLevel(gGlobalState->level);
+    auto out = std::format("Seed: {}", levelSeed, ImGui::GetFontSize());
     gOverlayDrawList->AddText(
         ImGui::GetFont(), 32.f, {io.DisplaySize.x - 348.f, 40.f},
         ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.8f}), out.c_str());
@@ -4117,6 +4190,11 @@ void onRunningFrame() {
   }
 }
 
+const char *levelItems[] = {
+    "1-1", "1-2", "1-3", "1-4", "2-1", "2-2", "2-3", "2-4", "3-1", "3-2",
+    "3-3", "3-4", "4-1", "4-2", "4-3", "4-4", "5-1", "5-2", "5-3", "5-4",
+};
+
 void drawModsTab() {
   ImGuiIO &io = ImGui::GetIO();
 
@@ -4230,6 +4308,74 @@ void drawModsTab() {
   ImGui::SameLine(20.0f * io.FontGlobalScale);
   ImGui::Checkbox("Random Seed On Restart##SeededMode",
                   &gSeededModeState.randomSeedOnRestart);
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
+  if (ImGui::Button("Add Level Seed##SeededMode")) {
+    auto nextLevel = getNextAvailableLevelForSeed();
+    if (nextLevel > 0 && nextLevel <= 21) {
+      gSeededModeState.levelSeeds.push_back({nextLevel, 1});
+    }
+  }
+
+  if (gSeededModeState.levelSeeds.size() > 0) {
+
+    if (ImGui::BeginTable("##LevelSeedTable", 3)) {
+
+      ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 1.0f);
+      ImGui::TableSetupColumn("Level", ImGuiTableColumnFlags_WidthStretch,
+                              2.0f);
+      ImGui::TableSetupColumn("Seed", ImGuiTableColumnFlags_WidthStretch, 4.0f);
+      ImGui::TableHeadersRow();
+
+      auto usedLevels = getUsedLevelsForSeed();
+
+      for (size_t i = 0; i < gSeededModeState.levelSeeds.size(); i++) {
+        ImGui::TableNextRow();
+
+        ImGui::TableNextColumn();
+        if (ImGui::Button(std::format("X##RemoveLevelSeed{}", i).c_str())) {
+          gSeededModeState.levelSeeds.erase(
+              gSeededModeState.levelSeeds.begin() + i);
+          continue;
+        }
+
+        uint8_t currentLevel = std::get<0>(gSeededModeState.levelSeeds[i]);
+        int itemSelectedIdx = currentLevel - 1;
+        const char *comboPreviewValue = levelItems[itemSelectedIdx];
+
+        ImGui::TableNextColumn();
+        // ImGui::Text("%s", formatLevel(level).c_str());
+
+        if (ImGui::BeginCombo(std::format("##LevelLevelSeed{}", i).c_str(),
+                              comboPreviewValue)) {
+
+          for (int n = 0; n < IM_ARRAYSIZE(levelItems); n++) {
+            const bool is_selected = (itemSelectedIdx == n);
+            auto flags = ImGuiSelectableFlags_None;
+            if (!is_selected && usedLevels.contains(n + 1)) {
+              flags = ImGuiSelectableFlags_Disabled;
+            }
+            if (ImGui::Selectable(levelItems[n], is_selected, flags)) {
+              std::get<0>(gSeededModeState.levelSeeds[i]) = n + 1;
+            }
+            if (is_selected)
+              ImGui::SetItemDefaultFocus();
+          }
+          ImGui::EndCombo();
+        }
+
+        ImGui::TableNextColumn();
+        uint32_t &levelSeed = std::get<1>(gSeededModeState.levelSeeds[i]);
+        if (ImGui::InputScalar(std::format("##SeedLevelSeed{}", i).c_str(),
+                               ImGuiDataType_U32, &levelSeed)) {
+          levelSeed = std::clamp(levelSeed, (uint32_t)0, UINT32_MAX);
+        }
+      }
+
+      ImGui::EndTable();
+    }
+  }
 }
 
 void drawToggleEntityTab(const char *preText, EnabledEntities &enabledEnts) {
