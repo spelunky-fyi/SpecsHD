@@ -3429,7 +3429,9 @@ void resetTunnelManState() {
   }
 }
 
-void chooseRandomSeed() { gSeededModeState.seed = mersenne_random(); }
+void chooseRandomSeed() {
+  gSeededModeState.seed = std::rand() % UINT32_MAX * (UINT32_MAX / RAND_MAX);
+}
 
 void resetFullSpelunkyState() {
   gFullSpelunkyState.allCharacters = {
