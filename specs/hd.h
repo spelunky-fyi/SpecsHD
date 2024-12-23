@@ -403,3 +403,6 @@ void GenerateRoom(int32_t entrance_or_exit, LevelState *level_state,
 
 void mersenne_init_and_twist(uint32_t seed);
 uint32_t mersenne_random();
+
+void resetForRun(GlobalState *global_state, char isDeathmatch);
+void resetForLevel(GlobalState *global_state);

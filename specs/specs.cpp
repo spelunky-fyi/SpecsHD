@@ -129,6 +129,7 @@ struct SeededModeState {
   std::vector<std::tuple<uint32_t, uint32_t>> levelSeeds = {};
   bool useDailySeeding = false;
   bool randomSeedOnRestart = false;
+  uint32_t advanceOnRestart = 1;
 };
 
 SeededModeState gSeededModeState = {};
@@ -721,7 +722,7 @@ void __declspec(naked) hookSeedLevel() {
     pushad
   }
 
-  seed = getSeedForLevel(gGlobalState->level);
+  seed = getSeedForLevel(gGlobalState->level) * gGlobalState->level;
 
   __asm {
     ; Restore all registers
@@ -2421,11 +2422,35 @@ void drawSpawnTab() {
 }
 
 void warpToLevel(uint32_t level) {
-  gGlobalState->level_minutes = 0;
-  gGlobalState->level_seconds = 0;
-  gGlobalState->level_ms = 0;
+  resetForLevel(gGlobalState);
   gGlobalState->level = level;
-  gGlobalState->screen_state = 3;
+  gGlobalState->screen_state = 1;
+}
+
+void resetRun() {
+  resetForRun(gGlobalState, '\0');
+  gGlobalState->screen_state = 1;
+}
+
+void advanceLevel() {
+
+  if (!gModsState.SeededMode) {
+    return;
+  }
+
+  if (gSeededModeState.advanceOnRestart <= 1) {
+    return;
+  }
+
+  auto isDisabled =
+      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+
+  if (isDisabled)
+    return;
+
+  if (gGlobalState->level < gSeededModeState.advanceOnRestart) {
+    warpToLevel(gGlobalState->level);
+  }
 }
 
 void RectFilled(ImVec2 &size, ImU32 col = IM_COL32_WHITE, float rounding = 0.f,
@@ -2576,7 +2601,9 @@ void drawLevelTab() {
   if (ImGui::Button("Yama")) {
     warpToLevel(19);
   }
-
+  if (ImGui::Button("Reset Run")) {
+    resetRun();
+  }
   if (isDisabled) {
     ImGui::EndDisabled();
   }
@@ -3429,9 +3456,11 @@ void resetTunnelManState() {
   }
 }
 
-void chooseRandomSeed() {
-  gSeededModeState.seed = std::rand() % UINT32_MAX * (UINT32_MAX / RAND_MAX);
+uint32_t getRandomSeed() {
+  return std::rand() % UINT32_MAX * (UINT32_MAX / RAND_MAX);
 }
+
+void chooseRandomSeed() { gSeededModeState.seed = getRandomSeed(); }
 
 void resetFullSpelunkyState() {
   gFullSpelunkyState.allCharacters = {
@@ -4310,6 +4339,24 @@ void drawModsTab() {
   ImGui::SameLine(20.0f * io.FontGlobalScale);
   ImGui::Checkbox("Random Seed On Restart##SeededMode",
                   &gSeededModeState.randomSeedOnRestart);
+
+  int itemSelectedIdx = gSeededModeState.advanceOnRestart - 1;
+  const char *comboPreviewValue = levelItems[itemSelectedIdx];
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
+  if (ImGui::BeginCombo("Advance On Restart", comboPreviewValue)) {
+    for (int n = 0; n < IM_ARRAYSIZE(levelItems); n++) {
+      const bool is_selected = (itemSelectedIdx == n);
+
+      if (ImGui::Selectable(levelItems[n], is_selected)) {
+        gSeededModeState.advanceOnRestart = n + 1;
+      }
+      if (is_selected)
+        ImGui::SetItemDefaultFocus();
+    }
+    ImGui::EndCombo();
+  }
 
   ImGui::Text("");
   ImGui::SameLine(20.0f * io.FontGlobalScale);
@@ -5308,6 +5355,7 @@ void specsOnFrame() {
   ensureLockedAmounts();
   drawOverlayWindow();
   drawToolWindow();
+  advanceLevel();
 
   if (gGlobalState->screen_state == 0 && gGlobalState->play_state == 0) {
     onRunningFrame();

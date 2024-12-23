@@ -532,7 +532,6 @@ void GlobalState::PlayOlmecMusic(const char *audioName) {
 }
 
 DWORD gDestroyFloor;
-
 bool DestroyFloor(LevelState *level_state, EntityFloor *floor) {
 
   bool val;
@@ -548,6 +547,33 @@ bool DestroyFloor(LevelState *level_state, EntityFloor *floor) {
   }
 
   return val;
+}
+
+DWORD gResetForRun;
+void resetForRun(GlobalState *global_state, char isDeathmatch) {
+
+  __asm {
+        pushad
+
+        push isDeathmatch
+        mov eax, global_state
+        call gResetForRun
+
+        popad
+  }
+}
+
+DWORD gResetForLevel;
+void resetForLevel(GlobalState *global_state) {
+
+  __asm {
+        pushad
+
+        mov esi, global_state
+        call gResetForLevel
+
+        popad
+  }
 }
 
 DWORD gLoadCoffinTexture;
@@ -625,6 +651,9 @@ void setupOffsets(DWORD baseAddress) {
 
   gMersenneInitAndTwist = baseAddress + 0x11420;
   gMersenneRandom = baseAddress + 0x07d10;
+
+  gResetForLevel = baseAddress + 0x64ee0;
+  gResetForRun = baseAddress + 0x649e0;
 }
 
 TextureId charIdToTextureId(CharacterIndex id) {

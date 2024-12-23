@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Ability to run internal resetForRun and resetForLevel functions
+- Update warp to use resetForLevel before warping
+- Add ability to advance to a specific level in seeded mode. Will run through
+  all previous levels to simulate going through each level
+- Added button to quickly reset run
+
+### Fixed
+
+- Seeds were improperly not multiplying by the level causing level gen to be
+  very similar between levels in an area
+
 ## [0.0.43] - 2024-12-22
 
 ### Updated
