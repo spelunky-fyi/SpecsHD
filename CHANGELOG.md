@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update warp to use resetForLevel before warping
 - Add ability to advance to a specific level in seeded mode. Will run through
   all previous levels to simulate going through each level
-- Added button to quickly reset run
+- Added button to quickly reset run\
+- Seed Scan option that will scan your advance level and write crate contents to crates.txt
 
 ### Fixed
 

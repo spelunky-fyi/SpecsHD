@@ -130,6 +130,7 @@ struct SeededModeState {
   bool useDailySeeding = false;
   bool randomSeedOnRestart = false;
   uint32_t advanceOnRestart = 1;
+  bool enabledSeedSearch = false;
 };
 
 SeededModeState gSeededModeState = {};
@@ -2432,13 +2433,34 @@ void resetRun() {
   gGlobalState->screen_state = 1;
 }
 
+void searchSeeds() {
+  std::ofstream outfile;
+  outfile.open("crates.txt", std::ios_base::app);
+
+  auto seedForLevel = getSeedForLevel(gGlobalState->level);
+  auto formattedLevel = formatLevel(gGlobalState->level);
+
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_type == 101) {
+      auto entity_type = getCrateItemForSeed(ent->z_depth_as_int);
+      auto entity_name = EntityTypeName(entity_type);
+      outfile << seedForLevel << "," << formattedLevel << "," << entity_name
+              << std::endl;
+    }
+  }
+
+  resetRun();
+}
+
 void advanceLevel() {
 
   if (!gModsState.SeededMode) {
-    return;
-  }
-
-  if (gSeededModeState.advanceOnRestart <= 1) {
     return;
   }
 
@@ -2450,6 +2472,11 @@ void advanceLevel() {
 
   if (gGlobalState->level < gSeededModeState.advanceOnRestart) {
     warpToLevel(gGlobalState->level);
+    return;
+  }
+
+  if (gSeededModeState.enabledSeedSearch) {
+    searchSeeds();
   }
 }
 
@@ -4356,6 +4383,25 @@ void drawModsTab() {
         ImGui::SetItemDefaultFocus();
     }
     ImGui::EndCombo();
+  }
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
+  ImGui::Checkbox("Enable Seed Search", &gSeededModeState.enabledSeedSearch);
+
+  auto isDisabled =
+      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+  if (isDisabled) {
+    ImGui::BeginDisabled();
+  }
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
+  if (ImGui::Button("Reset Run")) {
+    resetRun();
+  }
+  if (isDisabled) {
+    ImGui::EndDisabled();
   }
 
   ImGui::Text("");
