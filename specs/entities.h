@@ -100,7 +100,7 @@ const std::vector<std::pair<std::string, int>> gEntities = {
     {"Mounted Lightable Torch Holder", 245},
     {"Unlit Torch", 246},
     {"Purple Target", 247},
-    {"Unopenable Mystery Box", 248},
+    {"Mystery Box", 248},
     {"Crowned Skull", 250},
     {"Eggplant", 252},
 

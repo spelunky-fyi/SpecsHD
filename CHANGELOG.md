@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Added support for logging shop items while seed finding
+
 ## [0.0.44] - 2024-12-23
 
 ### Added

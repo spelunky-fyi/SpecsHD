@@ -2434,11 +2434,15 @@ void resetRun() {
 }
 
 void searchSeeds() {
-  std::ofstream outfile;
-  outfile.open("crates.txt", std::ios_base::app);
+  std::ofstream cratesFile;
+  std::ofstream shopItemsFile;
+  cratesFile.open("crates.txt", std::ios_base::app);
+  shopItemsFile.open("shop_items.txt", std::ios_base::app);
 
   auto seedForLevel = getSeedForLevel(gGlobalState->level);
   auto formattedLevel = formatLevel(gGlobalState->level);
+
+  std::vector<EntityItem *> shopItems;
 
   for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
        idx++) {
@@ -2450,9 +2454,25 @@ void searchSeeds() {
     if (ent->entity_type == 101) {
       auto entity_type = getCrateItemForSeed(ent->z_depth_as_int);
       auto entity_name = EntityTypeName(entity_type);
-      outfile << seedForLevel << "," << formattedLevel << "," << entity_name
-              << std::endl;
+      cratesFile << seedForLevel << "," << formattedLevel << "," << entity_name
+                 << std::endl;
     }
+
+    if (ent->entity_kind == EntityKind::KIND_ITEM) {
+      auto entity_item = (EntityItem *)ent;
+      if (entity_item->field52_0x1f0 == 1) {
+        shopItems.push_back(entity_item);
+      }
+    }
+  }
+
+  if (shopItems.size() > 0) {
+    shopItemsFile << seedForLevel << "," << formattedLevel;
+    for (auto entity_item : shopItems) {
+      auto entity_name = EntityTypeName(entity_item->entity_type);
+      shopItemsFile << "," << entity_name;
+    }
+    shopItemsFile << std::endl;
   }
 
   resetRun();

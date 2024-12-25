@@ -279,7 +279,7 @@ const char *EntityTypeName(uint32_t entity_type) {
   case 247:
     return "Purple Target";
   case 248:
-    return "Unopenable Mystery Box";
+    return "Mystery Box";
   case 249:
     return "Alien Queen Corpse";
   case 250:

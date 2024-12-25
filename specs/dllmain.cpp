@@ -8,6 +8,8 @@
 
 void WINAPI MainThread(const HMODULE instance) {
 
+  srand(time(NULL));
+
   try {
     ui::Setup();
     hooks::Setup();
