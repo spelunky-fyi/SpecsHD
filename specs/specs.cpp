@@ -44,6 +44,17 @@ enum DataType_ {
   DataType_COUNT,
 };
 
+std::vector<std::string> split(const std::string &str, char delim) {
+  std::vector<std::string> strings;
+  size_t start;
+  size_t end = 0;
+  while ((start = str.find_first_not_of(delim, end)) != std::string::npos) {
+    end = str.find(delim, start);
+    strings.push_back(str.substr(start, end - start));
+  }
+  return strings;
+}
+
 struct EnabledEntities {
   bool activeEntities = false;
   bool floorEntities = false;
@@ -131,9 +142,37 @@ struct SeededModeState {
   bool randomSeedOnRestart = false;
   uint32_t advanceOnRestart = 1;
   bool enabledSeedSearch = false;
+  std::string exportSeed = "";
 };
 
 SeededModeState gSeededModeState = {};
+
+void updateExportedSeed() {
+  std::string seed = std::format("{}", gSeededModeState.seed);
+  for (auto [level, levelSeed] : gSeededModeState.levelSeeds) {
+    seed += std::format(";{}:{}", level, levelSeed);
+  }
+  gSeededModeState.exportSeed = seed;
+}
+
+void loadFromExportSeed() {
+  auto seed = gSeededModeState.exportSeed;
+  auto parts = split(seed, ';');
+  if (parts.size() > 0) {
+    gSeededModeState.seed = std::stoi(parts[0]);
+  }
+  if (parts.size() > 1) {
+    gSeededModeState.levelSeeds.clear();
+    auto levelSeeds = std::vector<std::string>(parts.begin() + 1, parts.end());
+    for (auto levelSeed : levelSeeds) {
+      auto levelSeedParts = split(levelSeed, ':');
+      if (levelSeedParts.size() == 2) {
+        gSeededModeState.levelSeeds.push_back(
+            {std::stoi(levelSeedParts[0]), std::stoi(levelSeedParts[1])});
+      }
+    }
+  }
+}
 
 const uint8_t MAX_SEED_OVERRIDES = 20;
 
@@ -141,6 +180,7 @@ std::unordered_set<uint8_t> getUsedLevelsForSeed() {
   std::unordered_set<uint8_t> usedLevels = {};
   for (auto [level, seed] : gSeededModeState.levelSeeds) {
     usedLevels.insert(level);
+    updateExportedSeed();
   }
 
   return usedLevels;
@@ -4369,6 +4409,7 @@ void drawModsTab() {
                          &gSeededModeState.seed)) {
     gSeededModeState.seed =
         std::clamp(gSeededModeState.seed, (uint32_t)0, UINT32_MAX);
+    updateExportedSeed();
   }
 
   ImGui::Text("");
@@ -4430,10 +4471,17 @@ void drawModsTab() {
     auto nextLevel = getNextAvailableLevelForSeed();
     if (nextLevel > 0 && nextLevel <= 21) {
       gSeededModeState.levelSeeds.push_back({nextLevel, 1});
+      updateExportedSeed();
     }
   }
 
   if (gSeededModeState.levelSeeds.size() > 0) {
+
+    ImGui::Text("");
+    ImGui::SameLine(20.0f * io.FontGlobalScale);
+    if (ImGui::InputText("Import/Export", &gSeededModeState.exportSeed)) {
+      loadFromExportSeed();
+    }
 
     if (ImGui::BeginTable("##LevelSeedTable", 3)) {
 
@@ -4452,6 +4500,7 @@ void drawModsTab() {
         if (ImGui::Button(std::format("X##RemoveLevelSeed{}", i).c_str())) {
           gSeededModeState.levelSeeds.erase(
               gSeededModeState.levelSeeds.begin() + i);
+          updateExportedSeed();
           continue;
         }
 
@@ -4473,6 +4522,7 @@ void drawModsTab() {
             }
             if (ImGui::Selectable(levelItems[n], is_selected, flags)) {
               std::get<0>(gSeededModeState.levelSeeds[i]) = n + 1;
+              updateExportedSeed();
             }
             if (is_selected)
               ImGui::SetItemDefaultFocus();
@@ -4485,6 +4535,7 @@ void drawModsTab() {
         if (ImGui::InputScalar(std::format("##SeedLevelSeed{}", i).c_str(),
                                ImGuiDataType_U32, &levelSeed)) {
           levelSeed = std::clamp(levelSeed, (uint32_t)0, UINT32_MAX);
+          updateExportedSeed();
         }
       }
 

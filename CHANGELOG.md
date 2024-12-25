@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added support for logging shop items while seed finding
+- Import/Export textbox for easier saving/loading of frankenseeds
 
 ## [0.0.44] - 2024-12-23
 
