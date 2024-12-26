@@ -55,6 +55,19 @@ std::vector<std::string> split(const std::string &str, char delim) {
   return strings;
 }
 
+inline void ltrim(std::string &s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+          }));
+}
+
+inline void rtrim(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(),
+                       [](unsigned char ch) { return !std::isspace(ch); })
+              .base(),
+          s.end());
+}
+
 struct EnabledEntities {
   bool activeEntities = false;
   bool floorEntities = false;
@@ -168,7 +181,7 @@ void loadFromExportSeed() {
       auto levelSeedParts = split(levelSeed, ':');
       if (levelSeedParts.size() == 2) {
         gSeededModeState.levelSeeds.push_back(
-            {std::stoi(levelSeedParts[0]), std::stoi(levelSeedParts[1])});
+            {std::stoi(levelSeedParts[0]), stoul(levelSeedParts[1])});
       }
     }
   }
@@ -2473,6 +2486,75 @@ void resetRun() {
   gGlobalState->screen_state = 1;
 }
 
+void searchStraightDown() {
+  auto entranceRoomNumber = gGlobalState->level_state->entrance_room_x +
+                            gGlobalState->level_state->entrance_room_y * 4;
+
+  auto roomType = gGlobalState->level_state->room_types[entranceRoomNumber];
+  auto roomType2 =
+      gGlobalState->level_state->room_types[entranceRoomNumber + 4];
+  auto roomType3 =
+      gGlobalState->level_state->room_types[entranceRoomNumber + 8];
+  auto exitRoomNumber = gGlobalState->level_state->exit_room_x +
+                        gGlobalState->level_state->exit_room_y * 4;
+
+  if (roomType != 2 || roomType2 != 2 || roomType3 != 2 ||
+      entranceRoomNumber + 12 != exitRoomNumber) {
+    resetRun();
+  }
+}
+
+void searchNoEggy13() {
+  auto hasBox = false;
+  auto hasIdol = false;
+  auto hasAltar = false;
+
+  auto boxPos = 0;
+  auto idolPos = 0;
+  auto altarPos = 0;
+
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_kind == EntityKind::KIND_ITEM) {
+      auto entity_item = (EntityItem *)ent;
+      if (entity_item->field52_0x1f0 == 1 and entity_item->entity_type == 248) {
+        hasBox = true;
+        boxPos = GetRoomForPosition(ent->x, ent->y) / 4;
+      }
+    }
+  }
+
+  for (auto idx = 0; idx < 4692; idx++) {
+    auto ent = gGlobalState->level_state->entity_floors[idx];
+    if (!ent) {
+      continue;
+    }
+    if (ent->entity_type == 35) {
+      hasAltar = true;
+      altarPos = GetRoomForPosition(ent->x, ent->y) / 4;
+    }
+    if (ent->entity_type == 15) {
+      hasIdol = true;
+      idolPos = GetRoomForPosition(ent->x, ent->y) / 4;
+    }
+  }
+
+  if (hasBox && hasAltar && hasIdol && boxPos <= idolPos &&
+      idolPos == altarPos) {
+    std::ofstream file;
+    file.open("1-3-seeds.txt", std::ios_base::app);
+    file << getSeedForLevel(gGlobalState->level) << std::endl;
+    resetRun();
+  } else {
+    resetRun();
+  }
+}
+
 void searchSeeds() {
   std::ofstream cratesFile;
   std::ofstream shopItemsFile;
@@ -4480,7 +4562,10 @@ void drawModsTab() {
     ImGui::Text("");
     ImGui::SameLine(20.0f * io.FontGlobalScale);
     if (ImGui::InputText("Import/Export", &gSeededModeState.exportSeed)) {
+      ltrim(gSeededModeState.exportSeed);
+      rtrim(gSeededModeState.exportSeed);
       loadFromExportSeed();
+      return;
     }
 
     if (ImGui::BeginTable("##LevelSeedTable", 3)) {
