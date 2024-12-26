@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Show Seeded Chest Contents
+- Kali Reward Level in Global State Debug
+- Kali Punishment Level in Global State Debug (-1 Broke BnC, 0, 1, 2 BnC, 3 BnC + Ghost)\
+- Total Favor in Global State Debug
+- Broke Altar on this level in Global State Debug
 
 ### Fixed
 
@@ -19,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added support for logging shop items while seed finding
+- Support for logging shop items while seed finding
 - Import/Export textbox for easier saving/loading of frankenseeds
 
 ## [0.0.44] - 2024-12-23

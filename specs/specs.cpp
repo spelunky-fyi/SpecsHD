@@ -2580,7 +2580,7 @@ void warpToLevel(uint32_t level) {
 }
 
 void resetRun() {
-  resetForRun(gGlobalState, '\0');
+  resetForRun(gGlobalState, 0);
   gGlobalState->level = gGlobalState->respawn_level;
   gGlobalState->screen_state = 1;
 }
@@ -2649,6 +2649,28 @@ void searchNoEggy13() {
     file.open("1-3-seeds.txt", std::ios_base::app);
     file << getSeedForLevel(gGlobalState->level) << std::endl;
     resetRun();
+  } else {
+    resetRun();
+  }
+}
+
+void searchDaR() {
+  auto spawnedBM = gGlobalState->spawned_black_market_entrance;
+
+  auto hasHC = false;
+  for (auto idx = 0; idx < 48; idx++) {
+    auto room_type = gGlobalState->level_state->room_types[idx];
+    if (room_type == 47) {
+      hasHC = true;
+      break;
+    }
+  }
+
+  if (hasHC && !spawnedBM) {
+    // std::ofstream file;
+    // file.open("haunted-castle-black-market-seeds.txt", std::ios_base::app);
+    // file << getSeedForLevel(gGlobalState->level) << std::endl;
+    // resetRun();
   } else {
     resetRun();
   }
@@ -5058,6 +5080,21 @@ void drawDebugTab() {
     ImGui::InputScalar("Number of Angry Shopkeepers", ImGuiDataType_S32,
                        &gGlobalState->entities->angered_shopkeeper_count);
     ImGui::PopItemWidth();
+    ImGui::PushItemWidth(200.f);
+    if (ImGui::InputInt("Kali Reward Level", &gGlobalState->reward_level, 1,
+                        1)) {
+      gGlobalState->reward_level = std::clamp(gGlobalState->reward_level, 0, 3);
+    }
+    if (ImGui::InputInt("Kali Punishment Level",
+                        &gGlobalState->punishment_amount, 1, 1)) {
+      gGlobalState->punishment_amount =
+          std::clamp(gGlobalState->punishment_amount, -1, 3);
+    }
+    ImGui::InputInt("Total Favor", &gGlobalState->total_favor, 1, 1);
+    ImGui::PopItemWidth();
+    ImGui::Checkbox("Kali Broke Altar This Level",
+                    &gGlobalState->broke_altar_this_level);
+
     drawCharBool("Shopkeeper Triggered", gGlobalState->shopkeeper_triggered);
     drawCharBool("Shopkeeper Music Triggered",
                  gGlobalState->shopkeeper_music_triggered);

@@ -550,7 +550,7 @@ bool DestroyFloor(LevelState *level_state, EntityFloor *floor) {
 }
 
 DWORD gResetForRun;
-void resetForRun(GlobalState *global_state, char isDeathmatch) {
+void resetForRun(GlobalState *global_state, int isDeathmatch) {
 
   __asm {
         pushad

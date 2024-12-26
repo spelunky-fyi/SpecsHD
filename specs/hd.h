@@ -332,12 +332,9 @@ public:
   uint8_t N00000FB6;                                  // 0x440611
   uint8_t N00000FE3;                                  // 0x440612
   uint8_t N00000FB7;                                  // 0x440613
-  uint8_t N000002DB;                                  // 0x440614
-  uint8_t N00000FB9;                                  // 0x440615
-  uint8_t N00000FE6;                                  // 0x440616
-  uint8_t N00000FBA;                                  // 0x440617
-  uint32_t punishment_amount;                         // 0x440618
-  uint8_t broke_altar_this_level;                     // 0x44061C
+  int32_t reward_level;                               // 0x440614
+  int32_t punishment_amount;                          // 0x440618
+  bool broke_altar_this_level;                        // 0x44061C
   uint8_t N00000FBF;                                  // 0x44061D
   uint8_t N00000FEC;                                  // 0x44061E
   uint8_t N00000FC0;                                  // 0x44061F
@@ -364,7 +361,11 @@ public:
   PlayerData player2_data;                            // 0x441B38
   PlayerData player3_data;                            // 0x442FDC
   PlayerData player4_data;                            // 0x444480
-  char pad_445924[28];                                // 0x445924
+  uint32_t num_alive_players;                         // 0x445924
+  uint32_t num_players;                               // 0x445928
+  uint32_t total_money;                               // 0x44592C
+  int32_t total_favor;                                // 0x445930
+  char pad_445934[12];                                // 0x445934
   uint32_t total_minutes;                             // 0x445940
   uint32_t total_seconds;                             // 0x445944
   double total_ms;                                    // 0x445948
@@ -404,5 +405,5 @@ void GenerateRoom(int32_t entrance_or_exit, LevelState *level_state,
 void mersenne_init_and_twist(uint32_t seed);
 uint32_t mersenne_random();
 
-void resetForRun(GlobalState *global_state, char isDeathmatch);
+void resetForRun(GlobalState *global_state, int isDeathmatch);
 void resetForLevel(GlobalState *global_state);
