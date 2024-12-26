@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Reset Run honors spawn level for starting level
+
 ## [0.0.45]- 2024-12-25
 
 ### Added

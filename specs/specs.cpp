@@ -2483,6 +2483,7 @@ void warpToLevel(uint32_t level) {
 
 void resetRun() {
   resetForRun(gGlobalState, '\0');
+  gGlobalState->level = gGlobalState->respawn_level;
   gGlobalState->screen_state = 1;
 }
 
