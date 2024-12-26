@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Show Seeded Chest Contents
+
 ### Fixed
 
 - Reset Run honors spawn level for starting level

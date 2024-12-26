@@ -55,6 +55,17 @@ std::vector<std::string> split(const std::string &str, char delim) {
   return strings;
 }
 
+std::string join(const std::vector<std::string> &strings, std::string delim) {
+  std::string result;
+  for (size_t i = 0; i < strings.size(); i++) {
+    result += strings[i];
+    if (i < strings.size() - 1) {
+      result += delim;
+    }
+  }
+  return result;
+}
+
 inline void ltrim(std::string &s) {
   s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
             return !std::isspace(ch);
@@ -255,6 +266,7 @@ struct DebugState {
   bool EnableSeededCrateOverlay = false;
   bool EnableSeededPotOverlay = false;
   bool EnableSeededKaliRewards = false;
+  bool EnableSeededChestOverlay = false;
   bool DrawEnemyDetection = false;
   bool BlackMarketTrainer = false;
   bool IncludeHitboxOrigins = false;
@@ -1271,6 +1283,58 @@ uint32_t getPotItemForSeed(uint32_t seed, bool sfx = true, bool rubble = true) {
   return 0;
 }
 
+std::vector<uint32_t> getChestItemsForSeed(uint32_t seed, bool vault = false) {
+
+  std::vector<uint32_t> items = {};
+  mersenne_init_and_twist(seed);
+
+  if (vault) {
+    auto num_items = (mersenne_random() % 3) + 6;
+    for (unsigned int i = 0; i < num_items; i++) {
+
+      if (mersenne_random() % 0x18 == 0) {
+        items.push_back(173); // Diamond
+      } else if (mersenne_random() % 6 == 0) {
+        items.push_back(106); // Large Ruby
+      } else if (mersenne_random() % 3 == 0) {
+        items.push_back(105); // Large Saph
+      } else {
+        items.push_back(104); // Large Emerald
+      }
+
+      // Random velocity
+      mersenne_random();
+      mersenne_random();
+    }
+  } else {
+    auto num_items = (mersenne_random() & 1) + 3;
+
+    for (unsigned int i = 0; i < num_items; i++) {
+
+      if (mersenne_random() % 0x50 == 0) {
+        items.push_back(107); // Live Bomb
+      } else if (mersenne_random() % 0x28 == 0) {
+        items.push_back(106); // Large Ruby
+      } else if (mersenne_random() % 0x14 == 0) {
+        items.push_back(105); // Large Saph
+      } else if (mersenne_random() % 10 == 0) {
+        items.push_back(104); // Large Emerald
+      } else if (mersenne_random() % 6 == 0) {
+        items.push_back(127); // Small Ruby
+      } else if (mersenne_random() % 3 == 0) {
+        items.push_back(126); // Small Saph
+      } else {
+        items.push_back(125); // Small Emerald
+      }
+      // Random velocity
+      mersenne_random();
+      mersenne_random();
+    }
+  }
+
+  return items;
+}
+
 uint32_t getCrateItemForSeed(uint32_t seed) {
   mersenne_init_and_twist(seed);
 
@@ -1396,6 +1460,36 @@ void drawSeededPotOverlay() {
           IM_COL32_WHITE,
           std::format("Dupe: {}", EntityTypeName(entity_type)).c_str());
     }
+  }
+}
+
+void drawSeededChestOverlay() {
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    EntityActive *ent =
+        (EntityActive *)gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_type != 100) {
+      continue;
+    }
+
+    auto screen = gameToScreen({ent->x - ent->hitbox_x, ent->y});
+    auto fontSize = ImGui::GetFontSize() + 2.f;
+
+    auto entity_types =
+        getChestItemsForSeed(ent->z_depth_as_int, ent->field5_0x140);
+    auto entity_names = std::vector<std::string>{};
+    for (auto entity_type : entity_types) {
+      entity_names.push_back(EntityTypeName(entity_type));
+    }
+    auto out = join(entity_names, ", ");
+
+    gOverlayDrawList->AddText(ImGui::GetFont(), fontSize,
+                              ImVec2{screen.x, screen.y - (fontSize + 2.f)},
+                              IM_COL32_WHITE, out.c_str());
   }
 }
 
@@ -1931,6 +2025,10 @@ void drawOverlayWindow() {
 
   if (gDebugState.EnableSeededPotOverlay) {
     drawSeededPotOverlay();
+  }
+
+  if (gDebugState.EnableSeededChestOverlay) {
+    drawSeededChestOverlay();
   }
 
   if (gDebugState.EnableSeededKaliRewards) {
@@ -4893,6 +4991,8 @@ void drawDebugTab() {
                   &gDebugState.EnableSeededCrateOverlay);
   ImGui::Checkbox("Draw Seeded Pot Contents",
                   &gDebugState.EnableSeededPotOverlay);
+  ImGui::Checkbox("Draw Seeded Chest Contents",
+                  &gDebugState.EnableSeededChestOverlay);
   ImGui::Checkbox("Draw Seeded Kali Rewards",
                   &gDebugState.EnableSeededKaliRewards);
   ImGui::Separator();
