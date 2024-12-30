@@ -16,6 +16,12 @@ public:
       {Specs::KeyFeatures_Engine_Pause, {ImGuiModFlags_Ctrl, ImGuiKey_Space}},
       {Specs::KeyFeatures_Engine_Frame_Advance,
        {ImGuiModFlags_None, ImGuiKey_PageDown}},
+      {Specs::KeyFeatures_Reset_Run, {ImGuiModFlags_None, ImGuiKey_F5}},
+      {
+          Specs::KeyFeatures_Next_Level,
+          {ImGuiModFlags_Ctrl, ImGuiKey_Equal},
+
+      },
   };
 
   std::map<Specs::MouseFeatures_, Specs::MouseConfig> buttons = {

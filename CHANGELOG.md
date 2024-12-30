@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.47] - 2024-12-29
+
 ### Added
 
 - Support for seed overrides for 3-ufo and 3-4.2
+- `F5` for reset run
+- `Ctrl` + `=` for next level
 
 ## [0.0.46] - 2024-12-26
 

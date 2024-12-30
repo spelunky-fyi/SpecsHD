@@ -2675,6 +2675,13 @@ int getFirstTileForRoomIdx(int roomIdx) {
   return startIdx + (roomY * roomHeight * rowWidth) + (roomX * roomWidth);
 }
 
+int getTileByCoord(int x, int y) {
+  const int startIdx = 141;
+  const int rowWidth = 46;
+
+  return 4692 - (y * rowWidth) + x;
+}
+
 void searchDaR() {
   auto spawnedBM = gGlobalState->spawned_black_market_entrance;
 
@@ -2813,7 +2820,54 @@ void searchWorm() {
   resetRun();
 }
 
+void search34() {
+  if (gGlobalState->level == 9) {
+    gGlobalState->is_worm = 1;
+    warpToLevel(gGlobalState->level);
+    return;
+  } else if (gGlobalState->level == 10) {
+    warpToLevel(gGlobalState->level);
+    return;
+  }
+
+  auto rightMoship =
+      gGlobalState->level_state->entity_floors[getTileByCoord(33, 96)];
+  auto leftMoship =
+      gGlobalState->level_state->entity_floors[getTileByCoord(12, 96)];
+
+  if (rightMoship && rightMoship->entity_type == 81) {
+    auto block =
+        gGlobalState->level_state->entity_floors[getTileByCoord(32, 97)];
+    auto blockAbove =
+        gGlobalState->level_state->entity_floors[getTileByCoord(32, 98)];
+    if (!block || block->entity_type != 9098 || blockAbove) {
+      resetRun();
+      return;
+    }
+  } else if (leftMoship && leftMoship->entity_type == 81) {
+    auto block =
+        gGlobalState->level_state->entity_floors[getTileByCoord(13, 97)];
+    auto blockAbove =
+        gGlobalState->level_state->entity_floors[getTileByCoord(13, 98)];
+    if (!block || block->entity_type != 9098 || blockAbove) {
+      resetRun();
+      return;
+    }
+  } else {
+    resetRun();
+    return;
+  }
+
+  std::ofstream file;
+  file.open("34-seeds.txt", std::ios_base::app);
+  file << lastSeed << std::endl;
+  resetRun();
+}
+
 void searchSeeds() {
+  search34();
+  return;
+
   std::ofstream cratesFile;
   std::ofstream shopItemsFile;
   cratesFile.open("crates.txt", std::ios_base::app);
@@ -5692,6 +5746,18 @@ void handleKeyInput() {
     }
   } else {
     gGlobalState->pause_update = 0;
+  }
+
+  auto isDisabled =
+      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+  if (!isDisabled && Specs::IsKeyPressed(keys[Specs::KeyFeatures_Reset_Run])) {
+    resetRun();
+    return;
+  }
+
+  if (!isDisabled && Specs::IsKeyPressed(keys[Specs::KeyFeatures_Next_Level])) {
+    warpToLevel(gGlobalState->level);
+    return;
   }
 }
 

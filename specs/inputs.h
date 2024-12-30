@@ -11,6 +11,8 @@ enum KeyFeatures_ {
   KeyFeatures_Hide,
   KeyFeatures_Engine_Pause,
   KeyFeatures_Engine_Frame_Advance,
+  KeyFeatures_Reset_Run,
+  KeyFeatures_Next_Level,
 
   // End of list
   KeyFeatures_COUNT,

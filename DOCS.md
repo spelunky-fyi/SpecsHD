@@ -13,6 +13,8 @@ The following are the default key bindings. Instructions on how to override bind
 - `Insert` - Toggle visibility of the main tool window.
 - `Ctrl` + `Space` - Pause Game Engine
 - `PageDown` - Advance Frame (Can be held for repeated advancement)
+- `F5` - Reset Run
+- `Ctrl` + `=` - Next Level
 
 #### Mouse Controls
 

@@ -5,9 +5,7 @@
 #include "inputs.h"
 
 static const char *const _KeyFeatureNames[] = {
-    "Hide",
-    "Engine Pause",
-    "Engine Frame Advance",
+    "Hide", "Engine Pause", "Engine Frame Advance", "Reset Run", "Next Level",
 };
 static_assert(Specs::KeyFeatures_COUNT ==
               (sizeof(_KeyFeatureNames) / sizeof(Specs::KeyFeatures_)));
