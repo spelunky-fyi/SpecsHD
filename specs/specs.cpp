@@ -2865,8 +2865,6 @@ void search34() {
 }
 
 void searchSeeds() {
-  search34();
-  return;
 
   std::ofstream cratesFile;
   std::ofstream shopItemsFile;
