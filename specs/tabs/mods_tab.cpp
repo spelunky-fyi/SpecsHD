@@ -114,8 +114,6 @@ void drawModsTab() {
   ImGui::SameLine(20.0f * io.FontGlobalScale);
   if (ImGui::InputScalar("Seed##SeededMode", ImGuiDataType_U32,
                          &gSeededModeState.seed)) {
-    gSeededModeState.seed =
-        std::clamp(gSeededModeState.seed, (uint32_t)0, UINT32_MAX);
     updateExportedSeed();
   }
 
@@ -135,7 +133,7 @@ void drawModsTab() {
   ImGui::Checkbox("Random Seed On Restart##SeededMode",
                   &gSeededModeState.randomSeedOnRestart);
 
-  int itemSelectedIdx = gSeededModeState.advanceOnRestart - 1;
+  int itemSelectedIdx = std::clamp(static_cast<int>(gSeededModeState.advanceOnRestart) - 1, 0, 19);
   const char *comboPreviewValue = levelItems[itemSelectedIdx];
 
   ImGui::Text("");
@@ -211,11 +209,12 @@ void drawModsTab() {
           gSeededModeState.levelSeeds.erase(
               gSeededModeState.levelSeeds.begin() + i);
           updateExportedSeed();
+          i--;
           continue;
         }
 
         uint8_t currentLevel = std::get<0>(gSeededModeState.levelSeeds[i]);
-        int itemSelectedIdx = currentLevel - 1;
+        int itemSelectedIdx = std::clamp(static_cast<int>(currentLevel) - 1, 0, 21);
         const char *comboPreviewValue = levelItems[itemSelectedIdx];
 
         ImGui::TableNextColumn();
@@ -243,7 +242,6 @@ void drawModsTab() {
         uint32_t &levelSeed = std::get<1>(gSeededModeState.levelSeeds[i]);
         if (ImGui::InputScalar(std::format("##SeedLevelSeed{}", i).c_str(),
                                ImGuiDataType_U32, &levelSeed)) {
-          levelSeed = std::clamp(levelSeed, (uint32_t)0, UINT32_MAX);
           updateExportedSeed();
         }
       }

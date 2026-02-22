@@ -6,7 +6,7 @@
 
 #include "hooks.h"
 
-void WINAPI MainThread(const HMODULE instance) {
+DWORD WINAPI MainThread(LPVOID instance) {
 
   srand(static_cast<unsigned int>(time(NULL)));
 
@@ -24,13 +24,14 @@ void WINAPI MainThread(const HMODULE instance) {
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
   }
 #else
-  return;
+  return 0;
 #endif
 
 DIE:
   hooks::Destroy();
   ui::Destroy();
-  FreeLibraryAndExitThread(instance, 0);
+  FreeLibraryAndExitThread(static_cast<HMODULE>(instance), 0);
+  return 0;
 }
 
 BOOL WINAPI DllMain(HMODULE hMod, DWORD dwReason, LPVOID lpReserved) {
@@ -42,8 +43,7 @@ BOOL WINAPI DllMain(HMODULE hMod, DWORD dwReason, LPVOID lpReserved) {
 
     DisableThreadLibraryCalls(hMod);
     const auto thread = CreateThread(
-        nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(MainThread), hMod,
-        0, nullptr);
+        nullptr, 0, MainThread, hMod, 0, nullptr);
 
     if (thread) {
       CloseHandle(thread);

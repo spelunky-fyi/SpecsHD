@@ -40,11 +40,15 @@ static void drawToggleEntityTab(const char *preText,
     }
   }
   ImGui::Separator();
+  int toErase = -1;
   for (auto ent_type : enabledEnts.excluded) {
     auto label = std::format("Remove {}##Debug{}", ent_type, preText);
     if (ImGui::Button(label.c_str())) {
-      enabledEnts.excluded.erase(ent_type);
+      toErase = ent_type;
     }
+  }
+  if (toErase >= 0) {
+    enabledEnts.excluded.erase(toErase);
   }
 }
 
@@ -99,6 +103,7 @@ void onLevelStartOlmec() {
   }
 
   auto player = gGlobalState->player1;
+  if (!player) return;
   player->field1_0x130 = 1;
   player->field2_0x134 = 1;
   player->field3_0x138 = 1;
@@ -115,7 +120,7 @@ void onLevelStartOlmec() {
   forEntities({}, cb, gGlobalState->entities->entities_active,
               gGlobalState->entities->entities_active_count);
   forEntities({}, cb, (Entity **)gGlobalState->level_state->entity_floors,
-              4692);
+              ENTITY_FLOORS_COUNT);
 
   gCameraState->camera_speed = 0.2f;
   auto hawkman =
@@ -187,10 +192,7 @@ void drawDebugTab() {
   ImGui::Separator();
   if (ImGui::Checkbox("Disable Olmec Spawns",
                       &gDebugState.DisableOlmecSpawns)) {
-    auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
-                                   PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
-                                   PROCESS_CREATE_THREAD,
-                               0, GetCurrentProcessId());
+    auto process = GetCurrentProcess();
     if (gDebugState.DisableOlmecSpawns) {
       BYTE patch[] = {0x83, 0xfa, 0x08};
       patchReadOnlyCode(process, gBaseAddress + 0x3121c, patch, 3);
@@ -198,13 +200,9 @@ void drawDebugTab() {
       BYTE patch[] = {0x83, 0xfa, 0x01};
       patchReadOnlyCode(process, gBaseAddress + 0x3121c, patch, 3);
     }
-    CloseHandle(process);
   }
   if (ImGui::Checkbox("Disable Olmec Gaps", &gDebugState.DisableOlmecGaps)) {
-    auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
-                                   PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
-                                   PROCESS_CREATE_THREAD,
-                               0, GetCurrentProcessId());
+    auto process = GetCurrentProcess();
     if (gDebugState.DisableOlmecGaps) {
       BYTE patch[] = {0xb9, 0x01, 0x00, 0x00, 0x00};
       patchReadOnlyCode(process, gBaseAddress + 0x0d5b71, patch, 5);
@@ -212,24 +210,17 @@ void drawDebugTab() {
       BYTE patch[] = {0xb9, 0x06, 0x00, 0x00, 0x00};
       patchReadOnlyCode(process, gBaseAddress + 0x0d5b71, patch, 5);
     }
-    CloseHandle(process);
   }
   if (ImGui::Checkbox("Disable Olmec Cutscene",
                       &gDebugState.DisableOlmecCutscene)) {
-    auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
-                                   PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
-                                   PROCESS_CREATE_THREAD,
-                               0, GetCurrentProcessId());
+    auto process = GetCurrentProcess();
     if (gDebugState.DisableOlmecCutscene) {
-
       BYTE patch[] = {0x83, 0xb9, 0xd4, 0x05, 0x44, 0x00, 0x99};
       patchReadOnlyCode(process, gBaseAddress + 0x0be66d, patch, 7);
     } else {
-
       BYTE patch[] = {0x83, 0xb9, 0xd4, 0x05, 0x44, 0x00, 0x10};
       patchReadOnlyCode(process, gBaseAddress + 0x0be66d, patch, 7);
     }
-    CloseHandle(process);
   }
   ImGui::Checkbox("Show Olmec Crush Probes", &gDebugState.ShowOlmecCrushProbes);
   ImGui::Separator();

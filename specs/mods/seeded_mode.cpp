@@ -7,6 +7,7 @@ SeededModeState gSeededModeState = {};
 
 #include "../drawing.h"
 #include "../entities.h"
+#include "../game_hooks.h"
 #include "../seeded_items.h"
 #include "../tabs/level_tab.h"
 #include "../utils.h"
@@ -64,19 +65,24 @@ void updateExportedSeed() {
 void loadFromExportSeed() {
   auto seed = gSeededModeState.exportSeed;
   auto parts = split(seed, ';');
-  if (parts.size() > 0) {
-    gSeededModeState.seed = std::stoi(parts[0]);
-  }
-  if (parts.size() > 1) {
-    gSeededModeState.levelSeeds.clear();
-    auto levelSeeds = std::vector<std::string>(parts.begin() + 1, parts.end());
-    for (auto levelSeed : levelSeeds) {
-      auto levelSeedParts = split(levelSeed, ':');
-      if (levelSeedParts.size() == 2) {
-        gSeededModeState.levelSeeds.push_back(
-            {std::stoi(levelSeedParts[0]), stoul(levelSeedParts[1])});
+  try {
+    if (parts.size() > 0) {
+      gSeededModeState.seed = std::stoi(parts[0]);
+    }
+    if (parts.size() > 1) {
+      gSeededModeState.levelSeeds.clear();
+      auto levelSeeds =
+          std::vector<std::string>(parts.begin() + 1, parts.end());
+      for (auto levelSeed : levelSeeds) {
+        auto levelSeedParts = split(levelSeed, ':');
+        if (levelSeedParts.size() == 2) {
+          gSeededModeState.levelSeeds.push_back(
+              {std::stoi(levelSeedParts[0]), stoul(levelSeedParts[1])});
+        }
       }
     }
+  } catch (const std::exception &) {
+    // Invalid input, ignore
   }
 }
 
@@ -84,7 +90,6 @@ std::unordered_set<uint8_t> getUsedLevelsForSeed() {
   std::unordered_set<uint8_t> usedLevels = {};
   for (auto [level, seed] : gSeededModeState.levelSeeds) {
     usedLevels.insert(level);
-    updateExportedSeed();
   }
 
   return usedLevels;
@@ -114,10 +119,269 @@ std::vector<uint8_t> getAvailableLevelsForSeed() {
 }
 
 uint32_t getRandomSeed() {
-  return std::rand() % UINT32_MAX * (UINT32_MAX / RAND_MAX);
+  return (static_cast<uint32_t>(std::rand()) << 16) |
+         static_cast<uint32_t>(std::rand());
 }
 
 void chooseRandomSeed() { gSeededModeState.seed = getRandomSeed(); }
+
+static void searchStraightDown() {
+  auto entranceRoomNumber = gGlobalState->level_state->entrance_room_x +
+                            gGlobalState->level_state->entrance_room_y * 4;
+
+  auto roomType = gGlobalState->level_state->room_types[entranceRoomNumber];
+  auto roomType2 =
+      gGlobalState->level_state->room_types[entranceRoomNumber + 4];
+  auto roomType3 =
+      gGlobalState->level_state->room_types[entranceRoomNumber + 8];
+  auto exitRoomNumber = gGlobalState->level_state->exit_room_x +
+                        gGlobalState->level_state->exit_room_y * 4;
+
+  if (roomType != 2 || roomType2 != 2 || roomType3 != 2 ||
+      entranceRoomNumber + 12 != exitRoomNumber) {
+    resetRun();
+  }
+}
+
+static void searchNoEggy13() {
+  auto hasBox = false;
+  auto hasIdol = false;
+  auto hasAltar = false;
+
+  auto boxPos = 0;
+  auto idolPos = 0;
+  auto altarPos = 0;
+
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_kind == EntityKind::KIND_ITEM) {
+      auto entity_item = (EntityItem *)ent;
+      if (entity_item->field52_0x1f0 == 1 and entity_item->entity_type == 248) {
+        hasBox = true;
+        boxPos = GetRoomForPosition(ent->x, ent->y) / 4;
+      }
+    }
+  }
+
+  for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
+    auto ent = gGlobalState->level_state->entity_floors[idx];
+    if (!ent) {
+      continue;
+    }
+    if (ent->entity_type == 35) {
+      hasAltar = true;
+      altarPos = GetRoomForPosition(ent->x, ent->y) / 4;
+    }
+    if (ent->entity_type == 15) {
+      hasIdol = true;
+      idolPos = GetRoomForPosition(ent->x, ent->y) / 4;
+    }
+  }
+
+  if (hasBox && hasAltar && hasIdol && boxPos <= idolPos &&
+      idolPos == altarPos) {
+    std::ofstream file("1-3-seeds.txt", std::ios_base::app);
+    if (file.is_open()) file << lastSeed << std::endl;
+    resetRun();
+  } else {
+    resetRun();
+  }
+}
+
+static int getFirstTileForRoomIdx(int roomIdx) {
+  const int startIdx = 141;
+  const int roomHeight = 8;
+  const int roomWidth = 10;
+  const int rowWidth = 46;
+
+  auto roomY = roomIdx / 4;
+  auto roomX = roomIdx % 4;
+
+  return startIdx + (roomY * roomHeight * rowWidth) + (roomX * roomWidth);
+}
+
+static int getTileByCoord(int x, int y) {
+  const int startIdx = 141;
+  const int rowWidth = 46;
+
+  return ENTITY_FLOORS_COUNT - (y * rowWidth) + x;
+}
+
+static void searchDaR() {
+  auto spawnedBM = gGlobalState->spawned_black_market_entrance;
+
+  auto hasHC = false;
+  auto hcRoom = 0;
+
+  for (auto idx = 0; idx < 48; idx++) {
+    auto room_type = gGlobalState->level_state->room_types[idx];
+    if (room_type == 47) {
+      hcRoom = idx;
+      hasHC = true;
+      break;
+    }
+  }
+
+  if (!hasHC || spawnedBM) {
+    resetRun();
+    return;
+  }
+
+  auto roomBelowHC = hcRoom + 4;
+  auto tileStart = getFirstTileForRoomIdx(roomBelowHC);
+
+  for (auto idx = 0; idx < 10; idx++) {
+    auto tile = gGlobalState->level_state->entity_floors[tileStart + idx];
+    if (!tile || tile->entity_type == 4) {
+      continue;
+    } else {
+      resetRun();
+      return;
+    }
+  }
+
+  for (auto idx = 0; idx < 10; idx++) {
+    auto tile = gGlobalState->level_state->entity_floors[tileStart + 46 + idx];
+    if (!tile) {
+      resetRun();
+      return;
+    }
+    if (tile->entity_type == 9097 || tile->entity_type == 4) {
+      continue;
+    } else {
+      resetRun();
+      return;
+    }
+  }
+
+  std::ofstream file("haunted-castle-black-market-seeds.txt", std::ios_base::app);
+  if (file.is_open()) file << lastSeed << std::endl;
+  resetRun();
+}
+
+static int hasBombChest() {
+  auto bombCount = 0;
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_type == 100) {
+      auto entity_types = getChestItemsForSeed(ent->z_depth_as_int);
+      bombCount += std::count(entity_types.begin(), entity_types.end(), 107);
+    }
+  }
+
+  return bombCount;
+}
+
+static void searchHC() {
+  auto spawnedBM = gGlobalState->spawned_black_market_entrance;
+  if (!spawnedBM) {
+    resetRun();
+    return;
+  }
+
+  auto bmX = gGlobalState->level_state->alt_exit_x;
+  auto bmY = gGlobalState->level_state->alt_exit_y;
+
+  auto bmXGood = bmX >= 30.0 && bmX <= 31.0;
+  auto bmYGood = bmY == 69.0;
+
+  if (!bmXGood || !bmYGood) {
+    resetRun();
+    return;
+  }
+
+  std::ofstream file("haunted-castle-seeds.txt", std::ios_base::app);
+  if (file.is_open()) file << lastSeed << std::endl;
+  resetRun();
+}
+
+static void searchWorm() {
+
+  auto wormEggCount = 0;
+  auto bacteriumCount = 0;
+  auto ufoCount = 0;
+  auto yetiCount = 0;
+  auto skeletonCount = 0;
+
+  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
+       idx++) {
+    auto ent = gGlobalState->entities->entities_active[idx];
+    if (!ent) {
+      continue;
+    }
+
+    if (ent->entity_type == 1046) {
+      wormEggCount++;
+    } else if (ent->entity_type == 1035) {
+      bacteriumCount++;
+    } else if (ent->entity_type == 1010) {
+      ufoCount++;
+    } else if (ent->entity_type == 1009) {
+      yetiCount++;
+    } else if (ent->entity_type == 1012) {
+      skeletonCount++;
+    }
+  }
+
+  std::ofstream file("worms.txt", std::ios_base::app);
+  if (!file.is_open()) { resetRun(); return; }
+  file << lastSeed << "," << wormEggCount << "," << bacteriumCount << ","
+       << ufoCount << "," << yetiCount << "," << skeletonCount << std::endl;
+  resetRun();
+}
+
+static void search34() {
+  if (gGlobalState->level == 9) {
+    gGlobalState->is_worm = 1;
+    warpToLevel(gGlobalState->level);
+    return;
+  } else if (gGlobalState->level == 10) {
+    warpToLevel(gGlobalState->level);
+    return;
+  }
+
+  auto rightMoship =
+      gGlobalState->level_state->entity_floors[getTileByCoord(33, 96)];
+  auto leftMoship =
+      gGlobalState->level_state->entity_floors[getTileByCoord(12, 96)];
+
+  if (rightMoship && rightMoship->entity_type == 81) {
+    auto block =
+        gGlobalState->level_state->entity_floors[getTileByCoord(32, 97)];
+    auto blockAbove =
+        gGlobalState->level_state->entity_floors[getTileByCoord(32, 98)];
+    if (!block || block->entity_type != 9098 || blockAbove) {
+      resetRun();
+      return;
+    }
+  } else if (leftMoship && leftMoship->entity_type == 81) {
+    auto block =
+        gGlobalState->level_state->entity_floors[getTileByCoord(13, 97)];
+    auto blockAbove =
+        gGlobalState->level_state->entity_floors[getTileByCoord(13, 98)];
+    if (!block || block->entity_type != 9098 || blockAbove) {
+      resetRun();
+      return;
+    }
+  } else {
+    resetRun();
+    return;
+  }
+
+  std::ofstream file("34-seeds.txt", std::ios_base::app);
+  if (file.is_open()) file << lastSeed << std::endl;
+  resetRun();
+}
 
 static void searchSeeds() {
   extern uint32_t lastSeed;
@@ -126,6 +390,7 @@ static void searchSeeds() {
   std::ofstream shopItemsFile;
   cratesFile.open("crates.txt", std::ios_base::app);
   shopItemsFile.open("shop_items.txt", std::ios_base::app);
+  if (!cratesFile.is_open() || !shopItemsFile.is_open()) return;
 
   auto seedForLevel = lastSeed;
   auto formattedLevel = formatLevel(gGlobalState->level);

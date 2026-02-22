@@ -13,36 +13,33 @@ void patchReadOnlyCode(HANDLE process, DWORD addr, void *value, size_t size) {
 }
 
 void applyForcePatch(ForcePatch &patch, FORCE_PATCH_TYPE type) {
-  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
-                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
-                                 PROCESS_CREATE_THREAD,
-                             0, GetCurrentProcessId());
+  auto process = GetCurrentProcess();
   if (type == FORCE_PATCH_TYPE_NORMAL) {
-    patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
-                      &patch.always.original[0], patch.always.original.size());
-    patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
-                      &patch.never.original[0], patch.never.original.size());
+    if (!patch.always.original.empty())
+      patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
+                        &patch.always.original[0], patch.always.original.size());
+    if (!patch.never.original.empty())
+      patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
+                        &patch.never.original[0], patch.never.original.size());
   } else if (type == FORCE_PATCH_TYPE_ALWAYS) {
-    patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
-                      &patch.always.patch[0], patch.always.patch.size());
-    patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
-                      &patch.never.original[0], patch.never.original.size());
+    if (!patch.always.patch.empty())
+      patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
+                        &patch.always.patch[0], patch.always.patch.size());
+    if (!patch.never.original.empty())
+      patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
+                        &patch.never.original[0], patch.never.original.size());
   } else if (type == FORCE_PATCH_TYPE_NEVER) {
-    patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
-                      &patch.always.original[0], patch.always.original.size());
-    patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
-                      &patch.never.patch[0], patch.never.patch.size());
+    if (!patch.always.original.empty())
+      patchReadOnlyCode(process, gBaseAddress + patch.always.offset,
+                        &patch.always.original[0], patch.always.original.size());
+    if (!patch.never.patch.empty())
+      patchReadOnlyCode(process, gBaseAddress + patch.never.offset,
+                        &patch.never.patch[0], patch.never.patch.size());
   }
-
-  CloseHandle(process);
 }
 
 void applyRelativePatches(std::vector<RelativePatch> &patches, bool rollback) {
-
-  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
-                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
-                                 PROCESS_CREATE_THREAD,
-                             0, GetCurrentProcessId());
+  auto process = GetCurrentProcess();
 
   for (RelativePatch patch : patches) {
     if (rollback) {
@@ -53,16 +50,10 @@ void applyRelativePatches(std::vector<RelativePatch> &patches, bool rollback) {
       patchReadOnlyCode(process, gBaseAddress + patch.offset, &value, 4);
     }
   }
-
-  CloseHandle(process);
 }
 
 void applyPatches(std::vector<Patch> &patches, bool rollback) {
-
-  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
-                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
-                                 PROCESS_CREATE_THREAD,
-                             0, GetCurrentProcessId());
+  auto process = GetCurrentProcess();
 
   for (Patch patch : patches) {
     if (rollback) {
@@ -77,8 +68,6 @@ void applyPatches(std::vector<Patch> &patches, bool rollback) {
       }
     }
   }
-
-  CloseHandle(process);
 }
 
 static std::vector<HookEntry> gInstalledHooks;

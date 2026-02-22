@@ -185,7 +185,7 @@ void postPlaceRoomsBiglunky() {
   if (gModsState.Biglunky) {
     if (gGlobalState->is_city_of_gold) {
       auto num_flag_21 = 0;
-      for (auto idx = 0; idx < 4692; idx++) {
+      for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
         auto ent = gGlobalState->level_state->entity_floors[idx];
         if (ent && ent->flag_21 == 1) {
           if (num_flag_21 > 512) {
@@ -195,7 +195,7 @@ void postPlaceRoomsBiglunky() {
         }
       }
     } else if (gGlobalState->rushing_water) {
-      for (auto idx = 0; idx < 4692; idx++) {
+      for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
         auto ent = gGlobalState->level_state->entity_floors[idx];
         if (ent && ent->y == 12 && ent->x >= 3 && ent->x < 43) {
           DestroyFloor(gGlobalState->level_state, ent);

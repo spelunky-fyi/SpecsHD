@@ -35,17 +35,13 @@ void specsOnInit() {
   gDebugState.Selection.activeEntities = true;
   gDebugState.Selection.floorEntities = true;
 
-  auto process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ |
-                                 PROCESS_VM_WRITE | PROCESS_VM_OPERATION |
-                                 PROCESS_CREATE_THREAD,
-                             0, GetCurrentProcessId());
+  auto process = GetCurrentProcess();
 
   BYTE patch[] = {0x4a};
   patchReadOnlyCode(process, gBaseAddress + 0x135B2A, patch, 1);
 
   BYTE patch2[] = {0xF0};
   patchReadOnlyCode(process, gBaseAddress + 0x1366C6, patch2, 1);
-  CloseHandle(process);
 }
 
 void specsOnDestroy() { cleanUpHooks(); }
@@ -176,6 +172,8 @@ void specsOnFrame() {
   gWindowedMode = static_cast<int>(*((DWORD *)(gBaseAddress + 0x15a52c)));
   gDisplayWidth = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a8c)));
   gDisplayHeight = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a90)));
+
+  if (!gGlobalState || !gCameraState) return;
 
   gGlobalState->N00001004 = 0; // 440629
   gFrame++;

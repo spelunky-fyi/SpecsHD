@@ -537,8 +537,8 @@ void onLevelStartFullSpelunky() {
       }
       break;
     }
-  } else if (gGlobalState->level == 9 && gGlobalState->is_wet_fur ||
-             gGlobalState->level == 11 && gGlobalState->is_mothership ||
+  } else if ((gGlobalState->level == 9 && gGlobalState->is_wet_fur) ||
+             (gGlobalState->level == 11 && gGlobalState->is_mothership) ||
              gGlobalState->is_worm) {
     for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
          idx++) {

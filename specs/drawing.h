@@ -36,7 +36,7 @@ bool drawCharBool(const char *label, uint8_t &flag);
 
 // Entity iteration
 using EntityCallback = std::function<void(Entity *e)>;
-void forEntities(std::unordered_set<uint32_t> excludedEntities,
+void forEntities(const std::unordered_set<uint32_t> &excludedEntities,
                  EntityCallback callback, Entity **entities, size_t count,
                  bool decos = false);
 void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback);

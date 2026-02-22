@@ -16,14 +16,15 @@ void drawSpawnTab() {
     gSpawnState.SpawnEntityInputs.push_back(SpawnEntityConfig{-1, true});
   }
 
-  for (auto idx = 0; auto &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
+  int eraseIdx = -1;
+  for (size_t idx = 0; idx < gSpawnState.SpawnEntityInputs.size(); idx++) {
+    auto &spawnEntityConfig = gSpawnState.SpawnEntityInputs[idx];
 
     ImGui::PushItemWidth(200 * io.FontGlobalScale);
 
     if (idx > 0) {
       if (ImGui::Button(std::format("-##SpawnEntityInput-{}", idx).c_str())) {
-        gSpawnState.SpawnEntityInputs.erase(
-            gSpawnState.SpawnEntityInputs.begin() + idx);
+        eraseIdx = static_cast<int>(idx);
       }
     } else {
       auto size = ImGui::CalcTextSize("-");
@@ -42,8 +43,10 @@ void drawSpawnTab() {
     ImGui::SameLine();
     ImGui::Checkbox(std::format("Active##SpawnEntityInputId-{}", idx).c_str(),
                     &spawnEntityConfig.activeEntity);
-
-    idx++;
+  }
+  if (eraseIdx >= 0) {
+    gSpawnState.SpawnEntityInputs.erase(
+        gSpawnState.SpawnEntityInputs.begin() + eraseIdx);
   }
 
   if (ImGui::Button("Add Additional Entity")) {
@@ -52,7 +55,7 @@ void drawSpawnTab() {
 
   ImGui::Separator();
 
-  if (ImGui::Button("Spawn")) {
+  if (ImGui::Button("Spawn") && gGlobalState->player1) {
     for (auto const &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
 
       if (spawnEntityConfig.entityType >= 0) {

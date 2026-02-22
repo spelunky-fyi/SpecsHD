@@ -15,6 +15,7 @@
 #include "tabs/spawn_tab.h"
 
 ImVec2 screenToGame(ImVec2 screen) {
+  if (gDisplayWidth == 0) return {0, 0};
 
   auto x =
       (screen.x - ((float)gDisplayWidth / 2)) * (20 / (float)gDisplayWidth) +
@@ -27,6 +28,8 @@ ImVec2 screenToGame(ImVec2 screen) {
 }
 
 ImVec2 gameToScreen(ImVec2 game) {
+  if (gDisplayWidth == 0) return {0, 0};
+
   auto x = (game.x - gCameraState->camera_x) / (20 / (float)gDisplayWidth) +
            ((float)gDisplayWidth / 2);
   auto y = (game.y - gCameraState->camera_y) / -(20 / (float)gDisplayWidth) +
@@ -225,12 +228,12 @@ void drawEntityId(Entity *ent) {
 
 void drawEntityOffsetDebug(Entity *ent) {
 
-  auto entry =
-      gDebugState
-          .DrawEntityOffsets[std::pair{ent->entity_kind, ent->entity_type}];
-  if (entry.empty()) {
+  auto it = gDebugState.DrawEntityOffsets.find(
+      std::pair{ent->entity_kind, ent->entity_type});
+  if (it == gDebugState.DrawEntityOffsets.end() || it->second.empty()) {
     return;
   }
+  auto &entry = it->second;
 
   auto idx = 0;
   auto font = ImGui::GetFont();
@@ -265,7 +268,7 @@ void drawEntityOffsetDebug(Entity *ent) {
   }
 }
 
-void forEntities(std::unordered_set<uint32_t> excludedEntities,
+void forEntities(const std::unordered_set<uint32_t> &excludedEntities,
                  EntityCallback callback, Entity **entities, size_t count,
                  bool decos) {
   for (size_t idx = 0; idx < count; idx++) {
@@ -358,12 +361,12 @@ bool findEntity(Entity *searchEnt) {
                       gGlobalState->entities->entities_light_emitting,
                       gGlobalState->entities->entities_light_emitting_count) ||
       findEntityArray(searchEnt,
-                      (Entity **)gGlobalState->level_state->entity_floors, 4692,
+                      (Entity **)gGlobalState->level_state->entity_floors, ENTITY_FLOORS_COUNT,
                       gDebugState.IncludeFloorDecos) ||
 
       findEntityArray(searchEnt,
                       (Entity **)gGlobalState->level_state->entity_floors_bg,
-                      4692) ||
+                      ENTITY_FLOORS_COUNT) ||
 
       findEntityArray(searchEnt,
                       (Entity **)gGlobalState->level_state->entity_backgrounds,
@@ -403,12 +406,12 @@ void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback) {
   // Floors
   if (enabledEnts.floorEntities) {
     forEntities(enabledEnts.excluded, callback,
-                (Entity **)gGlobalState->level_state->entity_floors, 4692,
+                (Entity **)gGlobalState->level_state->entity_floors, ENTITY_FLOORS_COUNT,
                 gDebugState.IncludeFloorDecos);
   }
   if (enabledEnts.floorBgEntities) {
     forEntities(enabledEnts.excluded, callback,
-                (Entity **)gGlobalState->level_state->entity_floors_bg, 4692);
+                (Entity **)gGlobalState->level_state->entity_floors_bg, ENTITY_FLOORS_COUNT);
   }
 
   // Backgrounds
@@ -535,7 +538,7 @@ static void handleSpawnInput() {
                                             spawnEntityConfig.activeEntity);
           }
 
-          if ((uint32_t)ent->entity_kind > 0 &&
+          if (ent && (uint32_t)ent->entity_kind > 0 &&
               (uint32_t)ent->entity_kind < 5) {
 
             auto activeEnt = (EntityActive *)ent;
@@ -944,7 +947,7 @@ static void drawEnemyDetection() {
           auto y_offset = (99 - y_pos) * 0x2e;
           do {
             auto floor_idx = x_offset + x_pos + y_offset;
-            if (floor_idx >= 0 && floor_idx < 4692) {
+            if (floor_idx >= 0 && floor_idx < ENTITY_FLOORS_COUNT) {
               auto floor =
                   gGlobalState->level_state->entity_floors[floor_idx];
 
@@ -1024,7 +1027,7 @@ void drawOverlayWindow() {
                             "SpecsHD");
 
   if (gModsState.SeededMode) {
-    auto out = std::format("Seed: {}", lastSeed, ImGui::GetFontSize());
+    auto out = std::format("Seed: {}", lastSeed);
     gOverlayDrawList->AddText(
         ImGui::GetFont(), 32.f, {io.DisplaySize.x - 348.f, 40.f},
         ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.8f}), out.c_str());

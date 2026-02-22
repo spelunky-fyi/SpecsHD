@@ -28,7 +28,6 @@ void advanceLevel();
 void updateExportedSeed();
 void loadFromExportSeed();
 
-uint32_t getUsedLevelsCount();
 std::unordered_set<uint8_t> getUsedLevelsForSeed();
 uint8_t getNextAvailableLevelForSeed();
 std::vector<uint8_t> getAvailableLevelsForSeed();

@@ -79,5 +79,6 @@
     "mutex": "cpp"
   },
   "C_Cpp.default.cppStandard": "c++20",
-  "C_Cpp.default.intelliSenseMode": "windows-msvc-x86"
+  "C_Cpp.default.intelliSenseMode": "windows-msvc-x86",
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

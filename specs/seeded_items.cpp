@@ -300,7 +300,7 @@ void drawSeededChestOverlay() {
 }
 
 void drawSeededKaliRewardsOverlay() {
-  for (auto idx = 0; idx < 4692; idx++) {
+  for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
     auto ent = gGlobalState->level_state->entity_floors[idx];
     if (!ent) {
       continue;

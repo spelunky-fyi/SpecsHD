@@ -5,6 +5,8 @@
 #include "Windows.h"
 #include "hd_entity.h"
 
+constexpr size_t ENTITY_FLOORS_COUNT = 4692;
+
 class CameraState {
 public:
   float camera_x;           // 0x0000
@@ -184,8 +186,8 @@ public:
   uint32_t unknown;                          // 0x0804
   Entity *entity_items[720];                 // 0x0808
   uint32_t entity_items_count;               // 0x1348
-  EntityFloor *entity_floors[4692];          // 0x134C
-  EntityFloor *entity_floors_bg[4692];       // 0x5C9C
+  EntityFloor *entity_floors[ENTITY_FLOORS_COUNT];          // 0x134C
+  EntityFloor *entity_floors_bg[ENTITY_FLOORS_COUNT];       // 0x5C9C
   uint32_t room_types[48];                   // 0xA5EC
   DeathmatchArea deathmatch_areas[9];        // 0xA6AC
   uint8_t unused[12972];                     // 0x13EB0

@@ -23,7 +23,7 @@ DWORD hookWhipSkipWhippingAddr = NULL;
 DWORD hookSeedLevelJmpBackAddr = NULL;
 DWORD hookPostSpawnEntityJmpBackAddr = NULL;
 
-int ELIGIBLE_FLOORS_FOR_BM[4692] = {0};
+int ELIGIBLE_FLOORS_FOR_BM[ENTITY_FLOORS_COUNT] = {0};
 int ELIGIBLE_FLOORS_FOR_BM_COUNT = 0;
 
 uint32_t lastSeed = 0;
@@ -202,9 +202,15 @@ void __declspec(naked) hookPreResetForRun() {
   }
 }
 
-void __declspec(naked) hookEligibleBMs() {
-  int *eligible;
+static int *gEligibleBMsPtr = nullptr;
 
+static void copyEligibleBMs() {
+  for (int i = 0; i < ELIGIBLE_FLOORS_FOR_BM_COUNT; i++) {
+    ELIGIBLE_FLOORS_FOR_BM[i] = gEligibleBMsPtr[i];
+  }
+}
+
+void __declspec(naked) hookEligibleBMs() {
   __asm {
     ; Stolen Bytes
     mov eax, dword ptr [ebp + ecx*0x4 + 0x134c]
@@ -218,12 +224,10 @@ void __declspec(naked) hookEligibleBMs() {
     ; Actually at esp+0x30 but add 0x20 for pushad
     mov ecx, esp
     add ecx, 0x50
-    mov eligible, ecx
+    mov gEligibleBMsPtr, ecx
   }
 
-  for (int i = 0; i < ELIGIBLE_FLOORS_FOR_BM_COUNT; i++) {
-    ELIGIBLE_FLOORS_FOR_BM[i] = eligible[i];
-  }
+  copyEligibleBMs();
 
   __asm {
     ; Restore all registers
@@ -254,33 +258,34 @@ void __declspec(naked) hookUnlockCoffins() {
   }
 }
 
+static bool gShouldSkipWhip = false;
+
+static void checkWhipCondition() {
+  gShouldSkipWhip = gGlobalState->player1 &&
+                     gGlobalState->player1_data.has_crysknife == 0 &&
+                     gGlobalState->player1->field68_0x200 == 0;
+}
+
 void __declspec(naked) hookWhip() {
   __asm {
     ; Save all registers
     pushad
   }
 
-  // Player off ground
-  if (gGlobalState->player1 && gGlobalState->player1_data.has_crysknife == 0 &&
-      gGlobalState->player1->field68_0x200 == 0) {
-    __asm {
-      ; Restore all registers
-      popad
+  checkWhipCondition();
 
-      ; Jump back to previous location
-      jmp [hookWhipSkipWhippingAddr]
-    }
-  }
-  else {
-    __asm {
-      ; Restore all registers
-      popad
+  __asm {
+    ; Restore all registers
+    popad
 
-      CMP dword ptr [EDI + 0x134],0x1d
+    cmp gShouldSkipWhip, 1
+    je skipWhip
 
-      ; Jump back to previous location
-      jmp [hookWhipJmpBackAddr]
-    }
+    CMP dword ptr [EDI + 0x134],0x1d
+    jmp [hookWhipJmpBackAddr]
+
+  skipWhip:
+    jmp [hookWhipSkipWhippingAddr]
   }
 }
 
@@ -304,32 +309,40 @@ uint32_t getSeedForLevel(int level) {
   return seed;
 }
 
-void __declspec(naked) hookSeedLevel() {
-  int seed;
+static uint32_t gComputedSeed = 0;
 
+static void computeSeedForLevel() {
+  lastSeed = getSeedForLevel(gGlobalState->level);
+  gComputedSeed = lastSeed * gGlobalState->level;
+}
+
+void __declspec(naked) hookSeedLevel() {
   __asm {
     ; Save all registers
     pushad
   }
 
-  lastSeed = getSeedForLevel(gGlobalState->level);
-  seed = lastSeed * gGlobalState->level;
+  computeSeedForLevel();
 
   __asm {
     ; Restore all registers
     popad
 
-    mov eax, seed
+    mov eax, gComputedSeed
     jmp[hookSeedLevelJmpBackAddr]
   }
 }
 
+static Entity *gSpawnedEntity = nullptr;
+
+static void handlePostSpawnEntity() {
+  if (gModsState.TunnelMan) {
+    gSpawnedEntity = postSpawnEntityTunnelMan(gSpawnedEntity);
+  }
+}
+
 void __declspec(naked) hookPostSpawnEntity() {
-
-  Entity *spawned_entity;
-
   __asm {
-
     ; Stolen Bytes
     MOV        ECX,dword ptr [EBP + 0x30]
     MOV        EDX,ESI
@@ -337,19 +350,16 @@ void __declspec(naked) hookPostSpawnEntity() {
     ; Save all registers
     pushad
 
-    mov spawned_entity, esi
+    mov gSpawnedEntity, esi
   }
 
-  if (gModsState.TunnelMan) {
-    spawned_entity = postSpawnEntityTunnelMan(spawned_entity);
-  }
+  handlePostSpawnEntity();
 
   __asm {
     ; Restore all registers
     popad
 
-    mov esi, spawned_entity
-    mov spawned_entity, 0
+    mov esi, gSpawnedEntity
 
     ; Jump back to previous location
     jmp [hookPostSpawnEntityJmpBackAddr]
