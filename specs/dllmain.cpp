@@ -8,14 +8,14 @@
 
 void WINAPI MainThread(const HMODULE instance) {
 
-  srand(time(NULL));
+  srand(static_cast<unsigned int>(time(NULL)));
 
   try {
     ui::Setup();
     hooks::Setup();
   } catch (const std::exception &error) {
     MessageBeep(MB_ICONERROR);
-    MessageBox(0, error.what(), "Specs HD Error", MB_OK | MB_ICONEXCLAMATION);
+    MessageBoxA(0, error.what(), "Specs HD Error", MB_OK | MB_ICONEXCLAMATION);
     goto DIE;
   }
 
