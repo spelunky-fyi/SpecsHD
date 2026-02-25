@@ -7,15 +7,15 @@
 LevelsState gLevelsState = {};
 
 void warpToLevel(uint32_t level) {
-  resetForLevel(gGlobalState);
-  gGlobalState->level = level;
-  gGlobalState->screen_state = 1;
+  hddll::resetForLevel(hddll::gGlobalState);
+  hddll::gGlobalState->level = level;
+  hddll::gGlobalState->screen_state = 1;
 }
 
 void resetRun() {
-  resetForRun(gGlobalState, 0);
-  gGlobalState->level = gGlobalState->respawn_level;
-  gGlobalState->screen_state = 1;
+  hddll::resetForRun(hddll::gGlobalState, 0);
+  hddll::gGlobalState->level = hddll::gGlobalState->respawn_level;
+  hddll::gGlobalState->screen_state = 1;
 }
 
 static void RectFilled(ImVec2 &size, ImU32 col = IM_COL32_WHITE,
@@ -80,35 +80,44 @@ static void ensureLockedU8(uint8_t &val, LockableU8 *lockable) {
 }
 
 void ensureLockedLevelsState() {
-  ensureLockedU8(gGlobalState->flooded_mines, &gLevelsState.FloodedMines);
-  ensureLockedU8(gGlobalState->skin_is_crawling, &gLevelsState.SkinIsCrawling);
+  ensureLockedU8(hddll::gGlobalState->flooded_mines,
+                 &gLevelsState.FloodedMines);
+  ensureLockedU8(hddll::gGlobalState->skin_is_crawling,
+                 &gLevelsState.SkinIsCrawling);
 
-  ensureLockedU8(gGlobalState->dead_are_restless,
+  ensureLockedU8(hddll::gGlobalState->dead_are_restless,
                  &gLevelsState.DeadAreRestless);
-  ensureLockedU8(gGlobalState->rushing_water, &gLevelsState.RushingWater);
-  ensureLockedU8(gGlobalState->is_haunted_castle, &gLevelsState.HauntedCastle);
-  ensureLockedU8(gGlobalState->tiki_village, &gLevelsState.TikiVillage);
-  ensureLockedU8(gGlobalState->is_blackmarket, &gLevelsState.BlackMarket);
+  ensureLockedU8(hddll::gGlobalState->rushing_water,
+                 &gLevelsState.RushingWater);
+  ensureLockedU8(hddll::gGlobalState->is_haunted_castle,
+                 &gLevelsState.HauntedCastle);
+  ensureLockedU8(hddll::gGlobalState->tiki_village, &gLevelsState.TikiVillage);
+  ensureLockedU8(hddll::gGlobalState->is_blackmarket,
+                 &gLevelsState.BlackMarket);
 
-  ensureLockedU8(gGlobalState->is_wet_fur, &gLevelsState.WetFur);
-  ensureLockedU8(gGlobalState->is_mothership, &gLevelsState.MotherShip);
-  ensureLockedU8(gGlobalState->is_worm, &gLevelsState.Worm);
+  ensureLockedU8(hddll::gGlobalState->is_wet_fur, &gLevelsState.WetFur);
+  ensureLockedU8(hddll::gGlobalState->is_mothership, &gLevelsState.MotherShip);
+  ensureLockedU8(hddll::gGlobalState->is_worm, &gLevelsState.Worm);
 
-  ensureLockedU8(gGlobalState->is_city_of_gold, &gLevelsState.CityOfGold);
+  ensureLockedU8(hddll::gGlobalState->is_city_of_gold,
+                 &gLevelsState.CityOfGold);
 
-  ensureLockedU8(gGlobalState->altar_spawned, &gLevelsState.AltarSpawned);
-  ensureLockedU8(gGlobalState->idol_spawned, &gLevelsState.IdolSpawned);
-  ensureLockedU8(gGlobalState->damsel_spawned, &gLevelsState.DamselSpawned);
-  ensureLockedU8(gGlobalState->ghost_spawned, &gLevelsState.GhostSpawned);
-  ensureLockedU8(gGlobalState->vault_spawned_in_area,
+  ensureLockedU8(hddll::gGlobalState->altar_spawned,
+                 &gLevelsState.AltarSpawned);
+  ensureLockedU8(hddll::gGlobalState->idol_spawned, &gLevelsState.IdolSpawned);
+  ensureLockedU8(hddll::gGlobalState->damsel_spawned,
+                 &gLevelsState.DamselSpawned);
+  ensureLockedU8(hddll::gGlobalState->ghost_spawned,
+                 &gLevelsState.GhostSpawned);
+  ensureLockedU8(hddll::gGlobalState->vault_spawned_in_area,
                  &gLevelsState.VaultSpawnedInArea);
 }
 
 void drawLevelTab() {
 
   ImGuiIO &io = ImGui::GetIO();
-  auto isDisabled =
-      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+  auto isDisabled = hddll::gGlobalState->screen_state != 0 ||
+                    hddll::gGlobalState->play_state != 0;
 
   if (isDisabled) {
     ImGui::BeginDisabled();
@@ -116,7 +125,7 @@ void drawLevelTab() {
   ImGui::Text("");
   ImGui::SameLine(100.0f * io.FontGlobalScale);
   if (ImGui::Button("Next Level")) {
-    warpToLevel(gGlobalState->level);
+    warpToLevel(hddll::gGlobalState->level);
   }
 
   ImGui::Text("Mines");
@@ -207,11 +216,13 @@ void drawLevelTab() {
 
   ImGui::Separator();
   ImGui::PushItemWidth(100 * io.FontGlobalScale);
-  ImGui::InputInt("Respawn Level Skip", (int *)&gGlobalState->respawn_level);
+  ImGui::InputInt("Respawn Level Skip",
+                  (int *)&hddll::gGlobalState->respawn_level);
   ImGui::SameLine();
   if (ImGui::Button("Set Current Level")) {
-    gGlobalState->respawn_level =
-        std::clamp((int)gGlobalState->level - 1, 0, (int)gGlobalState->level);
+    hddll::gGlobalState->respawn_level =
+        std::clamp((int)hddll::gGlobalState->level - 1, 0,
+                   (int)hddll::gGlobalState->level);
   }
 
   if (ImGui::CollapsingHeader("Level Flags")) {
@@ -222,53 +233,57 @@ void drawLevelTab() {
 
     ImGui::Separator();
 
-    drawLockedLevelFlag("Flooded Mines", gGlobalState->flooded_mines,
+    drawLockedLevelFlag("Flooded Mines", hddll::gGlobalState->flooded_mines,
                         &gLevelsState.FloodedMines);
-    drawLockedLevelFlag("Skin is Crawling", gGlobalState->skin_is_crawling,
+    drawLockedLevelFlag("Skin is Crawling",
+                        hddll::gGlobalState->skin_is_crawling,
                         &gLevelsState.SkinIsCrawling);
 
     ImGui::Separator();
-    drawLockedLevelFlag("Dead are Restless", gGlobalState->dead_are_restless,
+    drawLockedLevelFlag("Dead are Restless",
+                        hddll::gGlobalState->dead_are_restless,
                         &gLevelsState.DeadAreRestless);
-    drawLockedLevelFlag("Rushing Water", gGlobalState->rushing_water,
+    drawLockedLevelFlag("Rushing Water", hddll::gGlobalState->rushing_water,
                         &gLevelsState.RushingWater);
-    drawLockedLevelFlag("Haunted Castle", gGlobalState->is_haunted_castle,
+    drawLockedLevelFlag("Haunted Castle",
+                        hddll::gGlobalState->is_haunted_castle,
                         &gLevelsState.HauntedCastle);
-    drawLockedLevelFlag("Tiki Village", gGlobalState->tiki_village,
+    drawLockedLevelFlag("Tiki Village", hddll::gGlobalState->tiki_village,
                         &gLevelsState.TikiVillage);
-    drawLockedLevelFlag("Black Market", gGlobalState->is_blackmarket,
+    drawLockedLevelFlag("Black Market", hddll::gGlobalState->is_blackmarket,
                         &gLevelsState.BlackMarket);
 
     ImGui::Separator();
-    drawLockedLevelFlag("Wet Fur", gGlobalState->is_wet_fur,
+    drawLockedLevelFlag("Wet Fur", hddll::gGlobalState->is_wet_fur,
                         &gLevelsState.WetFur);
-    drawLockedLevelFlag("Mothership", gGlobalState->is_mothership,
+    drawLockedLevelFlag("Mothership", hddll::gGlobalState->is_mothership,
                         &gLevelsState.MotherShip);
-    drawLockedLevelFlag("Worm", gGlobalState->is_worm, &gLevelsState.Worm);
+    drawLockedLevelFlag("Worm", hddll::gGlobalState->is_worm,
+                        &gLevelsState.Worm);
 
     ImGui::Separator();
-    drawLockedLevelFlag("City of Gold", gGlobalState->is_city_of_gold,
+    drawLockedLevelFlag("City of Gold", hddll::gGlobalState->is_city_of_gold,
                         &gLevelsState.CityOfGold);
 
     ImGui::Separator();
-    drawLockedLevelFlag("Altar Spawned", gGlobalState->altar_spawned,
+    drawLockedLevelFlag("Altar Spawned", hddll::gGlobalState->altar_spawned,
                         &gLevelsState.AltarSpawned);
-    drawLockedLevelFlag("Idol Spawned", gGlobalState->idol_spawned,
+    drawLockedLevelFlag("Idol Spawned", hddll::gGlobalState->idol_spawned,
                         &gLevelsState.IdolSpawned);
-    drawLockedLevelFlag("Damsel Spawned", gGlobalState->damsel_spawned,
+    drawLockedLevelFlag("Damsel Spawned", hddll::gGlobalState->damsel_spawned,
                         &gLevelsState.DamselSpawned);
-    drawLockedLevelFlag("Ghost Spawned", gGlobalState->ghost_spawned,
+    drawLockedLevelFlag("Ghost Spawned", hddll::gGlobalState->ghost_spawned,
                         &gLevelsState.GhostSpawned);
     drawLockedLevelFlag("Vault Spawned in Area",
-                        gGlobalState->vault_spawned_in_area,
+                        hddll::gGlobalState->vault_spawned_in_area,
                         &gLevelsState.VaultSpawnedInArea);
   }
 
   ImVec2 size = {5.f, 5.f};
   ImGui::Separator();
   if (ImGui::CollapsingHeader("Level Map")) {
-    for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
-      auto ent = gGlobalState->level_state->entity_floors[idx];
+    for (auto idx = 0; idx < hddll::ENTITY_FLOORS_COUNT; idx++) {
+      auto ent = hddll::gGlobalState->level_state->entity_floors[idx];
 
       auto col = IM_COL32(183, 183, 183, 255);
       // Empty
@@ -307,7 +322,7 @@ void drawLevelTab() {
   if (ImGui::CollapsingHeader("Room Types")) {
     for (auto idx = 0; idx < 48; idx++) {
       auto column = idx % 4;
-      auto type = gGlobalState->level_state->room_types[idx];
+      auto type = hddll::gGlobalState->level_state->room_types[idx];
       auto col = IM_COL32(183, 183, 183, 255);
       if (type >= 1 && type <= 3) {
         // Path

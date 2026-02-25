@@ -3,10 +3,12 @@
 #include <Windows.h>
 #include <string>
 
-#include "3rdparty/imgui/imgui.h"
 #include "config.h"
-#include "hd.h"
-#include "hd_entity.h"
+#include <hddll/hd.h>
+#include <hddll/hd_entity.h>
+#include <hddll/hddll.h>
+#include <imgui.h>
+
 
 // Structs
 
@@ -21,11 +23,7 @@ struct ModsState {
 
 // Extern globals
 
-extern DWORD gBaseAddress;
 extern ImDrawList *gOverlayDrawList;
-
-extern CameraState *gCameraState;
-extern GlobalState *gGlobalState;
 
 extern Specs::Config *gConfig;
 

@@ -1,7 +1,7 @@
 
 #include "uplunky.h"
 
-std::vector<Patch> gUplunkyPatches = {
+std::vector<hddll::Patch> gUplunkyPatches = {
     // Change Exit Door to Entrance Door
     {0xd91ba, {0x02}, {0x03}},
     // Change Entrance Door to Exit Door
@@ -22,20 +22,20 @@ std::vector<Patch> gUplunkyPatches = {
     {0xde966, {0x02}, {0x03}},
 };
 
-std::vector<RelativePatch> gUplunkyRelativePatches = {
+std::vector<hddll::RelativePatch> gUplunkyRelativePatches = {
     // // Swap entrance/exit on olmec
     // {0xde7d6, 0x13602c, 0x135b3c},
     // {0xde94d, 0x135b3c, 0x13602c},
 };
 
 void resetUplunkyState() {
-  gGlobalState->player1_data.ropes = 64;
-  gGlobalState->player1_data.bombs = 6;
+  hddll::gGlobalState->player1_data.ropes = 64;
+  hddll::gGlobalState->player1_data.bombs = 6;
 }
 
 void prePlaceRoomsUplunky() {
   if (!gModsState.DarkMode) {
-    gGlobalState->dark_level = 0;
+    hddll::gGlobalState->dark_level = 0;
   }
 }
 

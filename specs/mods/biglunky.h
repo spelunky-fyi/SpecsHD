@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../memory.h"
 #include "../state.h"
+#include <hddll/memory.h>
 
-extern std::vector<Patch> gBiglunkyPatches;
-extern std::vector<RelativePatch> gBiglunkyRelativePatches;
+extern std::vector<hddll::Patch> gBiglunkyPatches;
+extern std::vector<hddll::RelativePatch> gBiglunkyRelativePatches;
 
 void prePlaceRoomsBiglunky();
 void postPlaceRoomsBiglunky();

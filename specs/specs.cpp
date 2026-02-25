@@ -7,9 +7,9 @@
 #include "drawing.h"
 #include "game_hooks.h"
 #include "inputs.h"
-#include "memory.h"
 #include "state.h"
-#include "ui.h"
+#include <hddll/memory.h>
+#include <hddll/ui.h>
 
 #include "mods/full_spelunky.h"
 #include "mods/seeded_mode.h"
@@ -23,7 +23,11 @@
 #include "tabs/settings_tab.h"
 #include "tabs/spawn_tab.h"
 
-void specsOnInit() {
+static bool gToolWindowOpen = true;
+
+namespace hddll {
+
+void onInit() {
   srand((unsigned int)time(NULL));
 
   gConfig = Specs::Config::load();
@@ -44,13 +48,15 @@ void specsOnInit() {
   patchReadOnlyCode(process, gBaseAddress + 0x1366C6, patch2, 1);
 }
 
-void specsOnDestroy() { cleanUpHooks(); }
+void onDestroy() { cleanUpHooks(); }
+
+} // namespace hddll
 
 static void handleKeyInput() {
   auto keys = gConfig->keys;
 
   if (Specs::IsKeyPressed(keys[Specs::KeyFeatures_Hide])) {
-    ui::open = !ui::open;
+    gToolWindowOpen = !gToolWindowOpen;
   }
 
   if (Specs::IsKeyPressed(keys[Specs::KeyFeatures_Engine_Pause])) {
@@ -61,30 +67,30 @@ static void handleKeyInput() {
   if (gPaused && gFrame > gPauseAt) {
     if (Specs::IsKeyPressed(keys[Specs::KeyFeatures_Engine_Frame_Advance],
                             true)) {
-      gGlobalState->pause_update = 0;
+      hddll::gGlobalState->pause_update = 0;
       gPauseAt = gFrame + 1;
     } else {
-      gGlobalState->pause_update = 1;
+      hddll::gGlobalState->pause_update = 1;
     }
   } else {
-    gGlobalState->pause_update = 0;
+    hddll::gGlobalState->pause_update = 0;
   }
 
-  auto isDisabled =
-      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+  auto isDisabled = hddll::gGlobalState->screen_state != 0 ||
+                    hddll::gGlobalState->play_state != 0;
   if (!isDisabled && Specs::IsKeyPressed(keys[Specs::KeyFeatures_Reset_Run])) {
     resetRun();
     return;
   }
 
   if (!isDisabled && Specs::IsKeyPressed(keys[Specs::KeyFeatures_Next_Level])) {
-    warpToLevel(gGlobalState->level);
+    warpToLevel(hddll::gGlobalState->level);
     return;
   }
 }
 
 static void drawToolWindow() {
-  if (!ui::open) {
+  if (!gToolWindowOpen) {
     return;
   }
   ImGuiIO &io = ImGui::GetIO();
@@ -162,7 +168,9 @@ static void onLevelStart() {
   }
 }
 
-void specsOnFrame() {
+namespace hddll {
+
+void onFrame() {
 
   gCameraState =
       reinterpret_cast<CameraState *>(*((DWORD *)(gBaseAddress + 0x154510)));
@@ -173,7 +181,8 @@ void specsOnFrame() {
   gDisplayWidth = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a8c)));
   gDisplayHeight = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a90)));
 
-  if (!gGlobalState || !gCameraState) return;
+  if (!gGlobalState || !gCameraState)
+    return;
 
   gGlobalState->N00001004 = 0; // 440629
   gFrame++;
@@ -194,3 +203,5 @@ void specsOnFrame() {
 
   gScreenStatePrevious = gGlobalState->screen_state;
 }
+
+} // namespace hddll

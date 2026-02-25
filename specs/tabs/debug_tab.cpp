@@ -3,9 +3,9 @@
 
 #include "../drawing.h"
 #include "../game_hooks.h"
-#include "../memory.h"
 #include "../sounds.h"
 #include "../state.h"
+#include <hddll/memory.h>
 
 EnabledEntities gAllEntities = {true, true, true, true, true,
                                 true, true, true, -1,   {}};
@@ -98,12 +98,13 @@ static void drawRawBytesTable(const char *str_id, char *start_addr,
 }
 
 void onLevelStartOlmec() {
-  if (!gDebugState.DisableOlmecCutscene || gGlobalState->level != 16) {
+  if (!gDebugState.DisableOlmecCutscene || hddll::gGlobalState->level != 16) {
     return;
   }
 
-  auto player = gGlobalState->player1;
-  if (!player) return;
+  auto player = hddll::gGlobalState->player1;
+  if (!player)
+    return;
   player->field1_0x130 = 1;
   player->field2_0x134 = 1;
   player->field3_0x138 = 1;
@@ -112,19 +113,20 @@ void onLevelStartOlmec() {
   player->field7_0x271 = 0;
 
   // Destroy Floor
-  EntityCallback cb = [&](Entity *e) {
+  EntityCallback cb = [&](hddll::Entity *e) {
     if (e->y == 75 && e->x >= 21 && e->x <= 25) {
       e->flag_deletion = 1;
     }
   };
-  forEntities({}, cb, gGlobalState->entities->entities_active,
-              gGlobalState->entities->entities_active_count);
-  forEntities({}, cb, (Entity **)gGlobalState->level_state->entity_floors,
-              ENTITY_FLOORS_COUNT);
+  forEntities({}, cb, hddll::gGlobalState->entities->entities_active,
+              hddll::gGlobalState->entities->entities_active_count);
+  forEntities({}, cb,
+              (hddll::Entity **)hddll::gGlobalState->level_state->entity_floors,
+              hddll::ENTITY_FLOORS_COUNT);
 
-  gCameraState->camera_speed = 0.2f;
-  auto hawkman =
-      (EntityMonster *)gGlobalState->SpawnEntity(18.019993f, 76.0f, 1011, true);
+  hddll::gCameraState->camera_speed = 0.2f;
+  auto hawkman = (hddll::EntityMonster *)hddll::gGlobalState->SpawnEntity(
+      18.019993f, 76.0f, 1011, true);
   hawkman->flag_horizontal_flip = 1;
   hawkman->field8_0x14c = 0xA;
   hawkman->field15_0x168 = 0x5A;
@@ -133,8 +135,8 @@ void onLevelStartOlmec() {
   hawkman->field81_0x20d = 1;
 
   // Spawn Olmec
-  auto olmec =
-      (EntityItem *)gGlobalState->SpawnEntity(23.109999f, 76.5f, 1055, true);
+  auto olmec = (hddll::EntityItem *)hddll::gGlobalState->SpawnEntity(
+      23.109999f, 76.5f, 1055, true);
   olmec->flag_horizontal_flip = 1;
 
   olmec->field8_0x14c = 0;
@@ -146,11 +148,11 @@ void onLevelStartOlmec() {
   olmec->field68_0x200 = 1;
   olmec->field82_0x20e = 1;
 
-  gGlobalState->PlayOlmecMusic("A04_boss.ogg");
-  gGlobalState->total_seconds += 11;
-  gGlobalState->total_ms += 33.50;
-  gGlobalState->level_seconds = 11;
-  gGlobalState->level_ms = 33.50;
+  hddll::gGlobalState->PlayOlmecMusic("A04_boss.ogg");
+  hddll::gGlobalState->total_seconds += 11;
+  hddll::gGlobalState->total_ms += 33.50;
+  hddll::gGlobalState->level_seconds = 11;
+  hddll::gGlobalState->level_ms = 33.50;
 }
 
 void drawDebugTab() {
@@ -159,12 +161,12 @@ void drawDebugTab() {
   auto gameMouse = screenToGame(io.MousePos);
   ImGui::Text("Mouse (Screen): %f %f", io.MousePos.x, io.MousePos.y);
   ImGui::Text("Mouse (Game): %f %f", gameMouse.x, gameMouse.y);
-  if (gGlobalState->player1) {
-    auto screenPlayer =
-        gameToScreen({gGlobalState->player1->x, gGlobalState->player1->y});
+  if (hddll::gGlobalState->player1) {
+    auto screenPlayer = gameToScreen(
+        {hddll::gGlobalState->player1->x, hddll::gGlobalState->player1->y});
     ImGui::Text("Player (Screen): %f %f", screenPlayer.x, screenPlayer.y);
-    ImGui::Text("Player (Game): %f %f", gGlobalState->player1->x,
-                gGlobalState->player1->y);
+    ImGui::Text("Player (Game): %f %f", hddll::gGlobalState->player1->x,
+                hddll::gGlobalState->player1->y);
   }
   ImGui::Checkbox("Draw Tile Borders", &gDebugState.EnableTileBorders);
   ImGui::Checkbox("Draw Bin Borders", &gDebugState.EnableBinBorders);
@@ -177,9 +179,9 @@ void drawDebugTab() {
     if (!hookEligibleBMsJmpBackAddr) {
       // Hook Eligible BM Floors
       int hookLen = 7;
-      DWORD hookAddr = gBaseAddress + 0xbe35e;
+      DWORD hookAddr = hddll::gBaseAddress + 0xbe35e;
       hookEligibleBMsJmpBackAddr = hookAddr + hookLen;
-      hook((void *)hookAddr, hookEligibleBMs, hookLen);
+      hddll::hook((void *)hookAddr, hookEligibleBMs, hookLen);
     }
   };
   ImGui::Checkbox("Include Hitbox Origins", &gDebugState.IncludeHitboxOrigins);
@@ -195,20 +197,24 @@ void drawDebugTab() {
     auto process = GetCurrentProcess();
     if (gDebugState.DisableOlmecSpawns) {
       BYTE patch[] = {0x83, 0xfa, 0x08};
-      patchReadOnlyCode(process, gBaseAddress + 0x3121c, patch, 3);
+      hddll::patchReadOnlyCode(process, hddll::gBaseAddress + 0x3121c, patch,
+                               3);
     } else {
       BYTE patch[] = {0x83, 0xfa, 0x01};
-      patchReadOnlyCode(process, gBaseAddress + 0x3121c, patch, 3);
+      hddll::patchReadOnlyCode(process, hddll::gBaseAddress + 0x3121c, patch,
+                               3);
     }
   }
   if (ImGui::Checkbox("Disable Olmec Gaps", &gDebugState.DisableOlmecGaps)) {
     auto process = GetCurrentProcess();
     if (gDebugState.DisableOlmecGaps) {
       BYTE patch[] = {0xb9, 0x01, 0x00, 0x00, 0x00};
-      patchReadOnlyCode(process, gBaseAddress + 0x0d5b71, patch, 5);
+      hddll::patchReadOnlyCode(process, hddll::gBaseAddress + 0x0d5b71, patch,
+                               5);
     } else {
       BYTE patch[] = {0xb9, 0x06, 0x00, 0x00, 0x00};
-      patchReadOnlyCode(process, gBaseAddress + 0x0d5b71, patch, 5);
+      hddll::patchReadOnlyCode(process, hddll::gBaseAddress + 0x0d5b71, patch,
+                               5);
     }
   }
   if (ImGui::Checkbox("Disable Olmec Cutscene",
@@ -216,10 +222,12 @@ void drawDebugTab() {
     auto process = GetCurrentProcess();
     if (gDebugState.DisableOlmecCutscene) {
       BYTE patch[] = {0x83, 0xb9, 0xd4, 0x05, 0x44, 0x00, 0x99};
-      patchReadOnlyCode(process, gBaseAddress + 0x0be66d, patch, 7);
+      hddll::patchReadOnlyCode(process, hddll::gBaseAddress + 0x0be66d, patch,
+                               7);
     } else {
       BYTE patch[] = {0x83, 0xb9, 0xd4, 0x05, 0x44, 0x00, 0x10};
-      patchReadOnlyCode(process, gBaseAddress + 0x0be66d, patch, 7);
+      hddll::patchReadOnlyCode(process, hddll::gBaseAddress + 0x0be66d, patch,
+                               7);
     }
   }
   ImGui::Checkbox("Show Olmec Crush Probes", &gDebugState.ShowOlmecCrushProbes);
@@ -254,139 +262,149 @@ void drawDebugTab() {
   if (ImGui::CollapsingHeader("Global State")) {
 
     ImGui::InputScalar("screen_state", ImGuiDataType_U32,
-                       &gGlobalState->screen_state);
+                       &hddll::gGlobalState->screen_state);
     ImGui::InputScalar("play_state", ImGuiDataType_U32,
-                       &gGlobalState->play_state);
+                       &hddll::gGlobalState->play_state);
     ImGui::InputScalar("flag_player", ImGuiDataType_U32,
-                       &gGlobalState->flag_player);
-    ImGui::InputScalar("level", ImGuiDataType_U32, &gGlobalState->level);
+                       &hddll::gGlobalState->flag_player);
+    ImGui::InputScalar("level", ImGuiDataType_U32, &hddll::gGlobalState->level);
     ImGui::InputScalar("level_track", ImGuiDataType_U32,
-                       &gGlobalState->level_track);
-    ImGui::InputFloat("insertion_point", &gGlobalState->insertion_point,
+                       &hddll::gGlobalState->level_track);
+    ImGui::InputFloat("insertion_point", &hddll::gGlobalState->insertion_point,
                       0.0001F, 0.0F, "%.4f");
     ImGui::Separator();
     ImGui::PushItemWidth(60.f);
     ImGui::InputScalar("Wanted Level", ImGuiDataType_S32,
-                       &gGlobalState->wanted_level);
-    ImGui::InputScalar("Number of Angry Shopkeepers", ImGuiDataType_S32,
-                       &gGlobalState->entities->angered_shopkeeper_count);
+                       &hddll::gGlobalState->wanted_level);
+    ImGui::InputScalar(
+        "Number of Angry Shopkeepers", ImGuiDataType_S32,
+        &hddll::gGlobalState->entities->angered_shopkeeper_count);
     ImGui::PopItemWidth();
     ImGui::PushItemWidth(200.f);
-    if (ImGui::InputInt("Kali Reward Level", &gGlobalState->reward_level, 1,
-                        1)) {
-      gGlobalState->reward_level = std::clamp(gGlobalState->reward_level, 0, 3);
+    if (ImGui::InputInt("Kali Reward Level", &hddll::gGlobalState->reward_level,
+                        1, 1)) {
+      hddll::gGlobalState->reward_level =
+          std::clamp(hddll::gGlobalState->reward_level, 0, 3);
     }
     if (ImGui::InputInt("Kali Punishment Level",
-                        &gGlobalState->punishment_amount, 1, 1)) {
-      gGlobalState->punishment_amount =
-          std::clamp(gGlobalState->punishment_amount, -1, 3);
+                        &hddll::gGlobalState->punishment_amount, 1, 1)) {
+      hddll::gGlobalState->punishment_amount =
+          std::clamp(hddll::gGlobalState->punishment_amount, -1, 3);
     }
-    ImGui::InputInt("Total Favor", &gGlobalState->total_favor, 1, 1);
+    ImGui::InputInt("Total Favor", &hddll::gGlobalState->total_favor, 1, 1);
     ImGui::PopItemWidth();
     ImGui::Checkbox("Kali Broke Altar This Level",
-                    &gGlobalState->broke_altar_this_level);
+                    &hddll::gGlobalState->broke_altar_this_level);
 
-    drawCharBool("Shopkeeper Triggered", gGlobalState->shopkeeper_triggered);
+    drawCharBool("Shopkeeper Triggered",
+                 hddll::gGlobalState->shopkeeper_triggered);
     drawCharBool("Shopkeeper Music Triggered",
-                 gGlobalState->shopkeeper_music_triggered);
+                 hddll::gGlobalState->shopkeeper_music_triggered);
 
     if (ImGui::CollapsingHeader("GlobalState Flags")) {
-      drawCharBool("dark_level", gGlobalState->dark_level);
-      drawCharBool("altar_spawned", gGlobalState->altar_spawned);
-      drawCharBool("idol_spawned", gGlobalState->idol_spawned);
-      drawCharBool("damsel_spawned", gGlobalState->damsel_spawned);
-      drawCharBool("unknown_flag", gGlobalState->unknown_flag);
-      drawCharBool("moai_unopened", gGlobalState->moai_unopened);
-      drawCharBool("moai_broke_in", gGlobalState->moai_broke_in);
-      drawCharBool("ghost_spawned", gGlobalState->ghost_spawned);
-      drawCharBool("rescued_damsel", gGlobalState->rescued_damsel);
-      drawCharBool("shopkeeper_triggered", gGlobalState->shopkeeper_triggered);
-      drawCharBool("area_had_dark_level", gGlobalState->area_had_dark_level);
-      drawCharBool("level_has_udjat", gGlobalState->level_has_udjat);
-      drawCharBool("has_spawned_udjat", gGlobalState->has_spawned_udjat);
-      drawCharBool("unused_flag", gGlobalState->unused_flag);
+      drawCharBool("dark_level", hddll::gGlobalState->dark_level);
+      drawCharBool("altar_spawned", hddll::gGlobalState->altar_spawned);
+      drawCharBool("idol_spawned", hddll::gGlobalState->idol_spawned);
+      drawCharBool("damsel_spawned", hddll::gGlobalState->damsel_spawned);
+      drawCharBool("unknown_flag", hddll::gGlobalState->unknown_flag);
+      drawCharBool("moai_unopened", hddll::gGlobalState->moai_unopened);
+      drawCharBool("moai_broke_in", hddll::gGlobalState->moai_broke_in);
+      drawCharBool("ghost_spawned", hddll::gGlobalState->ghost_spawned);
+      drawCharBool("rescued_damsel", hddll::gGlobalState->rescued_damsel);
+      drawCharBool("shopkeeper_triggered",
+                   hddll::gGlobalState->shopkeeper_triggered);
+      drawCharBool("area_had_dark_level",
+                   hddll::gGlobalState->area_had_dark_level);
+      drawCharBool("level_has_udjat", hddll::gGlobalState->level_has_udjat);
+      drawCharBool("has_spawned_udjat", hddll::gGlobalState->has_spawned_udjat);
+      drawCharBool("unused_flag", hddll::gGlobalState->unused_flag);
       drawCharBool("vault_spawned_in_area",
-                   gGlobalState->vault_spawned_in_area);
-      drawCharBool("flooded_mines", gGlobalState->flooded_mines);
-      drawCharBool("skin_is_crawling", gGlobalState->skin_is_crawling);
-      drawCharBool("dead_are_restless", gGlobalState->dead_are_restless);
-      drawCharBool("rushing_water", gGlobalState->rushing_water);
-      drawCharBool("is_haunted_castle", gGlobalState->is_haunted_castle);
+                   hddll::gGlobalState->vault_spawned_in_area);
+      drawCharBool("flooded_mines", hddll::gGlobalState->flooded_mines);
+      drawCharBool("skin_is_crawling", hddll::gGlobalState->skin_is_crawling);
+      drawCharBool("dead_are_restless", hddll::gGlobalState->dead_are_restless);
+      drawCharBool("rushing_water", hddll::gGlobalState->rushing_water);
+      drawCharBool("is_haunted_castle", hddll::gGlobalState->is_haunted_castle);
       drawCharBool("at_haunted_castle_exit",
-                   gGlobalState->at_haunted_castle_exit);
-      drawCharBool("tiki_village", gGlobalState->tiki_village);
+                   hddll::gGlobalState->at_haunted_castle_exit);
+      drawCharBool("tiki_village", hddll::gGlobalState->tiki_village);
       drawCharBool("spawned_black_market_entrance",
-                   gGlobalState->spawned_black_market_entrance);
-      drawCharBool("unused_flag2", gGlobalState->unused_flag2);
+                   hddll::gGlobalState->spawned_black_market_entrance);
+      drawCharBool("unused_flag2", hddll::gGlobalState->unused_flag2);
       drawCharBool("spawned_haunted_castle_entrance",
-                   gGlobalState->spawned_haunted_castle_entrance);
-      drawCharBool("mothership_spawned", gGlobalState->mothership_spawned);
-      drawCharBool("moai_spawned", gGlobalState->moai_spawned);
-      drawCharBool("is_blackmarket", gGlobalState->is_blackmarket);
-      drawCharBool("at_blackmarket_exit", gGlobalState->at_blackmarket_exit);
-      drawCharBool("is_wet_fur", gGlobalState->is_wet_fur);
-      drawCharBool("is_mothership", gGlobalState->is_mothership);
-      drawCharBool("at_mothership_exit", gGlobalState->at_mothership_exit);
-      drawCharBool("is_city_of_gold", gGlobalState->is_city_of_gold);
-      drawCharBool("at_city_of_gold_exit", gGlobalState->at_city_of_gold_exit);
-      drawCharBool("is_worm", gGlobalState->is_worm);
+                   hddll::gGlobalState->spawned_haunted_castle_entrance);
+      drawCharBool("mothership_spawned",
+                   hddll::gGlobalState->mothership_spawned);
+      drawCharBool("moai_spawned", hddll::gGlobalState->moai_spawned);
+      drawCharBool("is_blackmarket", hddll::gGlobalState->is_blackmarket);
+      drawCharBool("at_blackmarket_exit",
+                   hddll::gGlobalState->at_blackmarket_exit);
+      drawCharBool("is_wet_fur", hddll::gGlobalState->is_wet_fur);
+      drawCharBool("is_mothership", hddll::gGlobalState->is_mothership);
+      drawCharBool("at_mothership_exit",
+                   hddll::gGlobalState->at_mothership_exit);
+      drawCharBool("is_city_of_gold", hddll::gGlobalState->is_city_of_gold);
+      drawCharBool("at_city_of_gold_exit",
+                   hddll::gGlobalState->at_city_of_gold_exit);
+      drawCharBool("is_worm", hddll::gGlobalState->is_worm);
     }
   }
 
   if (ImGui::CollapsingHeader("Level State")) {
 
     ImGui::InputScalar("shop_type", ImGuiDataType_S32,
-                       &gGlobalState->level_state->shop_type);
+                       &hddll::gGlobalState->level_state->shop_type);
     ImGui::InputScalar("entrance_room_x", ImGuiDataType_S32,
-                       &gGlobalState->level_state->entrance_room_x);
+                       &hddll::gGlobalState->level_state->entrance_room_x);
     ImGui::InputScalar("entrance_room_y", ImGuiDataType_S32,
-                       &gGlobalState->level_state->entrance_room_y);
+                       &hddll::gGlobalState->level_state->entrance_room_y);
     ImGui::InputScalar("exit_room_x", ImGuiDataType_S32,
-                       &gGlobalState->level_state->exit_room_x);
+                       &hddll::gGlobalState->level_state->exit_room_x);
     ImGui::InputScalar("exit_room_y", ImGuiDataType_S32,
-                       &gGlobalState->level_state->exit_room_y);
+                       &hddll::gGlobalState->level_state->exit_room_y);
     ImGui::InputScalar("entrance_x", ImGuiDataType_Float,
-                       &gGlobalState->level_state->entrance_x);
+                       &hddll::gGlobalState->level_state->entrance_x);
     ImGui::InputScalar("entrance_y", ImGuiDataType_Float,
-                       &gGlobalState->level_state->entrance_y);
+                       &hddll::gGlobalState->level_state->entrance_y);
     ImGui::InputScalar("exit_x", ImGuiDataType_Float,
-                       &gGlobalState->level_state->exit_x);
+                       &hddll::gGlobalState->level_state->exit_x);
     ImGui::InputScalar("exit_y", ImGuiDataType_Float,
-                       &gGlobalState->level_state->exit_y);
+                       &hddll::gGlobalState->level_state->exit_y);
     ImGui::InputScalar("alt_exit_x", ImGuiDataType_Float,
-                       &gGlobalState->level_state->alt_exit_x);
+                       &hddll::gGlobalState->level_state->alt_exit_x);
     ImGui::InputScalar("alt_exit_y", ImGuiDataType_Float,
-                       &gGlobalState->level_state->alt_exit_y);
+                       &hddll::gGlobalState->level_state->alt_exit_y);
   }
 
   if (ImGui::CollapsingHeader("Camera State")) {
 
     ImGui::InputScalar("camera_x", ImGuiDataType_Float,
-                       &gCameraState->camera_x);
+                       &hddll::gCameraState->camera_x);
     ImGui::InputScalar("camera_y", ImGuiDataType_Float,
-                       &gCameraState->camera_y);
+                       &hddll::gCameraState->camera_y);
     ImGui::InputScalar("following_x", ImGuiDataType_Float,
-                       &gCameraState->following_x);
+                       &hddll::gCameraState->following_x);
     ImGui::InputScalar("following_y", ImGuiDataType_Float,
-                       &gCameraState->following_y);
+                       &hddll::gCameraState->following_y);
     ImGui::InputScalar("camera_max_left", ImGuiDataType_Float,
-                       &gCameraState->camera_max_left);
+                       &hddll::gCameraState->camera_max_left);
     ImGui::InputScalar("camera_max_right", ImGuiDataType_Float,
-                       &gCameraState->camera_max_right);
+                       &hddll::gCameraState->camera_max_right);
     ImGui::InputScalar("camera_max_up", ImGuiDataType_Float,
-                       &gCameraState->camera_max_up);
+                       &hddll::gCameraState->camera_max_up);
     ImGui::InputScalar("camera_max_down", ImGuiDataType_Float,
-                       &gCameraState->camera_max_down);
+                       &hddll::gCameraState->camera_max_down);
     ImGui::InputScalar("camera_speed", ImGuiDataType_Float,
-                       &gCameraState->camera_speed);
+                       &hddll::gCameraState->camera_speed);
 
     if (ImGui::CollapsingHeader("Camera Raw")) {
-      drawRawBytesTable("Raw Bytes##CameraState", (char *)gCameraState, 92);
+      drawRawBytesTable("Raw Bytes##CameraState", (char *)hddll::gCameraState,
+                        92);
     }
   }
 
   if (ImGui::CollapsingHeader("Render Dupe")) {
-    ImGui::InputFloat("insertion_point", &gGlobalState->insertion_point,
+    ImGui::InputFloat("insertion_point", &hddll::gGlobalState->insertion_point,
                       0.0001F, 0.0F, "%.4f");
     ImGui::Text("Filter:");
     ImGui::InputFloat("  Minimum Z", &gDebugState.MinZCutoff, 0.0001F, 0.0F,
@@ -401,9 +419,9 @@ void drawDebugTab() {
       ImGui::TableSetupColumn("Deleted", ImGuiTableColumnFlags_WidthFixed);
       ImGui::TableHeadersRow();
 
-      for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-           idx++) {
-        auto ent = gGlobalState->entities->entities_active[idx];
+      for (size_t idx = 0;
+           idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+        auto ent = hddll::gGlobalState->entities->entities_active[idx];
         if (!ent) {
           continue;
         }
@@ -435,7 +453,7 @@ void drawDebugTab() {
   }
 
   if (ImGui::CollapsingHeader("Audio")) {
-    auto player = gGlobalState->player1;
+    auto player = hddll::gGlobalState->player1;
     if (!player) {
       ImGui::Text("Need Player Entity");
       return;

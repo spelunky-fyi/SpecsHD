@@ -56,7 +56,7 @@ struct DebugState {
   EnabledEntities Selection;
 
   // (EntityKind, entity type): [(offset, datatype),...]
-  std::map<std::pair<EntityKind, uint32_t>,
+  std::map<std::pair<hddll::EntityKind, uint32_t>,
            std::unordered_set<std::pair<DWORD, DataType_>,
                               DrawEntityOffsetsValueHashFunction>>
       DrawEntityOffsets;

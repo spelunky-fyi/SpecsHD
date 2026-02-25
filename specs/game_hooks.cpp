@@ -1,9 +1,13 @@
 
 #include "game_hooks.h"
 
-#include "memory.h"
-#include "utils.h"
 #include "mods/biglunky.h"
+#include <hddll/memory.h>
+#include <hddll/utils.h>
+
+// Pointer-to-pointer for inline asm (MSVC asm can't resolve namespace-qualified
+// names)
+static auto _pGlobalState = &hddll::gGlobalState;
 #include "mods/full_spelunky.h"
 #include "mods/seeded_mode.h"
 #include "mods/tunnel_man.h"
@@ -23,25 +27,26 @@ DWORD hookWhipSkipWhippingAddr = NULL;
 DWORD hookSeedLevelJmpBackAddr = NULL;
 DWORD hookPostSpawnEntityJmpBackAddr = NULL;
 
-int ELIGIBLE_FLOORS_FOR_BM[ENTITY_FLOORS_COUNT] = {0};
+int ELIGIBLE_FLOORS_FOR_BM[hddll::ENTITY_FLOORS_COUNT] = {0};
 int ELIGIBLE_FLOORS_FOR_BM_COUNT = 0;
 
 uint32_t lastSeed = 0;
 
 void loadHiredHandTextures() {
-  TextureDefinition *texture_def;
-  for (int hh_idx = 0; hh_idx < gGlobalState->player1_data.hh_count; hh_idx++) {
-    texture_def =
-        getTextureById(gGlobalState->player1_data.hh_texture_id[hh_idx]);
+  hddll::TextureDefinition *texture_def;
+  for (int hh_idx = 0; hh_idx < hddll::gGlobalState->player1_data.hh_count;
+       hh_idx++) {
+    texture_def = hddll::getTextureById(
+        hddll::gGlobalState->player1_data.hh_texture_id[hh_idx]);
     if (texture_def && !texture_def->loaded) {
-      LoadTexture(gGlobalState->_34struct, texture_def->name);
+      hddll::LoadTexture(hddll::gGlobalState->_34struct, texture_def->name);
     }
   }
   if (!gFullSpelunkyState.randoms.empty()) {
-    texture_def =
-        getTextureById(charIdToTextureId(gFullSpelunkyState.randoms[0]));
+    texture_def = hddll::getTextureById(
+        hddll::charIdToTextureId(gFullSpelunkyState.randoms[0]));
     if (texture_def && !texture_def->loaded) {
-      LoadTexture(gGlobalState->_34struct, texture_def->name);
+      hddll::LoadTexture(hddll::gGlobalState->_34struct, texture_def->name);
     }
   }
 }
@@ -49,7 +54,10 @@ void loadHiredHandTextures() {
 void __declspec(naked) hookLoadCoffinTexture() {
   __asm {
     ; Stolen Bytes
-    mov edx, dword ptr [gGlobalState]
+    mov edx, dword ptr [_pGlobalState]
+
+    ; Second load needed because asm cant resolve namespaced globals directly
+    mov edx, dword ptr [edx]
 
     ; Save all registers
     pushad
@@ -261,9 +269,9 @@ void __declspec(naked) hookUnlockCoffins() {
 static bool gShouldSkipWhip = false;
 
 static void checkWhipCondition() {
-  gShouldSkipWhip = gGlobalState->player1 &&
-                     gGlobalState->player1_data.has_crysknife == 0 &&
-                     gGlobalState->player1->field68_0x200 == 0;
+  gShouldSkipWhip = hddll::gGlobalState->player1 &&
+                    hddll::gGlobalState->player1_data.has_crysknife == 0 &&
+                    hddll::gGlobalState->player1->field68_0x200 == 0;
 }
 
 void __declspec(naked) hookWhip() {
@@ -293,9 +301,9 @@ uint32_t getSeedForLevel(int level) {
   int seed = gSeededModeState.seed;
 
   auto searchLevel = level;
-  if (level == 11 && gGlobalState->is_mothership) {
+  if (level == 11 && hddll::gGlobalState->is_mothership) {
     searchLevel = 21;
-  } else if (level == 12 && gGlobalState->mothership_spawned) {
+  } else if (level == 12 && hddll::gGlobalState->mothership_spawned) {
     searchLevel = 22;
   }
 
@@ -312,8 +320,8 @@ uint32_t getSeedForLevel(int level) {
 static uint32_t gComputedSeed = 0;
 
 static void computeSeedForLevel() {
-  lastSeed = getSeedForLevel(gGlobalState->level);
-  gComputedSeed = lastSeed * gGlobalState->level;
+  lastSeed = getSeedForLevel(hddll::gGlobalState->level);
+  gComputedSeed = lastSeed * hddll::gGlobalState->level;
 }
 
 void __declspec(naked) hookSeedLevel() {
@@ -333,7 +341,7 @@ void __declspec(naked) hookSeedLevel() {
   }
 }
 
-static Entity *gSpawnedEntity = nullptr;
+static hddll::Entity *gSpawnedEntity = nullptr;
 
 static void handlePostSpawnEntity() {
   if (gModsState.TunnelMan) {
@@ -372,39 +380,39 @@ void initHooks() {
 
   // Hook Reset For Run
   hookLen = 6;
-  hookAddr = gBaseAddress + 0x64ed4;
+  hookAddr = hddll::gBaseAddress + 0x64ed4;
   hookPreResetForRunJmpBackAddr = hookAddr + hookLen;
-  hook((void *)hookAddr, hookPreResetForRun, hookLen);
+  hddll::hook((void *)hookAddr, hookPreResetForRun, hookLen);
 
   // Hook Pre Place Rooms
   hookLen = 6;
-  hookAddr = gBaseAddress + 0xbded9;
+  hookAddr = hddll::gBaseAddress + 0xbded9;
   hookPrePlaceRoomsJmpBackAddr = hookAddr + hookLen;
-  hook((void *)hookAddr, hookPrePlaceRooms, hookLen);
+  hddll::hook((void *)hookAddr, hookPrePlaceRooms, hookLen);
 
   // Hook Post Place Rooms
   hookLen = 6;
-  hookAddr = gBaseAddress + 0xbe845;
+  hookAddr = hddll::gBaseAddress + 0xbe845;
   hookPostPlaceRoomsJmpBackAddr = hookAddr + hookLen;
-  hook((void *)hookAddr, hookPostPlaceRooms, hookLen);
+  hddll::hook((void *)hookAddr, hookPostPlaceRooms, hookLen);
 
   hookLen = 6;
-  hookAddr = gBaseAddress + 0xeef60;
+  hookAddr = hddll::gBaseAddress + 0xeef60;
   hookLoadCoffinTextureJmpBackAddr = hookAddr + hookLen;
-  hook((void *)hookAddr, hookLoadCoffinTexture, hookLen);
+  hddll::hook((void *)hookAddr, hookLoadCoffinTexture, hookLen);
 
   hookLen = 6;
-  hookAddr = gBaseAddress + 0xdd769;
+  hookAddr = hddll::gBaseAddress + 0xdd769;
   hookPreSpawnTilesJmpBackAddr = hookAddr + hookLen;
-  hook((void *)hookAddr, hookPreSpawnTiles, hookLen);
+  hddll::hook((void *)hookAddr, hookPreSpawnTiles, hookLen);
 
   hookLen = 7;
-  hookAddr = gBaseAddress + 0xd66a6;
+  hookAddr = hddll::gBaseAddress + 0xd66a6;
   hookPreGenerateRoomJmpBackAddr = hookAddr + hookLen;
-  hook((void *)hookAddr, hookPreGenerateRoom, hookLen);
+  hddll::hook((void *)hookAddr, hookPreGenerateRoom, hookLen);
 
   hookLen = 5;
-  hookAddr = gBaseAddress + 0x7c387;
+  hookAddr = hddll::gBaseAddress + 0x7c387;
   hookPostSpawnEntityJmpBackAddr = hookAddr + hookLen;
-  hook((void *)hookAddr, hookPostSpawnEntity, hookLen);
+  hddll::hook((void *)hookAddr, hookPostSpawnEntity, hookLen);
 }

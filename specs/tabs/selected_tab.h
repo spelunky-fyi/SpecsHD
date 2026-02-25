@@ -4,7 +4,7 @@
 
 struct SelectedEntityState {
   bool Clicking = false;
-  Entity *Entity = NULL;
+  hddll::Entity *Entity = NULL;
 };
 
 extern SelectedEntityState gSelectedEntityState;

@@ -3,10 +3,10 @@
 
 #include "../drawing.h"
 #include "../game_hooks.h"
-#include "../memory.h"
 #include "../state.h"
-#include "../utils.h"
-#include "../3rdparty/imgui/misc/cpp/imgui_stdlib.h"
+#include <hddll/memory.h>
+#include <hddll/utils.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 #include "../mods/biglunky.h"
 #include "../mods/dark_mode.h"
@@ -21,7 +21,7 @@ void drawModsTab() {
   ImGuiIO &io = ImGui::GetIO();
 
   if (ImGui::Checkbox("Dark Mode", &gModsState.DarkMode)) {
-    applyPatches(gDarkModePatches, !gModsState.DarkMode);
+    hddll::applyPatches(gDarkModePatches, !gModsState.DarkMode);
   };
 
   ImGui::Separator();
@@ -29,14 +29,14 @@ void drawModsTab() {
     if (gModsState.TheFullSpelunky && !hookUnlockCoffinsJmpBackAddr) {
       // Hook Coffin Assignments
       int hookLen = 6;
-      DWORD hookAddr = gBaseAddress + 0xe8860;
+      DWORD hookAddr = hddll::gBaseAddress + 0xe8860;
       hookUnlockCoffinsJmpBackAddr = hookAddr + hookLen;
-      hook((void *)hookAddr, hookUnlockCoffins, hookLen);
-      applyPatches(gFullSpelunkyPatches);
+      hddll::hook((void *)hookAddr, hookUnlockCoffins, hookLen);
+      hddll::applyPatches(gFullSpelunkyPatches);
     }
     if (!gModsState.TheFullSpelunky && hookUnlockCoffinsJmpBackAddr) {
-      applyPatches(gFullSpelunkyPatches, true);
-      unhook((void *)(gBaseAddress + 0xe8860));
+      hddll::applyPatches(gFullSpelunkyPatches, true);
+      hddll::unhook((void *)(hddll::gBaseAddress + 0xe8860));
       hookUnlockCoffinsJmpBackAddr = NULL;
     }
   };
@@ -48,18 +48,18 @@ void drawModsTab() {
   ImGui::Separator();
   if (ImGui::Checkbox("Biglunky", &gModsState.Biglunky)) {
     if (gModsState.Biglunky) {
-      applyPatches(gBiglunkyPatches);
-      applyRelativePatches(gBiglunkyRelativePatches);
+      hddll::applyPatches(gBiglunkyPatches);
+      hddll::applyRelativePatches(gBiglunkyRelativePatches);
     } else {
-      applyPatches(gBiglunkyPatches, true);
-      applyRelativePatches(gBiglunkyRelativePatches, true);
+      hddll::applyPatches(gBiglunkyPatches, true);
+      hddll::applyRelativePatches(gBiglunkyRelativePatches, true);
     }
   };
 
   ImGui::Separator();
   if (ImGui::Checkbox("Uplunky (Beta)", &gModsState.Uplunky)) {
-    applyPatches(gUplunkyPatches, !gModsState.Uplunky);
-    applyRelativePatches(gUplunkyRelativePatches, !gModsState.Uplunky);
+    hddll::applyPatches(gUplunkyPatches, !gModsState.Uplunky);
+    hddll::applyRelativePatches(gUplunkyRelativePatches, !gModsState.Uplunky);
     if (gModsState.Uplunky) {
       resetUplunkyState();
     }
@@ -73,15 +73,15 @@ void drawModsTab() {
       if (!hookWhipJmpBackAddr) {
 
         int hookLen = 7;
-        DWORD hookAddr = gBaseAddress + 0x569a5;
+        DWORD hookAddr = hddll::gBaseAddress + 0x569a5;
         hookWhipJmpBackAddr = hookAddr + hookLen;
-        hookWhipSkipWhippingAddr = gBaseAddress + 0x56a80;
-        hook((void *)hookAddr, hookWhip, hookLen);
+        hookWhipSkipWhippingAddr = hddll::gBaseAddress + 0x56a80;
+        hddll::hook((void *)hookAddr, hookWhip, hookLen);
       }
     } else {
       if (hookWhipJmpBackAddr) {
-        applyPatches(gTunnelManPatches, true);
-        unhook((void *)(gBaseAddress + 0x569a5));
+        hddll::applyPatches(gTunnelManPatches, true);
+        hddll::unhook((void *)(hddll::gBaseAddress + 0x569a5));
         hookWhipJmpBackAddr = NULL;
         hookWhipSkipWhippingAddr = NULL;
       }
@@ -93,19 +93,19 @@ void drawModsTab() {
     if (gModsState.SeededMode) {
       if (!hookSeedLevelJmpBackAddr) {
         int hookLen = 7;
-        DWORD hookAddr = gBaseAddress + 0x6ae01;
+        DWORD hookAddr = hddll::gBaseAddress + 0x6ae01;
         hookSeedLevelJmpBackAddr = hookAddr + hookLen;
-        hook((void *)hookAddr, hookSeedLevel, hookLen);
-        applyPatches(gSeededModePatches);
+        hddll::hook((void *)hookAddr, hookSeedLevel, hookLen);
+        hddll::applyPatches(gSeededModePatches);
         if (gSeededModeState.useDailySeeding) {
-          applyPatches(gSeededModeDailySeedingPatches);
+          hddll::applyPatches(gSeededModeDailySeedingPatches);
         }
       }
     } else {
       if (hookSeedLevelJmpBackAddr) {
-        applyPatches(gSeededModePatches, true);
-        applyPatches(gSeededModeDailySeedingPatches, true);
-        unhook((void *)(gBaseAddress + 0x6ae01));
+        hddll::applyPatches(gSeededModePatches, true);
+        hddll::applyPatches(gSeededModeDailySeedingPatches, true);
+        hddll::unhook((void *)(hddll::gBaseAddress + 0x6ae01));
         hookSeedLevelJmpBackAddr = NULL;
       }
     }
@@ -122,9 +122,9 @@ void drawModsTab() {
   if (ImGui::Checkbox("Use Daily Seeding##SeededMode",
                       &gSeededModeState.useDailySeeding)) {
     if (gModsState.SeededMode && gSeededModeState.useDailySeeding) {
-      applyPatches(gSeededModeDailySeedingPatches);
+      hddll::applyPatches(gSeededModeDailySeedingPatches);
     } else {
-      applyPatches(gSeededModeDailySeedingPatches, true);
+      hddll::applyPatches(gSeededModeDailySeedingPatches, true);
     }
   }
 
@@ -133,7 +133,8 @@ void drawModsTab() {
   ImGui::Checkbox("Random Seed On Restart##SeededMode",
                   &gSeededModeState.randomSeedOnRestart);
 
-  int itemSelectedIdx = std::clamp(static_cast<int>(gSeededModeState.advanceOnRestart) - 1, 0, 19);
+  int itemSelectedIdx = std::clamp(
+      static_cast<int>(gSeededModeState.advanceOnRestart) - 1, 0, 19);
   const char *comboPreviewValue = levelItems[itemSelectedIdx];
 
   ImGui::Text("");
@@ -155,8 +156,8 @@ void drawModsTab() {
   ImGui::SameLine(20.0f * io.FontGlobalScale);
   ImGui::Checkbox("Enable Seed Search", &gSeededModeState.enabledSeedSearch);
 
-  auto isDisabled =
-      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+  auto isDisabled = hddll::gGlobalState->screen_state != 0 ||
+                    hddll::gGlobalState->play_state != 0;
   if (isDisabled) {
     ImGui::BeginDisabled();
   }
@@ -185,8 +186,8 @@ void drawModsTab() {
     ImGui::Text("");
     ImGui::SameLine(20.0f * io.FontGlobalScale);
     if (ImGui::InputText("Import/Export", &gSeededModeState.exportSeed)) {
-      ltrim(gSeededModeState.exportSeed);
-      rtrim(gSeededModeState.exportSeed);
+      hddll::ltrim(gSeededModeState.exportSeed);
+      hddll::rtrim(gSeededModeState.exportSeed);
       loadFromExportSeed();
       return;
     }
@@ -214,7 +215,8 @@ void drawModsTab() {
         }
 
         uint8_t currentLevel = std::get<0>(gSeededModeState.levelSeeds[i]);
-        int itemSelectedIdx = std::clamp(static_cast<int>(currentLevel) - 1, 0, 21);
+        int itemSelectedIdx =
+            std::clamp(static_cast<int>(currentLevel) - 1, 0, 21);
         const char *comboPreviewValue = levelItems[itemSelectedIdx];
 
         ImGui::TableNextColumn();

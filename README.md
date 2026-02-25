@@ -19,8 +19,7 @@ git submodule update --init --recursive
 ## Initial Setup
 
 ```
-cd specs
-cmake -A Win32 -S . -B "build"
+cmake -A Win32 -S -B "build"
 ```
 
 ## Rebuilding

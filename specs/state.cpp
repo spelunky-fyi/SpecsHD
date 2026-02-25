@@ -1,13 +1,15 @@
 
 #include "state.h"
 
-// Global state definitions
-
+// HDDLL global definitions
+namespace hddll {
 DWORD gBaseAddress = NULL;
-ImDrawList *gOverlayDrawList = NULL;
-
 CameraState *gCameraState = NULL;
 GlobalState *gGlobalState = NULL;
+} // namespace hddll
+
+// SpecsHD global state definitions
+ImDrawList *gOverlayDrawList = NULL;
 
 Specs::Config *gConfig = NULL;
 

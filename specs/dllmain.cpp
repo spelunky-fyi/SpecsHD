@@ -1,54 +1,11 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include <cstdint>
-#include <thread>
-
-#include "hooks.h"
-
-DWORD WINAPI MainThread(LPVOID instance) {
-
-  srand(static_cast<unsigned int>(time(NULL)));
-
-  try {
-    ui::Setup();
-    hooks::Setup();
-  } catch (const std::exception &error) {
-    MessageBeep(MB_ICONERROR);
-    MessageBoxA(0, error.what(), "Specs HD Error", MB_OK | MB_ICONEXCLAMATION);
-    goto DIE;
-  }
-
-#ifdef DEV
-  while (!GetAsyncKeyState(VK_END)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-  }
-#else
-  return 0;
-#endif
-
-DIE:
-  hooks::Destroy();
-  ui::Destroy();
-  FreeLibraryAndExitThread(static_cast<HMODULE>(instance), 0);
-  return 0;
-}
+#include <hddll/hddll.h>
 
 BOOL WINAPI DllMain(HMODULE hMod, DWORD dwReason, LPVOID lpReserved) {
-
   if (dwReason == DLL_PROCESS_ATTACH) {
-    // AllocConsole();
-    // freopen("CONOUT$", "w", stdout);
-    // std::cout << "Starting Specs HD!" << std::endl;
-
-    DisableThreadLibraryCalls(hMod);
-    const auto thread = CreateThread(
-        nullptr, 0, MainThread, hMod, 0, nullptr);
-
-    if (thread) {
-      CloseHandle(thread);
-    }
+    hddll::Start(hMod);
   }
-
   return TRUE;
 }

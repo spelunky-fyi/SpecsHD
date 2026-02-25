@@ -1,7 +1,7 @@
 
 #include "biglunky.h"
 
-std::vector<Patch> gBiglunkyPatches = {
+std::vector<hddll::Patch> gBiglunkyPatches = {
     // Worm Max Right Camera Bounds: 15.5 -> 35.5
     {0x135d34, {0x00, 0x00, 0x0e, 0x42}, {0x00, 0x00, 0x78, 0x41}},
 
@@ -152,7 +152,7 @@ std::vector<Patch> gBiglunkyPatches = {
     {0xca8fa, {0x2}, {0x1}},
 };
 
-std::vector<RelativePatch> gBiglunkyRelativePatches = {
+std::vector<hddll::RelativePatch> gBiglunkyRelativePatches = {
     // Move Hell Door
     {0xdeb55, 0x136044, 0x135cdc},
     {0xdec45, 0x136044, 0x135cdc},
@@ -177,16 +177,16 @@ std::vector<RelativePatch> gBiglunkyRelativePatches = {
 
 void prePlaceRoomsBiglunky() {
   if (!gModsState.DarkMode && !gModsState.TheFullSpelunky) {
-    gGlobalState->dark_level = 0;
+    hddll::gGlobalState->dark_level = 0;
   }
 }
 
 void postPlaceRoomsBiglunky() {
   if (gModsState.Biglunky) {
-    if (gGlobalState->is_city_of_gold) {
+    if (hddll::gGlobalState->is_city_of_gold) {
       auto num_flag_21 = 0;
-      for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
-        auto ent = gGlobalState->level_state->entity_floors[idx];
+      for (auto idx = 0; idx < hddll::ENTITY_FLOORS_COUNT; idx++) {
+        auto ent = hddll::gGlobalState->level_state->entity_floors[idx];
         if (ent && ent->flag_21 == 1) {
           if (num_flag_21 > 512) {
             ent->flag_21 = 0;
@@ -194,12 +194,12 @@ void postPlaceRoomsBiglunky() {
           num_flag_21++;
         }
       }
-    } else if (gGlobalState->rushing_water) {
-      for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
-        auto ent = gGlobalState->level_state->entity_floors[idx];
+    } else if (hddll::gGlobalState->rushing_water) {
+      for (auto idx = 0; idx < hddll::ENTITY_FLOORS_COUNT; idx++) {
+        auto ent = hddll::gGlobalState->level_state->entity_floors[idx];
         if (ent && ent->y == 12 && ent->x >= 3 && ent->x < 43) {
-          DestroyFloor(gGlobalState->level_state, ent);
-          auto bg = gGlobalState->level_state->entity_floors_bg[idx];
+          hddll::DestroyFloor(hddll::gGlobalState->level_state, ent);
+          auto bg = hddll::gGlobalState->level_state->entity_floors_bg[idx];
           if (bg) {
             bg->flag_deletion = 1;
           }
@@ -211,9 +211,9 @@ void postPlaceRoomsBiglunky() {
 
 void preGenerateRoomBiglunky() {
   if (gModsState.Biglunky) {
-    if (gGlobalState->is_mothership && std::rand() % 6 == 0) {
+    if (hddll::gGlobalState->is_mothership && std::rand() % 6 == 0) {
       // Set altar spawned to 0 to force an alien lord
-      gGlobalState->altar_spawned = 0;
+      hddll::gGlobalState->altar_spawned = 0;
     }
   }
 }
@@ -222,201 +222,201 @@ void preSpawnTilesBiglunky() {
 
   if (gModsState.Biglunky) {
 
-    if (gGlobalState->is_blackmarket == 1) {
-      gGlobalState->level_state->exit_room_y = 11;
-      gGlobalState->level_state->entrance_room_x = 1;
+    if (hddll::gGlobalState->is_blackmarket == 1) {
+      hddll::gGlobalState->level_state->exit_room_y = 11;
+      hddll::gGlobalState->level_state->entrance_room_x = 1;
 
-      gGlobalState->level_state->room_types[0] = 1;
-      gGlobalState->level_state->room_types[1] = 2;
-      gGlobalState->level_state->room_types[2] = 2;
-      gGlobalState->level_state->room_types[3] = 1;
+      hddll::gGlobalState->level_state->room_types[0] = 1;
+      hddll::gGlobalState->level_state->room_types[1] = 2;
+      hddll::gGlobalState->level_state->room_types[2] = 2;
+      hddll::gGlobalState->level_state->room_types[3] = 1;
 
-      gGlobalState->level_state->room_types[4] = 4;
-      gGlobalState->level_state->room_types[5] = 2;
-      gGlobalState->level_state->room_types[6] = 2;
-      gGlobalState->level_state->room_types[7] = 2;
+      hddll::gGlobalState->level_state->room_types[4] = 4;
+      hddll::gGlobalState->level_state->room_types[5] = 2;
+      hddll::gGlobalState->level_state->room_types[6] = 2;
+      hddll::gGlobalState->level_state->room_types[7] = 2;
 
-      gGlobalState->level_state->room_types[8] = 1;
-      gGlobalState->level_state->room_types[9] = 3;
-      gGlobalState->level_state->room_types[10] = 2;
-      gGlobalState->level_state->room_types[11] = 4;
+      hddll::gGlobalState->level_state->room_types[8] = 1;
+      hddll::gGlobalState->level_state->room_types[9] = 3;
+      hddll::gGlobalState->level_state->room_types[10] = 2;
+      hddll::gGlobalState->level_state->room_types[11] = 4;
 
-      gGlobalState->level_state->room_types[12] = 4;
-      gGlobalState->level_state->room_types[13] = 2;
-      gGlobalState->level_state->room_types[14] = 3;
-      gGlobalState->level_state->room_types[15] = 1;
+      hddll::gGlobalState->level_state->room_types[12] = 4;
+      hddll::gGlobalState->level_state->room_types[13] = 2;
+      hddll::gGlobalState->level_state->room_types[14] = 3;
+      hddll::gGlobalState->level_state->room_types[15] = 1;
 
-      gGlobalState->level_state->room_types[16] = 1;
-      gGlobalState->level_state->room_types[17] = 3;
-      gGlobalState->level_state->room_types[18] = 2;
-      gGlobalState->level_state->room_types[19] = 5;
+      hddll::gGlobalState->level_state->room_types[16] = 1;
+      hddll::gGlobalState->level_state->room_types[17] = 3;
+      hddll::gGlobalState->level_state->room_types[18] = 2;
+      hddll::gGlobalState->level_state->room_types[19] = 5;
 
-      gGlobalState->level_state->room_types[20] = 4;
-      gGlobalState->level_state->room_types[21] = 2;
-      gGlobalState->level_state->room_types[22] = 3;
-      gGlobalState->level_state->room_types[23] = 1;
+      hddll::gGlobalState->level_state->room_types[20] = 4;
+      hddll::gGlobalState->level_state->room_types[21] = 2;
+      hddll::gGlobalState->level_state->room_types[22] = 3;
+      hddll::gGlobalState->level_state->room_types[23] = 1;
 
-      gGlobalState->level_state->room_types[24] = 1;
-      gGlobalState->level_state->room_types[25] = 3;
-      gGlobalState->level_state->room_types[26] = 2;
-      gGlobalState->level_state->room_types[27] = 4;
+      hddll::gGlobalState->level_state->room_types[24] = 1;
+      hddll::gGlobalState->level_state->room_types[25] = 3;
+      hddll::gGlobalState->level_state->room_types[26] = 2;
+      hddll::gGlobalState->level_state->room_types[27] = 4;
 
-      gGlobalState->level_state->room_types[28] = 4;
-      gGlobalState->level_state->room_types[29] = 2;
-      gGlobalState->level_state->room_types[30] = 3;
-      gGlobalState->level_state->room_types[31] = 1;
+      hddll::gGlobalState->level_state->room_types[28] = 4;
+      hddll::gGlobalState->level_state->room_types[29] = 2;
+      hddll::gGlobalState->level_state->room_types[30] = 3;
+      hddll::gGlobalState->level_state->room_types[31] = 1;
 
-      gGlobalState->level_state->room_types[32] = 2;
-      gGlobalState->level_state->room_types[33] = 3;
-      gGlobalState->level_state->room_types[34] = 2;
-      gGlobalState->level_state->room_types[35] = 2;
+      hddll::gGlobalState->level_state->room_types[32] = 2;
+      hddll::gGlobalState->level_state->room_types[33] = 3;
+      hddll::gGlobalState->level_state->room_types[34] = 2;
+      hddll::gGlobalState->level_state->room_types[35] = 2;
 
-    } else if (gGlobalState->rushing_water == 1) {
-      gGlobalState->level_state->exit_room_y =
-          gGlobalState->level_state->exit_room_y - 2;
+    } else if (hddll::gGlobalState->rushing_water == 1) {
+      hddll::gGlobalState->level_state->exit_room_y =
+          hddll::gGlobalState->level_state->exit_room_y - 2;
 
       // Lake Islands
-      gGlobalState->level_state->room_types[36] = 9;
-      gGlobalState->level_state->room_types[37] = 9;
-      gGlobalState->level_state->room_types[38] = 9;
-      gGlobalState->level_state->room_types[39] = 9;
+      hddll::gGlobalState->level_state->room_types[36] = 9;
+      hddll::gGlobalState->level_state->room_types[37] = 9;
+      hddll::gGlobalState->level_state->room_types[38] = 9;
+      hddll::gGlobalState->level_state->room_types[39] = 9;
 
       // Middle Lake
-      gGlobalState->level_state->room_types[40] = 10;
-      gGlobalState->level_state->room_types[41] = 11;
-      gGlobalState->level_state->room_types[42] = 11;
-      gGlobalState->level_state->room_types[43] = 10;
+      hddll::gGlobalState->level_state->room_types[40] = 10;
+      hddll::gGlobalState->level_state->room_types[41] = 11;
+      hddll::gGlobalState->level_state->room_types[42] = 11;
+      hddll::gGlobalState->level_state->room_types[43] = 10;
 
       // Bottom Lake
-      gGlobalState->level_state->room_types[44] = 10;
-      gGlobalState->level_state->room_types[45] = 10;
-      gGlobalState->level_state->room_types[46] = 10;
-      gGlobalState->level_state->room_types[47] = 10;
-    } else if (gGlobalState->is_haunted_castle == 1) {
+      hddll::gGlobalState->level_state->room_types[44] = 10;
+      hddll::gGlobalState->level_state->room_types[45] = 10;
+      hddll::gGlobalState->level_state->room_types[46] = 10;
+      hddll::gGlobalState->level_state->room_types[47] = 10;
+    } else if (hddll::gGlobalState->is_haunted_castle == 1) {
 
       // Copy normal bottom floors to new bottom
 
-      gGlobalState->level_state->room_types[40] =
-          gGlobalState->level_state->room_types[8];
-      gGlobalState->level_state->room_types[41] =
-          gGlobalState->level_state->room_types[9];
-      gGlobalState->level_state->room_types[42] =
-          gGlobalState->level_state->room_types[10];
-      gGlobalState->level_state->room_types[43] =
-          gGlobalState->level_state->room_types[11];
-      gGlobalState->level_state->room_types[44] =
-          gGlobalState->level_state->room_types[12];
-      gGlobalState->level_state->room_types[45] =
-          gGlobalState->level_state->room_types[13];
-      gGlobalState->level_state->room_types[46] =
-          gGlobalState->level_state->room_types[14];
-      gGlobalState->level_state->room_types[47] =
-          gGlobalState->level_state->room_types[15];
+      hddll::gGlobalState->level_state->room_types[40] =
+          hddll::gGlobalState->level_state->room_types[8];
+      hddll::gGlobalState->level_state->room_types[41] =
+          hddll::gGlobalState->level_state->room_types[9];
+      hddll::gGlobalState->level_state->room_types[42] =
+          hddll::gGlobalState->level_state->room_types[10];
+      hddll::gGlobalState->level_state->room_types[43] =
+          hddll::gGlobalState->level_state->room_types[11];
+      hddll::gGlobalState->level_state->room_types[44] =
+          hddll::gGlobalState->level_state->room_types[12];
+      hddll::gGlobalState->level_state->room_types[45] =
+          hddll::gGlobalState->level_state->room_types[13];
+      hddll::gGlobalState->level_state->room_types[46] =
+          hddll::gGlobalState->level_state->room_types[14];
+      hddll::gGlobalState->level_state->room_types[47] =
+          hddll::gGlobalState->level_state->room_types[15];
 
       // Extend Castle
-      gGlobalState->level_state->room_types[8] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[9] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[10] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[11] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[8] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[9] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[10] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[11] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->room_types[12] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[13] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[14] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[15] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[12] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[13] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[14] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[15] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->room_types[16] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[17] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[18] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[19] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[16] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[17] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[18] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[19] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->room_types[20] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[21] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[22] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[23] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[20] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[21] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[22] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[23] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->room_types[24] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[25] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[26] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[27] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[24] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[25] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[26] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[27] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->room_types[28] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[29] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[30] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[31] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[28] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[29] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[30] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[31] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->room_types[32] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[33] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[34] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[35] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[32] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[33] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[34] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[35] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->room_types[36] =
-          gGlobalState->level_state->room_types[4];
-      gGlobalState->level_state->room_types[37] =
-          gGlobalState->level_state->room_types[5];
-      gGlobalState->level_state->room_types[38] =
-          gGlobalState->level_state->room_types[6];
-      gGlobalState->level_state->room_types[39] =
-          gGlobalState->level_state->room_types[7];
+      hddll::gGlobalState->level_state->room_types[36] =
+          hddll::gGlobalState->level_state->room_types[4];
+      hddll::gGlobalState->level_state->room_types[37] =
+          hddll::gGlobalState->level_state->room_types[5];
+      hddll::gGlobalState->level_state->room_types[38] =
+          hddll::gGlobalState->level_state->room_types[6];
+      hddll::gGlobalState->level_state->room_types[39] =
+          hddll::gGlobalState->level_state->room_types[7];
 
-      gGlobalState->level_state->exit_room_y = 11;
+      hddll::gGlobalState->level_state->exit_room_y = 11;
 
-    } else if (gGlobalState->level == 16) {
-      GenerateRoom(0, gGlobalState->level_state, 3, 45, 36);
-      GenerateRoom(0, gGlobalState->level_state, 13, 45, 37);
-      GenerateRoom(0, gGlobalState->level_state, 23, 45, 38);
-      GenerateRoom(0, gGlobalState->level_state, 33, 45, 39);
+    } else if (hddll::gGlobalState->level == 16) {
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 3, 45, 36);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 13, 45, 37);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 23, 45, 38);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 33, 45, 39);
 
-      GenerateRoom(0, gGlobalState->level_state, 3, 61, 36);
-      GenerateRoom(0, gGlobalState->level_state, 13, 61, 37);
-      GenerateRoom(0, gGlobalState->level_state, 23, 61, 38);
-      GenerateRoom(0, gGlobalState->level_state, 33, 61, 39);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 3, 61, 36);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 13, 61, 37);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 23, 61, 38);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 33, 61, 39);
 
-      GenerateRoom(0, gGlobalState->level_state, 3, 77, 36);
-      GenerateRoom(0, gGlobalState->level_state, 13, 77, 37);
-      GenerateRoom(0, gGlobalState->level_state, 23, 77, 38);
-      GenerateRoom(0, gGlobalState->level_state, 33, 77, 39);
-    } else if (gGlobalState->level == 20) {
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 3, 77, 36);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 13, 77, 37);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 23, 77, 38);
+      hddll::GenerateRoom(0, hddll::gGlobalState->level_state, 33, 77, 39);
+    } else if (hddll::gGlobalState->level == 20) {
       for (auto idx = 12; idx < 44; idx++) {
         if (idx % 4 < 2) {
-          gGlobalState->level_state->room_types[idx] = 55;
+          hddll::gGlobalState->level_state->room_types[idx] = 55;
         } else {
-          gGlobalState->level_state->room_types[idx] = 58;
+          hddll::gGlobalState->level_state->room_types[idx] = 58;
         }
       }
 
       // Bottom Row
-      gGlobalState->level_state->room_types[44] = 59;
-      gGlobalState->level_state->room_types[45] = 60;
-      gGlobalState->level_state->room_types[46] = 61;
-      gGlobalState->level_state->room_types[47] = 62;
+      hddll::gGlobalState->level_state->room_types[44] = 59;
+      hddll::gGlobalState->level_state->room_types[45] = 60;
+      hddll::gGlobalState->level_state->room_types[46] = 61;
+      hddll::gGlobalState->level_state->room_types[47] = 62;
     }
   }
 }

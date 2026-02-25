@@ -1,48 +1,48 @@
 #pragma once
 
-#include "../memory.h"
 #include "../state.h"
+#include <hddll/memory.h>
 
 struct FullSpelunkyState {
-  std::vector<CharacterIndex> allCharacters = {
-      CHARACTER_GUY,
-      CHARACTER_RED,
-      CHARACTER_GREEN,
-      CHARACTER_BLUE,
-      CHARACTER_MEATBOY,
-      CHARACTER_YELLOW,
-      CHARACTER_PURPLE,
-      CHARACTER_VAN_HELSING,
-      CHARACTER_CYAN,
-      CHARACTER_LIME,
-      CHARACTER_INUK,
-      CHARACTER_ROUND_GIRL,
-      CHARACTER_NINJA,
-      CHARACTER_VIKING,
-      CHARACTER_ROUND_BOY,
-      CHARACTER_CARL,
-      CHARACTER_ROBOT,
-      CHARACTER_MONK,
+  std::vector<hddll::CharacterIndex> allCharacters = {
+      hddll::CHARACTER_GUY,
+      hddll::CHARACTER_RED,
+      hddll::CHARACTER_GREEN,
+      hddll::CHARACTER_BLUE,
+      hddll::CHARACTER_MEATBOY,
+      hddll::CHARACTER_YELLOW,
+      hddll::CHARACTER_PURPLE,
+      hddll::CHARACTER_VAN_HELSING,
+      hddll::CHARACTER_CYAN,
+      hddll::CHARACTER_LIME,
+      hddll::CHARACTER_INUK,
+      hddll::CHARACTER_ROUND_GIRL,
+      hddll::CHARACTER_NINJA,
+      hddll::CHARACTER_VIKING,
+      hddll::CHARACTER_ROUND_BOY,
+      hddll::CHARACTER_CARL,
+      hddll::CHARACTER_ROBOT,
+      hddll::CHARACTER_MONK,
 
-      CHARACTER_JUNGLE_WARRIOR,
-      CHARACTER_YANG,
+      hddll::CHARACTER_JUNGLE_WARRIOR,
+      hddll::CHARACTER_YANG,
   };
 
-  std::vector<CharacterIndex> randoms = {
-      CHARACTER_GUY,
-      CHARACTER_RED,
-      CHARACTER_GREEN,
-      CHARACTER_BLUE,
-      CHARACTER_YELLOW,
-      CHARACTER_PURPLE,
-      CHARACTER_CYAN,
-      CHARACTER_LIME,
-      CHARACTER_CARL,
-      CHARACTER_ROUND_GIRL,
-      CHARACTER_ROUND_BOY,
-      CHARACTER_INUK,
-      CHARACTER_JUNGLE_WARRIOR,
-      CHARACTER_YANG,
+  std::vector<hddll::CharacterIndex> randoms = {
+      hddll::CHARACTER_GUY,
+      hddll::CHARACTER_RED,
+      hddll::CHARACTER_GREEN,
+      hddll::CHARACTER_BLUE,
+      hddll::CHARACTER_YELLOW,
+      hddll::CHARACTER_PURPLE,
+      hddll::CHARACTER_CYAN,
+      hddll::CHARACTER_LIME,
+      hddll::CHARACTER_CARL,
+      hddll::CHARACTER_ROUND_GIRL,
+      hddll::CHARACTER_ROUND_BOY,
+      hddll::CHARACTER_INUK,
+      hddll::CHARACTER_JUNGLE_WARRIOR,
+      hddll::CHARACTER_YANG,
   };
 
   bool showCharacterOverlay = false;
@@ -50,19 +50,19 @@ struct FullSpelunkyState {
 
 extern FullSpelunkyState gFullSpelunkyState;
 
-extern std::vector<Patch> gFullSpelunkyPatches;
+extern std::vector<hddll::Patch> gFullSpelunkyPatches;
 
-extern ForcePatch gDarkLevelForcePatch;
-extern ForcePatch gSnakePitForcePatch;
-extern ForcePatch gSkinIsCrawlingForcePatch;
-extern ForcePatch gRushingWaterForcePatch;
-extern ForcePatch gDeadAreRestlessForcePatch;
-extern ForcePatch gBeesForcePatch;
-extern ForcePatch gTikiVillageForcePatch;
-extern ForcePatch gWetFurForcePatch;
-extern ForcePatch gPsychicPresenceForcePatch;
-extern ForcePatch gIcePoolsForcePatch;
-extern ForcePatch gKaliPitForcePatch;
+extern hddll::ForcePatch gDarkLevelForcePatch;
+extern hddll::ForcePatch gSnakePitForcePatch;
+extern hddll::ForcePatch gSkinIsCrawlingForcePatch;
+extern hddll::ForcePatch gRushingWaterForcePatch;
+extern hddll::ForcePatch gDeadAreRestlessForcePatch;
+extern hddll::ForcePatch gBeesForcePatch;
+extern hddll::ForcePatch gTikiVillageForcePatch;
+extern hddll::ForcePatch gWetFurForcePatch;
+extern hddll::ForcePatch gPsychicPresenceForcePatch;
+extern hddll::ForcePatch gIcePoolsForcePatch;
+extern hddll::ForcePatch gKaliPitForcePatch;
 
 void resetFullSpelunkyState();
 void prePlaceRoomsFullSpelunky();

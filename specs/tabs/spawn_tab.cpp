@@ -1,9 +1,9 @@
 
 #include "spawn_tab.h"
 
-#include "../entities.h"
 #include "../state.h"
-#include "../3rdparty/imgui/misc/cpp/imgui_stdlib.h"
+#include <hddll/entities.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 SpawnState gSpawnState = {};
 
@@ -45,8 +45,8 @@ void drawSpawnTab() {
                     &spawnEntityConfig.activeEntity);
   }
   if (eraseIdx >= 0) {
-    gSpawnState.SpawnEntityInputs.erase(
-        gSpawnState.SpawnEntityInputs.begin() + eraseIdx);
+    gSpawnState.SpawnEntityInputs.erase(gSpawnState.SpawnEntityInputs.begin() +
+                                        eraseIdx);
   }
 
   if (ImGui::Button("Add Additional Entity")) {
@@ -55,16 +55,17 @@ void drawSpawnTab() {
 
   ImGui::Separator();
 
-  if (ImGui::Button("Spawn") && gGlobalState->player1) {
+  if (ImGui::Button("Spawn") && hddll::gGlobalState->player1) {
     for (auto const &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
 
       if (spawnEntityConfig.entityType >= 0) {
         if (spawnEntityConfig.entityType == 0) {
-          gGlobalState->SpawnHiredHand(gGlobalState->player1->x,
-                                       gGlobalState->player1->y, 90);
+          hddll::gGlobalState->SpawnHiredHand(hddll::gGlobalState->player1->x,
+                                              hddll::gGlobalState->player1->y,
+                                              90);
         } else {
-          gGlobalState->SpawnEntity(
-              gGlobalState->player1->x, gGlobalState->player1->y,
+          hddll::gGlobalState->SpawnEntity(
+              hddll::gGlobalState->player1->x, hddll::gGlobalState->player1->y,
               spawnEntityConfig.entityType, spawnEntityConfig.activeEntity);
         }
       }
@@ -82,7 +83,7 @@ void drawSpawnTab() {
 
   if (ImGui::BeginListBox("##", {-1, -1})) {
     auto spawnEntityConfig = &gSpawnState.SpawnEntityInputs.back();
-    for (auto const &[name, entity_type] : gEntities) {
+    for (auto const &[name, entity_type] : hddll::gEntities) {
 
       std::string lowerName = name;
       std::transform(lowerName.begin(), lowerName.end(), lowerName.begin(),

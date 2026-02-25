@@ -14,18 +14,12 @@ endif()
 
 add_library(
     specs SHARED
-    ui.h ui.cpp
-    hooks.h hooks.cpp
-    hd.h hd.cpp
+    dllmain.cpp
     inputs.h inputs.cpp
     config.h config.cpp
-    hd_entity.h
     sounds.h
-    entities.h
     specs.h specs.cpp
     state.h state.cpp
-    utils.h utils.cpp
-    memory.h memory.cpp
     drawing.h drawing.cpp
     seeded_items.h seeded_items.cpp
     game_hooks.h game_hooks.cpp
@@ -42,6 +36,5 @@ add_library(
     tabs/debug_tab.h tabs/debug_tab.cpp
     tabs/selected_tab.h tabs/selected_tab.cpp
     tabs/settings_tab.h tabs/settings_tab.cpp
-    dllmain.cpp
 )
-target_link_libraries(specs PUBLIC imgui minhook toml11)
+target_link_libraries(specs PUBLIC hddll toml11)

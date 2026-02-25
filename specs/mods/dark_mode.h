@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../memory.h"
 #include "../state.h"
+#include <hddll/memory.h>
 
-extern std::vector<Patch> gDarkModePatches;
+extern std::vector<hddll::Patch> gDarkModePatches;

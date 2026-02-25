@@ -2,8 +2,8 @@
 
 #include <unordered_set>
 
-#include "../memory.h"
 #include "../state.h"
+#include <hddll/memory.h>
 
 struct SeededModeState {
   uint32_t seed = 1;
@@ -17,8 +17,8 @@ struct SeededModeState {
 
 extern SeededModeState gSeededModeState;
 
-extern std::vector<Patch> gSeededModePatches;
-extern std::vector<Patch> gSeededModeDailySeedingPatches;
+extern std::vector<hddll::Patch> gSeededModePatches;
+extern std::vector<hddll::Patch> gSeededModeDailySeedingPatches;
 
 extern const char *levelItems[];
 

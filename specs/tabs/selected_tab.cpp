@@ -28,7 +28,7 @@ static void drawRawBytesTableForSelected(const char *str_id, char *start_addr,
       ImGui::TableNextColumn();
       ImGui::Text("0x%X", i);
 
-      std::pair<EntityKind, uint32_t> key = {
+      std::pair<hddll::EntityKind, uint32_t> key = {
           gSelectedEntityState.Entity->entity_kind,
           gSelectedEntityState.Entity->entity_type};
 
@@ -116,13 +116,13 @@ void drawSelectedEntityTab() {
   if (ImGui::Button(std::format("Follow With Camera##FollowEnt-{}",
                                 (uint32_t)gSelectedEntityState.Entity)
                         .c_str())) {
-    gCameraState->camera_following = gSelectedEntityState.Entity;
+    hddll::gCameraState->camera_following = gSelectedEntityState.Entity;
   }
 
-  if (gCameraState->camera_following == gSelectedEntityState.Entity) {
+  if (hddll::gCameraState->camera_following == gSelectedEntityState.Entity) {
     ImGui::SameLine();
     if (ImGui::Button("Stop Following##FollowEnt")) {
-      gCameraState->camera_following = nullptr;
+      hddll::gCameraState->camera_following = nullptr;
     }
   }
 
@@ -174,10 +174,11 @@ void drawSelectedEntityTab() {
     drawCharBool("flag_23", gSelectedEntityState.Entity->flag_23);
     drawCharBool("flag_24", gSelectedEntityState.Entity->flag_24);
   }
-  if (gSelectedEntityState.Entity->entity_kind == EntityKind::KIND_PLAYER &&
+  if (gSelectedEntityState.Entity->entity_kind ==
+          hddll::EntityKind::KIND_PLAYER &&
       ImGui::CollapsingHeader("EntityPlayer")) {
     auto entityPlayer =
-        reinterpret_cast<EntityPlayer *>(gSelectedEntityState.Entity);
+        reinterpret_cast<hddll::EntityPlayer *>(gSelectedEntityState.Entity);
     ImGui::InputInt("Following", (int *)&entityPlayer->following);
     ImGui::InputInt("Follower", (int *)&entityPlayer->follower);
   }
@@ -185,7 +186,7 @@ void drawSelectedEntityTab() {
       (uint32_t)gSelectedEntityState.Entity->entity_kind < 5 &&
       ImGui::CollapsingHeader("EntityActive")) {
     auto entityActive =
-        reinterpret_cast<EntityActive *>(gSelectedEntityState.Entity);
+        reinterpret_cast<hddll::EntityActive *>(gSelectedEntityState.Entity);
     ImGui::InputInt("Health", &entityActive->health);
     ImGui::InputInt("Favor given", &entityActive->favor_given);
     ImGui::InputFloat("Velocity x", &entityActive->velocity_x);
@@ -200,7 +201,7 @@ void drawSelectedEntityTab() {
   if ((uint32_t)gSelectedEntityState.Entity->entity_kind == 0 &&
       ImGui::CollapsingHeader("EntityFloor")) {
     auto entityFloor =
-        reinterpret_cast<EntityFloor *>(gSelectedEntityState.Entity);
+        reinterpret_cast<hddll::EntityFloor *>(gSelectedEntityState.Entity);
 
     drawCharBool("Make Door onDestroy", entityFloor->field8_0x143);
   }

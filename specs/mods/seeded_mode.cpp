@@ -6,13 +6,13 @@
 SeededModeState gSeededModeState = {};
 
 #include "../drawing.h"
-#include "../entities.h"
 #include "../game_hooks.h"
 #include "../seeded_items.h"
 #include "../tabs/level_tab.h"
-#include "../utils.h"
+#include <hddll/entities.h>
+#include <hddll/utils.h>
 
-std::vector<Patch> gSeededModePatches = {
+std::vector<hddll::Patch> gSeededModePatches = {
     // Seed Kali Drops
     {0x1531c, {0x90, 0x90}, {0x74, 0x0c}},
 
@@ -39,7 +39,7 @@ std::vector<Patch> gSeededModePatches = {
     {0x6bae1, {0x0}, {0x1}},
 };
 
-std::vector<Patch> gSeededModeDailySeedingPatches = {
+std::vector<hddll::Patch> gSeededModeDailySeedingPatches = {
     // Remove Roulette Wheel
     {0xdeef8,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
@@ -64,7 +64,7 @@ void updateExportedSeed() {
 
 void loadFromExportSeed() {
   auto seed = gSeededModeState.exportSeed;
-  auto parts = split(seed, ';');
+  auto parts = hddll::split(seed, ';');
   try {
     if (parts.size() > 0) {
       gSeededModeState.seed = std::stoi(parts[0]);
@@ -74,7 +74,7 @@ void loadFromExportSeed() {
       auto levelSeeds =
           std::vector<std::string>(parts.begin() + 1, parts.end());
       for (auto levelSeed : levelSeeds) {
-        auto levelSeedParts = split(levelSeed, ':');
+        auto levelSeedParts = hddll::split(levelSeed, ':');
         if (levelSeedParts.size() == 2) {
           gSeededModeState.levelSeeds.push_back(
               {std::stoi(levelSeedParts[0]), stoul(levelSeedParts[1])});
@@ -126,16 +126,18 @@ uint32_t getRandomSeed() {
 void chooseRandomSeed() { gSeededModeState.seed = getRandomSeed(); }
 
 static void searchStraightDown() {
-  auto entranceRoomNumber = gGlobalState->level_state->entrance_room_x +
-                            gGlobalState->level_state->entrance_room_y * 4;
+  auto entranceRoomNumber =
+      hddll::gGlobalState->level_state->entrance_room_x +
+      hddll::gGlobalState->level_state->entrance_room_y * 4;
 
-  auto roomType = gGlobalState->level_state->room_types[entranceRoomNumber];
+  auto roomType =
+      hddll::gGlobalState->level_state->room_types[entranceRoomNumber];
   auto roomType2 =
-      gGlobalState->level_state->room_types[entranceRoomNumber + 4];
+      hddll::gGlobalState->level_state->room_types[entranceRoomNumber + 4];
   auto roomType3 =
-      gGlobalState->level_state->room_types[entranceRoomNumber + 8];
-  auto exitRoomNumber = gGlobalState->level_state->exit_room_x +
-                        gGlobalState->level_state->exit_room_y * 4;
+      hddll::gGlobalState->level_state->room_types[entranceRoomNumber + 8];
+  auto exitRoomNumber = hddll::gGlobalState->level_state->exit_room_x +
+                        hddll::gGlobalState->level_state->exit_room_y * 4;
 
   if (roomType != 2 || roomType2 != 2 || roomType3 != 2 ||
       entranceRoomNumber + 12 != exitRoomNumber) {
@@ -152,41 +154,42 @@ static void searchNoEggy13() {
   auto idolPos = 0;
   auto altarPos = 0;
 
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = hddll::gGlobalState->entities->entities_active[idx];
     if (!ent) {
       continue;
     }
 
-    if (ent->entity_kind == EntityKind::KIND_ITEM) {
-      auto entity_item = (EntityItem *)ent;
+    if (ent->entity_kind == hddll::EntityKind::KIND_ITEM) {
+      auto entity_item = (hddll::EntityItem *)ent;
       if (entity_item->field52_0x1f0 == 1 and entity_item->entity_type == 248) {
         hasBox = true;
-        boxPos = GetRoomForPosition(ent->x, ent->y) / 4;
+        boxPos = hddll::GetRoomForPosition(ent->x, ent->y) / 4;
       }
     }
   }
 
-  for (auto idx = 0; idx < ENTITY_FLOORS_COUNT; idx++) {
-    auto ent = gGlobalState->level_state->entity_floors[idx];
+  for (auto idx = 0; idx < hddll::ENTITY_FLOORS_COUNT; idx++) {
+    auto ent = hddll::gGlobalState->level_state->entity_floors[idx];
     if (!ent) {
       continue;
     }
     if (ent->entity_type == 35) {
       hasAltar = true;
-      altarPos = GetRoomForPosition(ent->x, ent->y) / 4;
+      altarPos = hddll::GetRoomForPosition(ent->x, ent->y) / 4;
     }
     if (ent->entity_type == 15) {
       hasIdol = true;
-      idolPos = GetRoomForPosition(ent->x, ent->y) / 4;
+      idolPos = hddll::GetRoomForPosition(ent->x, ent->y) / 4;
     }
   }
 
   if (hasBox && hasAltar && hasIdol && boxPos <= idolPos &&
       idolPos == altarPos) {
     std::ofstream file("1-3-seeds.txt", std::ios_base::app);
-    if (file.is_open()) file << lastSeed << std::endl;
+    if (file.is_open())
+      file << lastSeed << std::endl;
     resetRun();
   } else {
     resetRun();
@@ -209,17 +212,17 @@ static int getTileByCoord(int x, int y) {
   const int startIdx = 141;
   const int rowWidth = 46;
 
-  return ENTITY_FLOORS_COUNT - (y * rowWidth) + x;
+  return hddll::ENTITY_FLOORS_COUNT - (y * rowWidth) + x;
 }
 
 static void searchDaR() {
-  auto spawnedBM = gGlobalState->spawned_black_market_entrance;
+  auto spawnedBM = hddll::gGlobalState->spawned_black_market_entrance;
 
   auto hasHC = false;
   auto hcRoom = 0;
 
   for (auto idx = 0; idx < 48; idx++) {
-    auto room_type = gGlobalState->level_state->room_types[idx];
+    auto room_type = hddll::gGlobalState->level_state->room_types[idx];
     if (room_type == 47) {
       hcRoom = idx;
       hasHC = true;
@@ -236,7 +239,8 @@ static void searchDaR() {
   auto tileStart = getFirstTileForRoomIdx(roomBelowHC);
 
   for (auto idx = 0; idx < 10; idx++) {
-    auto tile = gGlobalState->level_state->entity_floors[tileStart + idx];
+    auto tile =
+        hddll::gGlobalState->level_state->entity_floors[tileStart + idx];
     if (!tile || tile->entity_type == 4) {
       continue;
     } else {
@@ -246,7 +250,8 @@ static void searchDaR() {
   }
 
   for (auto idx = 0; idx < 10; idx++) {
-    auto tile = gGlobalState->level_state->entity_floors[tileStart + 46 + idx];
+    auto tile =
+        hddll::gGlobalState->level_state->entity_floors[tileStart + 46 + idx];
     if (!tile) {
       resetRun();
       return;
@@ -259,16 +264,18 @@ static void searchDaR() {
     }
   }
 
-  std::ofstream file("haunted-castle-black-market-seeds.txt", std::ios_base::app);
-  if (file.is_open()) file << lastSeed << std::endl;
+  std::ofstream file("haunted-castle-black-market-seeds.txt",
+                     std::ios_base::app);
+  if (file.is_open())
+    file << lastSeed << std::endl;
   resetRun();
 }
 
 static int hasBombChest() {
   auto bombCount = 0;
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = hddll::gGlobalState->entities->entities_active[idx];
     if (!ent) {
       continue;
     }
@@ -283,14 +290,14 @@ static int hasBombChest() {
 }
 
 static void searchHC() {
-  auto spawnedBM = gGlobalState->spawned_black_market_entrance;
+  auto spawnedBM = hddll::gGlobalState->spawned_black_market_entrance;
   if (!spawnedBM) {
     resetRun();
     return;
   }
 
-  auto bmX = gGlobalState->level_state->alt_exit_x;
-  auto bmY = gGlobalState->level_state->alt_exit_y;
+  auto bmX = hddll::gGlobalState->level_state->alt_exit_x;
+  auto bmY = hddll::gGlobalState->level_state->alt_exit_y;
 
   auto bmXGood = bmX >= 30.0 && bmX <= 31.0;
   auto bmYGood = bmY == 69.0;
@@ -301,7 +308,8 @@ static void searchHC() {
   }
 
   std::ofstream file("haunted-castle-seeds.txt", std::ios_base::app);
-  if (file.is_open()) file << lastSeed << std::endl;
+  if (file.is_open())
+    file << lastSeed << std::endl;
   resetRun();
 }
 
@@ -313,9 +321,9 @@ static void searchWorm() {
   auto yetiCount = 0;
   auto skeletonCount = 0;
 
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = hddll::gGlobalState->entities->entities_active[idx];
     if (!ent) {
       continue;
     }
@@ -334,41 +342,44 @@ static void searchWorm() {
   }
 
   std::ofstream file("worms.txt", std::ios_base::app);
-  if (!file.is_open()) { resetRun(); return; }
+  if (!file.is_open()) {
+    resetRun();
+    return;
+  }
   file << lastSeed << "," << wormEggCount << "," << bacteriumCount << ","
        << ufoCount << "," << yetiCount << "," << skeletonCount << std::endl;
   resetRun();
 }
 
 static void search34() {
-  if (gGlobalState->level == 9) {
-    gGlobalState->is_worm = 1;
-    warpToLevel(gGlobalState->level);
+  if (hddll::gGlobalState->level == 9) {
+    hddll::gGlobalState->is_worm = 1;
+    warpToLevel(hddll::gGlobalState->level);
     return;
-  } else if (gGlobalState->level == 10) {
-    warpToLevel(gGlobalState->level);
+  } else if (hddll::gGlobalState->level == 10) {
+    warpToLevel(hddll::gGlobalState->level);
     return;
   }
 
   auto rightMoship =
-      gGlobalState->level_state->entity_floors[getTileByCoord(33, 96)];
+      hddll::gGlobalState->level_state->entity_floors[getTileByCoord(33, 96)];
   auto leftMoship =
-      gGlobalState->level_state->entity_floors[getTileByCoord(12, 96)];
+      hddll::gGlobalState->level_state->entity_floors[getTileByCoord(12, 96)];
 
   if (rightMoship && rightMoship->entity_type == 81) {
     auto block =
-        gGlobalState->level_state->entity_floors[getTileByCoord(32, 97)];
+        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(32, 97)];
     auto blockAbove =
-        gGlobalState->level_state->entity_floors[getTileByCoord(32, 98)];
+        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(32, 98)];
     if (!block || block->entity_type != 9098 || blockAbove) {
       resetRun();
       return;
     }
   } else if (leftMoship && leftMoship->entity_type == 81) {
     auto block =
-        gGlobalState->level_state->entity_floors[getTileByCoord(13, 97)];
+        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(13, 97)];
     auto blockAbove =
-        gGlobalState->level_state->entity_floors[getTileByCoord(13, 98)];
+        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(13, 98)];
     if (!block || block->entity_type != 9098 || blockAbove) {
       resetRun();
       return;
@@ -379,7 +390,8 @@ static void search34() {
   }
 
   std::ofstream file("34-seeds.txt", std::ios_base::app);
-  if (file.is_open()) file << lastSeed << std::endl;
+  if (file.is_open())
+    file << lastSeed << std::endl;
   resetRun();
 }
 
@@ -390,29 +402,30 @@ static void searchSeeds() {
   std::ofstream shopItemsFile;
   cratesFile.open("crates.txt", std::ios_base::app);
   shopItemsFile.open("shop_items.txt", std::ios_base::app);
-  if (!cratesFile.is_open() || !shopItemsFile.is_open()) return;
+  if (!cratesFile.is_open() || !shopItemsFile.is_open())
+    return;
 
   auto seedForLevel = lastSeed;
-  auto formattedLevel = formatLevel(gGlobalState->level);
+  auto formattedLevel = hddll::formatLevel(hddll::gGlobalState->level);
 
-  std::vector<EntityItem *> shopItems;
+  std::vector<hddll::EntityItem *> shopItems;
 
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = hddll::gGlobalState->entities->entities_active[idx];
     if (!ent) {
       continue;
     }
 
     if (ent->entity_type == 101) {
       auto entity_type = getCrateItemForSeed(ent->z_depth_as_int);
-      auto entity_name = EntityTypeName(entity_type);
+      auto entity_name = hddll::EntityTypeName(entity_type);
       cratesFile << seedForLevel << "," << formattedLevel << "," << entity_name
                  << std::endl;
     }
 
-    if (ent->entity_kind == EntityKind::KIND_ITEM) {
-      auto entity_item = (EntityItem *)ent;
+    if (ent->entity_kind == hddll::EntityKind::KIND_ITEM) {
+      auto entity_item = (hddll::EntityItem *)ent;
       if (entity_item->field52_0x1f0 == 1) {
         shopItems.push_back(entity_item);
       }
@@ -422,7 +435,7 @@ static void searchSeeds() {
   if (shopItems.size() > 0) {
     shopItemsFile << seedForLevel << "," << formattedLevel;
     for (auto entity_item : shopItems) {
-      auto entity_name = EntityTypeName(entity_item->entity_type);
+      auto entity_name = hddll::EntityTypeName(entity_item->entity_type);
       shopItemsFile << "," << entity_name;
     }
     shopItemsFile << std::endl;
@@ -437,14 +450,14 @@ void advanceLevel() {
     return;
   }
 
-  auto isDisabled =
-      gGlobalState->screen_state != 0 || gGlobalState->play_state != 0;
+  auto isDisabled = hddll::gGlobalState->screen_state != 0 ||
+                    hddll::gGlobalState->play_state != 0;
 
   if (isDisabled)
     return;
 
-  if (gGlobalState->level < gSeededModeState.advanceOnRestart) {
-    warpToLevel(gGlobalState->level);
+  if (hddll::gGlobalState->level < gSeededModeState.advanceOnRestart) {
+    warpToLevel(hddll::gGlobalState->level);
     return;
   }
 

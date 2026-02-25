@@ -2,11 +2,11 @@
 #include "full_spelunky.h"
 
 #include "../drawing.h"
-#include "../memory.h"
+#include <hddll/memory.h>
 
 FullSpelunkyState gFullSpelunkyState = {};
 
-std::vector<Patch> gFullSpelunkyPatches = {
+std::vector<hddll::Patch> gFullSpelunkyPatches = {
     // Allow coffins on level 1
     {0xbe12a, {0x0}, {0x1}},
     {0x6ab16, {0x0}, {0x1}},
@@ -88,75 +88,75 @@ std::vector<Patch> gFullSpelunkyPatches = {
 
 };
 
-ForcePatch gDarkLevelForcePatch = {
+hddll::ForcePatch gDarkLevelForcePatch = {
     {0x6afbe, {0x1}, {0x0}},
     {0x6afae, {0x0}, {0x1}},
 };
 
-ForcePatch gSnakePitForcePatch = {
+hddll::ForcePatch gSnakePitForcePatch = {
     {0xca167,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0x90, 0x0, 0x0, 0x0}},
     {0xca166, {0x0}, {0x1}},
 };
 
-ForcePatch gSkinIsCrawlingForcePatch = {
+hddll::ForcePatch gSkinIsCrawlingForcePatch = {
     {0xcaa28,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0x00, 0x02, 0x00, 0x00}},
     {0xcaa27, {0x0}, {0x1}},
 };
 
-ForcePatch gRushingWaterForcePatch = {
+hddll::ForcePatch gRushingWaterForcePatch = {
     {0xcad7c,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x84, 0xc1, 0x01, 0x00, 0x00}},
     {0xcad6c, {0x0}, {0x1}},
 };
 
-ForcePatch gDeadAreRestlessForcePatch = {
+hddll::ForcePatch gDeadAreRestlessForcePatch = {
     {0xbdf38,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0xc9, 0x00, 0x00, 0x00}},
     {0xbdf28, {0x0}, {0x1}},
 };
 
-ForcePatch gBeesForcePatch = {
+hddll::ForcePatch gBeesForcePatch = {
     {0xcafb2,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0x80, 0x03, 0x00, 0x00}},
     {0xcafb1, {0x0}, {0x1}},
 };
 
-ForcePatch gTikiVillageForcePatch = {
+hddll::ForcePatch gTikiVillageForcePatch = {
     {0xcb3ca,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0x90, 0x00, 0x00, 0x00}},
     {0xcb3c9, {0x0}, {0x1}},
 };
 
-ForcePatch gWetFurForcePatch = {
+hddll::ForcePatch gWetFurForcePatch = {
     {0xcb59c,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x84, 0xf5, 0x00, 0x00, 0x00}},
     {0xcb58c, {0x0}, {0x1}},
 };
 
-ForcePatch gPsychicPresenceForcePatch = {
+hddll::ForcePatch gPsychicPresenceForcePatch = {
     {0xcb704,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0xbf, 0x00, 0x00, 0x00}},
     {0xcb703, {0x0}, {0x1}},
 };
 
-ForcePatch gIcePoolsForcePatch = {
+hddll::ForcePatch gIcePoolsForcePatch = {
     {0xcb856,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0x27, 0x01, 0x00, 0x00}},
     {0xcb855, {0x0}, {0x1}},
 };
 
-ForcePatch gKaliPitForcePatch = {
+hddll::ForcePatch gKaliPitForcePatch = {
     {0xca3b8,
      {0x90, 0x90, 0x90, 0x90, 0x90, 0x90},
      {0x0f, 0x85, 0x9f, 0x00, 0x00, 0x00}},
@@ -165,153 +165,187 @@ ForcePatch gKaliPitForcePatch = {
 
 void resetFullSpelunkyState() {
   gFullSpelunkyState.allCharacters = {
-      CHARACTER_GUY,
-      CHARACTER_RED,
-      CHARACTER_GREEN,
-      CHARACTER_BLUE,
-      CHARACTER_MEATBOY,
-      CHARACTER_YELLOW,
-      CHARACTER_PURPLE,
-      CHARACTER_VAN_HELSING,
-      CHARACTER_CYAN,
-      CHARACTER_LIME,
-      CHARACTER_INUK,
-      CHARACTER_ROUND_GIRL,
-      CHARACTER_NINJA,
-      CHARACTER_VIKING,
-      CHARACTER_ROUND_BOY,
-      CHARACTER_CARL,
-      CHARACTER_ROBOT,
-      CHARACTER_MONK,
+      hddll::CHARACTER_GUY,
+      hddll::CHARACTER_RED,
+      hddll::CHARACTER_GREEN,
+      hddll::CHARACTER_BLUE,
+      hddll::CHARACTER_MEATBOY,
+      hddll::CHARACTER_YELLOW,
+      hddll::CHARACTER_PURPLE,
+      hddll::CHARACTER_VAN_HELSING,
+      hddll::CHARACTER_CYAN,
+      hddll::CHARACTER_LIME,
+      hddll::CHARACTER_INUK,
+      hddll::CHARACTER_ROUND_GIRL,
+      hddll::CHARACTER_NINJA,
+      hddll::CHARACTER_VIKING,
+      hddll::CHARACTER_ROUND_BOY,
+      hddll::CHARACTER_CARL,
+      hddll::CHARACTER_ROBOT,
+      hddll::CHARACTER_MONK,
 
-      CHARACTER_JUNGLE_WARRIOR,
-      CHARACTER_YANG,
+      hddll::CHARACTER_JUNGLE_WARRIOR,
+      hddll::CHARACTER_YANG,
   };
 
   gFullSpelunkyState.randoms = {
-      CHARACTER_GUY,
-      CHARACTER_RED,
-      CHARACTER_GREEN,
-      CHARACTER_BLUE,
-      CHARACTER_YELLOW,
-      CHARACTER_PURPLE,
-      CHARACTER_CYAN,
-      CHARACTER_LIME,
-      CHARACTER_CARL,
-      CHARACTER_ROUND_GIRL,
-      CHARACTER_ROUND_BOY,
-      CHARACTER_INUK,
-      CHARACTER_JUNGLE_WARRIOR,
-      CHARACTER_YANG,
+      hddll::CHARACTER_GUY,
+      hddll::CHARACTER_RED,
+      hddll::CHARACTER_GREEN,
+      hddll::CHARACTER_BLUE,
+      hddll::CHARACTER_YELLOW,
+      hddll::CHARACTER_PURPLE,
+      hddll::CHARACTER_CYAN,
+      hddll::CHARACTER_LIME,
+      hddll::CHARACTER_CARL,
+      hddll::CHARACTER_ROUND_GIRL,
+      hddll::CHARACTER_ROUND_BOY,
+      hddll::CHARACTER_INUK,
+      hddll::CHARACTER_JUNGLE_WARRIOR,
+      hddll::CHARACTER_YANG,
   };
 }
 
 void prePlaceRoomsFullSpelunky() {
   // Mines
-  if (gGlobalState->level >= 1 && gGlobalState->level <= 4) {
-    if (gGlobalState->level == 3) {
-      applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-      applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_NEVER);
-    } else if (gGlobalState->level == 4) {
-      applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+  if (hddll::gGlobalState->level >= 1 && hddll::gGlobalState->level <= 4) {
+    if (hddll::gGlobalState->level == 3) {
+      hddll::applyForcePatch(gSnakePitForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
+      hddll::applyForcePatch(gSkinIsCrawlingForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+    } else if (hddll::gGlobalState->level == 4) {
+      hddll::applyForcePatch(gSnakePitForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gSkinIsCrawlingForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
     } else {
-      applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gSnakePitForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gSkinIsCrawlingForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
     }
     // Jungle
-  } else if (gGlobalState->level >= 5 && gGlobalState->level <= 8) {
-    if (gGlobalState->level == 5) {
-      applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-      applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-      applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_NEVER);
-    } else if (gGlobalState->level == 8) {
-      applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-      applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+  } else if (hddll::gGlobalState->level >= 5 &&
+             hddll::gGlobalState->level <= 8) {
+    if (hddll::gGlobalState->level == 5) {
+      hddll::applyForcePatch(gRushingWaterForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
+      hddll::applyForcePatch(gDeadAreRestlessForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
+      hddll::applyForcePatch(gBeesForcePatch, hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gTikiVillageForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+    } else if (hddll::gGlobalState->level == 8) {
+      hddll::applyForcePatch(gRushingWaterForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gDeadAreRestlessForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gBeesForcePatch, hddll::FORCE_PATCH_TYPE_ALWAYS);
+      hddll::applyForcePatch(gTikiVillageForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
     } else {
-      applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gDeadAreRestlessForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gRushingWaterForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gBeesForcePatch, hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gTikiVillageForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
     }
     // Ice Caves
-  } else if (gGlobalState->level >= 9 && gGlobalState->level <= 12) {
-    if (gGlobalState->level == 9) {
-      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NEVER);
-    } else if (gGlobalState->level == 11 and
-               gGlobalState->mothership_spawned == 0) {
-      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
-    } else if (gGlobalState->level == 12 and
-               gGlobalState->mothership_spawned == 0) {
-      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gIcePoolsForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-    } else if (gGlobalState->level == 12 and
-               gGlobalState->mothership_spawned == 1) {
-      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_ALWAYS);
-      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
+  } else if (hddll::gGlobalState->level >= 9 &&
+             hddll::gGlobalState->level <= 12) {
+    if (hddll::gGlobalState->level == 9) {
+      hddll::applyForcePatch(gWetFurForcePatch, hddll::FORCE_PATCH_TYPE_ALWAYS);
+      hddll::applyForcePatch(gPsychicPresenceForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+    } else if (hddll::gGlobalState->level == 11 and
+               hddll::gGlobalState->mothership_spawned == 0) {
+      hddll::applyForcePatch(gPsychicPresenceForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
+      hddll::applyForcePatch(gWetFurForcePatch, hddll::FORCE_PATCH_TYPE_NEVER);
+    } else if (hddll::gGlobalState->level == 12 and
+               hddll::gGlobalState->mothership_spawned == 0) {
+      hddll::applyForcePatch(gPsychicPresenceForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gWetFurForcePatch, hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gIcePoolsForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
+    } else if (hddll::gGlobalState->level == 12 and
+               hddll::gGlobalState->mothership_spawned == 1) {
+      hddll::applyForcePatch(gPsychicPresenceForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
+      hddll::applyForcePatch(gWetFurForcePatch, hddll::FORCE_PATCH_TYPE_NEVER);
     } else {
-      applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NEVER);
-      applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gWetFurForcePatch, hddll::FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gPsychicPresenceForcePatch,
+                             hddll::FORCE_PATCH_TYPE_NEVER);
     }
     // Temple
-  } else if (gGlobalState->level >= 13 && gGlobalState->level <= 15) {
-    if (gGlobalState->level == 14) {
-      applyForcePatch(gKaliPitForcePatch, FORCE_PATCH_TYPE_ALWAYS);
+  } else if (hddll::gGlobalState->level >= 13 &&
+             hddll::gGlobalState->level <= 15) {
+    if (hddll::gGlobalState->level == 14) {
+      hddll::applyForcePatch(gKaliPitForcePatch,
+                             hddll::FORCE_PATCH_TYPE_ALWAYS);
     } else {
-      applyForcePatch(gKaliPitForcePatch, FORCE_PATCH_TYPE_NEVER);
+      hddll::applyForcePatch(gKaliPitForcePatch, hddll::FORCE_PATCH_TYPE_NEVER);
     }
   }
 
   if (!gModsState.DarkMode) {
-    if (gGlobalState->level == 12 and gGlobalState->mothership_spawned == 0) {
-      gGlobalState->dark_level = 1;
+    if (hddll::gGlobalState->level == 12 and
+        hddll::gGlobalState->mothership_spawned == 0) {
+      hddll::gGlobalState->dark_level = 1;
     } else {
-      gGlobalState->dark_level = 0;
+      hddll::gGlobalState->dark_level = 0;
     }
   }
 }
 
 void postPlaceRoomsFullSpelunky() {
   // Mines
-  if (gGlobalState->level >= 1 && gGlobalState->level <= 4) {
-    applyForcePatch(gSnakePitForcePatch, FORCE_PATCH_TYPE_NORMAL);
-    applyForcePatch(gSkinIsCrawlingForcePatch, FORCE_PATCH_TYPE_NORMAL);
-  } else if (gGlobalState->level >= 5 && gGlobalState->level <= 8) {
-    applyForcePatch(gRushingWaterForcePatch, FORCE_PATCH_TYPE_NORMAL);
-    applyForcePatch(gDeadAreRestlessForcePatch, FORCE_PATCH_TYPE_NORMAL);
-    applyForcePatch(gBeesForcePatch, FORCE_PATCH_TYPE_NORMAL);
-    applyForcePatch(gTikiVillageForcePatch, FORCE_PATCH_TYPE_NORMAL);
-  } else if (gGlobalState->level >= 9 && gGlobalState->level <= 12) {
-    applyForcePatch(gWetFurForcePatch, FORCE_PATCH_TYPE_NORMAL);
-    applyForcePatch(gPsychicPresenceForcePatch, FORCE_PATCH_TYPE_NORMAL);
-    applyForcePatch(gIcePoolsForcePatch, FORCE_PATCH_TYPE_NORMAL);
+  if (hddll::gGlobalState->level >= 1 && hddll::gGlobalState->level <= 4) {
+    hddll::applyForcePatch(gSnakePitForcePatch, hddll::FORCE_PATCH_TYPE_NORMAL);
+    hddll::applyForcePatch(gSkinIsCrawlingForcePatch,
+                           hddll::FORCE_PATCH_TYPE_NORMAL);
+  } else if (hddll::gGlobalState->level >= 5 &&
+             hddll::gGlobalState->level <= 8) {
+    hddll::applyForcePatch(gRushingWaterForcePatch,
+                           hddll::FORCE_PATCH_TYPE_NORMAL);
+    hddll::applyForcePatch(gDeadAreRestlessForcePatch,
+                           hddll::FORCE_PATCH_TYPE_NORMAL);
+    hddll::applyForcePatch(gBeesForcePatch, hddll::FORCE_PATCH_TYPE_NORMAL);
+    hddll::applyForcePatch(gTikiVillageForcePatch,
+                           hddll::FORCE_PATCH_TYPE_NORMAL);
+  } else if (hddll::gGlobalState->level >= 9 &&
+             hddll::gGlobalState->level <= 12) {
+    hddll::applyForcePatch(gWetFurForcePatch, hddll::FORCE_PATCH_TYPE_NORMAL);
+    hddll::applyForcePatch(gPsychicPresenceForcePatch,
+                           hddll::FORCE_PATCH_TYPE_NORMAL);
+    hddll::applyForcePatch(gIcePoolsForcePatch, hddll::FORCE_PATCH_TYPE_NORMAL);
     // Temple
-  } else if (gGlobalState->level >= 13 && gGlobalState->level <= 15) {
-    applyForcePatch(gKaliPitForcePatch, FORCE_PATCH_TYPE_NORMAL);
+  } else if (hddll::gGlobalState->level >= 13 &&
+             hddll::gGlobalState->level <= 15) {
+    hddll::applyForcePatch(gKaliPitForcePatch, hddll::FORCE_PATCH_TYPE_NORMAL);
   }
 }
 
 void preSpawnTilesFullSpelunky() {
   if (gModsState.TheFullSpelunky) {
-    if (gGlobalState->level == 5) {
+    if (hddll::gGlobalState->level == 5) {
       bool found_hc_entrance = false;
       bool placed_hc_entrance = false;
       for (auto idx = 0; idx < 48; idx++) {
-        if (gGlobalState->level_state->room_types[idx] == 47) {
+        if (hddll::gGlobalState->level_state->room_types[idx] == 47) {
           found_hc_entrance = true;
           break;
         }
       }
       if (!found_hc_entrance) {
         for (auto idx = 4; idx < 48; idx++) {
-          if (gGlobalState->level_state->room_types[idx] == 0) {
-            gGlobalState->level_state->room_types[idx] = 47;
+          if (hddll::gGlobalState->level_state->room_types[idx] == 0) {
+            hddll::gGlobalState->level_state->room_types[idx] = 47;
             placed_hc_entrance = true;
             break;
           }
@@ -320,63 +354,67 @@ void preSpawnTilesFullSpelunky() {
         // If you didn't find an open side room shove it on the path
         if (!placed_hc_entrance) {
           for (auto idx = 4; idx < 48; idx++) {
-            auto roomType = gGlobalState->level_state->room_types[idx];
+            auto roomType = hddll::gGlobalState->level_state->room_types[idx];
             if (roomType == 2 || roomType == 3) {
-              gGlobalState->level_state->room_types[idx] = 47;
+              hddll::gGlobalState->level_state->room_types[idx] = 47;
               placed_hc_entrance = true;
               break;
             }
           }
         }
       }
-    } else if (gGlobalState->level == 9 && gGlobalState->is_wet_fur == 1) {
+    } else if (hddll::gGlobalState->level == 9 &&
+               hddll::gGlobalState->is_wet_fur == 1) {
       // Place coffin in Wet Fur
       for (auto idx = 4; idx < 12; idx++) {
-        if (gGlobalState->level_state->room_types[idx] == 0) {
-          gGlobalState->level_state->room_types[idx] = 43;
+        if (hddll::gGlobalState->level_state->room_types[idx] == 0) {
+          hddll::gGlobalState->level_state->room_types[idx] = 43;
           break;
         }
       }
-    } else if (gGlobalState->level == 11 && gGlobalState->is_mothership == 1) {
+    } else if (hddll::gGlobalState->level == 11 &&
+               hddll::gGlobalState->is_mothership == 1) {
       // Place coffin in Mothership
       for (auto idx = 4; idx < 12; idx++) {
-        if (gGlobalState->level_state->room_types[idx] == 0) {
-          gGlobalState->level_state->room_types[idx] = 43;
+        if (hddll::gGlobalState->level_state->room_types[idx] == 0) {
+          hddll::gGlobalState->level_state->room_types[idx] = 43;
           break;
         }
       }
-    } else if (gGlobalState->is_worm == 1) {
+    } else if (hddll::gGlobalState->is_worm == 1) {
       // Place coffin in Worm
       for (auto idx = 8; idx < 48; idx++) {
         if (((idx % 4) < 2) &&
-            gGlobalState->level_state->room_types[idx] == 1) {
-          gGlobalState->level_state->room_types[idx] = 44;
+            hddll::gGlobalState->level_state->room_types[idx] == 1) {
+          hddll::gGlobalState->level_state->room_types[idx] = 44;
           break;
         }
       }
-    } else if (gGlobalState->level == 15 && gGlobalState->is_city_of_gold) {
+    } else if (hddll::gGlobalState->level == 15 &&
+               hddll::gGlobalState->is_city_of_gold) {
       bool found_coffin = false;
       for (auto idx = 0; idx < 48; idx++) {
-        if (gGlobalState->level_state->room_types[idx] == 44 && idx < 4 &&
-            gGlobalState->level_state->entrance_room_x != idx) {
+        if (hddll::gGlobalState->level_state->room_types[idx] == 44 &&
+            idx < 4 &&
+            hddll::gGlobalState->level_state->entrance_room_x != idx) {
           found_coffin = true;
           break;
         }
       }
       if (!found_coffin) {
         for (auto idx = 4; idx < 48; idx++) {
-          if (gGlobalState->level_state->room_types[idx] == 2) {
-            gGlobalState->level_state->room_types[idx] = 44;
+          if (hddll::gGlobalState->level_state->room_types[idx] == 2) {
+            hddll::gGlobalState->level_state->room_types[idx] = 44;
             break;
           }
         }
       }
       // Hell
-    } else if (gGlobalState->level > 16) {
-      if (gGlobalState->_34struct->coffin_char > -1) {
+    } else if (hddll::gGlobalState->level > 16) {
+      if (hddll::gGlobalState->_34struct->coffin_char > -1) {
         bool found_coffin = false;
         for (auto idx = 0; idx < 48; idx++) {
-          auto levelType = gGlobalState->level_state->room_types[idx];
+          auto levelType = hddll::gGlobalState->level_state->room_types[idx];
           if (levelType == 73) {
             found_coffin = true;
             break;
@@ -384,8 +422,8 @@ void preSpawnTilesFullSpelunky() {
         }
         if (!found_coffin) {
           for (auto idx = 4; idx < 48; idx++) {
-            if (gGlobalState->level_state->room_types[idx] == 0) {
-              gGlobalState->level_state->room_types[idx] = 73;
+            if (hddll::gGlobalState->level_state->room_types[idx] == 0) {
+              hddll::gGlobalState->level_state->room_types[idx] = 73;
               break;
             }
           }
@@ -398,69 +436,71 @@ void preSpawnTilesFullSpelunky() {
 void unlockCoffinsFullSpelunky() {
   if (gFullSpelunkyState.allCharacters.empty() ||
       gFullSpelunkyState.randoms.empty()) {
-    gGlobalState->_34struct->coffin_char = -1;
+    hddll::gGlobalState->_34struct->coffin_char = -1;
     return;
   }
 
-  if (gGlobalState->is_haunted_castle != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_VAN_HELSING;
-  } else if (gGlobalState->is_worm != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_MEATBOY;
-  } else if (gGlobalState->skin_is_crawling != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_ROUND_GIRL;
-  } else if (gGlobalState->rushing_water != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_VIKING;
-  } else if (gGlobalState->tiki_village != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_ROUND_BOY;
-  } else if (gGlobalState->is_wet_fur != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_INUK;
-  } else if (gGlobalState->is_mothership != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_ROBOT;
-  } else if (gGlobalState->is_city_of_gold != 0) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_MONK;
-  } else if (gGlobalState->level == 16) {
-    gGlobalState->_34struct->coffin_char = CHARACTER_NINJA;
+  if (hddll::gGlobalState->is_haunted_castle != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_VAN_HELSING;
+  } else if (hddll::gGlobalState->is_worm != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_MEATBOY;
+  } else if (hddll::gGlobalState->skin_is_crawling != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_ROUND_GIRL;
+  } else if (hddll::gGlobalState->rushing_water != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_VIKING;
+  } else if (hddll::gGlobalState->tiki_village != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_ROUND_BOY;
+  } else if (hddll::gGlobalState->is_wet_fur != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_INUK;
+  } else if (hddll::gGlobalState->is_mothership != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_ROBOT;
+  } else if (hddll::gGlobalState->is_city_of_gold != 0) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_MONK;
+  } else if (hddll::gGlobalState->level == 16) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_NINJA;
   } else {
-    gGlobalState->_34struct->coffin_char = gFullSpelunkyState.randoms[0];
+    hddll::gGlobalState->_34struct->coffin_char = gFullSpelunkyState.randoms[0];
   }
 
-  if (gGlobalState->_34struct->coffin_char == CHARACTER_YANG &&
+  if (hddll::gGlobalState->_34struct->coffin_char == hddll::CHARACTER_YANG &&
       gFullSpelunkyState.allCharacters.size() > 1) {
-    gGlobalState->_34struct->coffin_char = -1;
+    hddll::gGlobalState->_34struct->coffin_char = -1;
   }
 
   // Only allow Jungle Warrior by Temple
-  if (gGlobalState->_34struct->coffin_char == CHARACTER_JUNGLE_WARRIOR &&
-      gGlobalState->level < 13) {
-    gGlobalState->_34struct->coffin_char = -1;
+  if (hddll::gGlobalState->_34struct->coffin_char ==
+          hddll::CHARACTER_JUNGLE_WARRIOR &&
+      hddll::gGlobalState->level < 13) {
+    hddll::gGlobalState->_34struct->coffin_char = -1;
   }
 
   // Only allow Yang in Hell
-  if (gGlobalState->_34struct->coffin_char == CHARACTER_YANG &&
-      gGlobalState->level < 17) {
-    gGlobalState->_34struct->coffin_char = -1;
+  if (hddll::gGlobalState->_34struct->coffin_char == hddll::CHARACTER_YANG &&
+      hddll::gGlobalState->level < 17) {
+    hddll::gGlobalState->_34struct->coffin_char = -1;
   }
 }
 
 void onRunningFrameFullSpelunky() {
-  if (gGlobalState->player1) {
-    if (gGlobalState->dark_level) {
-      if (gGlobalState->player1_data.has_udjat ||
-          gGlobalState->player1_data.has_spectacles) {
-        gGlobalState->player1->brightness = 20.0;
+  if (hddll::gGlobalState->player1) {
+    if (hddll::gGlobalState->dark_level) {
+      if (hddll::gGlobalState->player1_data.has_udjat ||
+          hddll::gGlobalState->player1_data.has_spectacles) {
+        hddll::gGlobalState->player1->brightness = 20.0;
       } else {
-        gGlobalState->player1->brightness = 15.0;
+        hddll::gGlobalState->player1->brightness = 15.0;
       }
     } else {
-      gGlobalState->player1->brightness = 5.0;
+      hddll::gGlobalState->player1->brightness = 5.0;
     }
   }
 
-  for (int hh_idx = 0; hh_idx < gGlobalState->player1_data.hh_count; hh_idx++) {
-    auto texture_id = gGlobalState->player1_data.hh_texture_id[hh_idx];
-    auto char_id = TextureIdToCharId((TextureId)texture_id);
+  for (int hh_idx = 0; hh_idx < hddll::gGlobalState->player1_data.hh_count;
+       hh_idx++) {
+    auto texture_id = hddll::gGlobalState->player1_data.hh_texture_id[hh_idx];
+    auto char_id = hddll::TextureIdToCharId((hddll::TextureId)texture_id);
 
-    std::vector<CharacterIndex>::iterator position;
+    std::vector<hddll::CharacterIndex>::iterator position;
     position = std::find(gFullSpelunkyState.randoms.begin(),
                          gFullSpelunkyState.randoms.end(), char_id);
     if (position != gFullSpelunkyState.randoms.end()) {
@@ -474,28 +514,29 @@ void onRunningFrameFullSpelunky() {
     }
   }
 
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
 
-    auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+    auto ent = (hddll::EntityActive *)
+                   hddll::gGlobalState->entities->entities_active[idx];
 
     if (!ent) {
       continue;
     }
 
-    if (ent->entity_kind != EntityKind::KIND_PLAYER) {
+    if (ent->entity_kind != hddll::EntityKind::KIND_PLAYER) {
       continue;
     }
 
-    EntityPlayer *player = (EntityPlayer *)ent;
+    hddll::EntityPlayer *player = (hddll::EntityPlayer *)ent;
     if (!player->ai_bot) {
       continue;
     }
 
     auto texture_id = player->texture_definition->texture_id;
-    auto char_id = TextureIdToCharId((TextureId)texture_id);
+    auto char_id = hddll::TextureIdToCharId((hddll::TextureId)texture_id);
 
-    std::vector<CharacterIndex>::iterator position;
+    std::vector<hddll::CharacterIndex>::iterator position;
     position = std::find(gFullSpelunkyState.randoms.begin(),
                          gFullSpelunkyState.randoms.end(), char_id);
     if (position != gFullSpelunkyState.randoms.end()) {
@@ -511,12 +552,13 @@ void onRunningFrameFullSpelunky() {
 }
 
 void onLevelStartFullSpelunky() {
-  if (gGlobalState->level == 5 || gGlobalState->level == 8) {
+  if (hddll::gGlobalState->level == 5 || hddll::gGlobalState->level == 8) {
 
-    for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-         idx++) {
+    for (size_t idx = 0;
+         idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
 
-      auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+      auto ent = (hddll::EntityActive *)
+                     hddll::gGlobalState->entities->entities_active[idx];
 
       if (!ent) {
         continue;
@@ -526,24 +568,28 @@ void onLevelStartFullSpelunky() {
         continue;
       }
 
-      auto room = GetRoomForPosition(ent->x, ent->y);
-      auto roomType = gGlobalState->level_state->room_types[room];
+      auto room = hddll::GetRoomForPosition(ent->x, ent->y);
+      auto roomType = hddll::gGlobalState->level_state->room_types[room];
       if (roomType != 73 && roomType != 74) {
         continue;
       }
 
       if (gFullSpelunkyState.randoms.size() > 2) {
-        ent->field5_0x140 = charIdToTextureId(gFullSpelunkyState.randoms[0]);
+        ent->field5_0x140 =
+            hddll::charIdToTextureId(gFullSpelunkyState.randoms[0]);
       }
       break;
     }
-  } else if ((gGlobalState->level == 9 && gGlobalState->is_wet_fur) ||
-             (gGlobalState->level == 11 && gGlobalState->is_mothership) ||
-             gGlobalState->is_worm) {
-    for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-         idx++) {
+  } else if ((hddll::gGlobalState->level == 9 &&
+              hddll::gGlobalState->is_wet_fur) ||
+             (hddll::gGlobalState->level == 11 &&
+              hddll::gGlobalState->is_mothership) ||
+             hddll::gGlobalState->is_worm) {
+    for (size_t idx = 0;
+         idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
 
-      auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+      auto ent = (hddll::EntityActive *)
+                     hddll::gGlobalState->entities->entities_active[idx];
 
       if (!ent) {
         continue;
@@ -553,11 +599,12 @@ void onLevelStartFullSpelunky() {
         continue;
       }
 
-      auto room = GetRoomForPosition(ent->x, ent->y);
-      auto roomType = gGlobalState->level_state->room_types[room];
+      auto room = hddll::GetRoomForPosition(ent->x, ent->y);
+      auto roomType = hddll::gGlobalState->level_state->room_types[room];
       if (roomType == 43 || roomType == 44 || roomType == 45) {
         if (gFullSpelunkyState.randoms.size() > 2) {
-          ent->field5_0x140 = charIdToTextureId(gFullSpelunkyState.randoms[0]);
+          ent->field5_0x140 =
+              hddll::charIdToTextureId(gFullSpelunkyState.randoms[0]);
         }
         break;
       }
@@ -576,7 +623,7 @@ void drawCharacterOverlay() {
   };
 
   for (auto idx = 0; idx < 20; idx++) {
-    ImColor color = charIdToColor((CharacterIndex)idx, 0.7f);
+    ImColor color = hddll::charIdToColor((hddll::CharacterIndex)idx, 0.7f);
 
     ImVec2 p0 = {start.x, start.y + idx * (size + padding)};
     ImVec2 p1 = {p0.x + size, p0.y + size};

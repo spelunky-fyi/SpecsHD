@@ -7,7 +7,8 @@
 
 PlayerState gPlayersState[4] = {{}, {}, {}, {}};
 
-static void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
+static void ensureLockedAmountsForPlayer(hddll::EntityPlayer *player,
+                                         hddll::PlayerData &data,
                                          PlayerState *state) {
   if (state->LockHealth) {
     // If you ressurect a player it gets into a bad state.
@@ -112,24 +113,28 @@ static void ensureLockedAmountsForPlayer(EntityPlayer *player, PlayerData &data,
 }
 
 void ensureLockedAmounts() {
-  if (gGlobalState->player1) {
-    ensureLockedAmountsForPlayer(gGlobalState->player1,
-                                 gGlobalState->player1_data, &gPlayersState[0]);
+  if (hddll::gGlobalState->player1) {
+    ensureLockedAmountsForPlayer(hddll::gGlobalState->player1,
+                                 hddll::gGlobalState->player1_data,
+                                 &gPlayersState[0]);
   }
 
-  if (gGlobalState->player2) {
-    ensureLockedAmountsForPlayer(gGlobalState->player2,
-                                 gGlobalState->player2_data, &gPlayersState[1]);
+  if (hddll::gGlobalState->player2) {
+    ensureLockedAmountsForPlayer(hddll::gGlobalState->player2,
+                                 hddll::gGlobalState->player2_data,
+                                 &gPlayersState[1]);
   }
 
-  if (gGlobalState->player3) {
-    ensureLockedAmountsForPlayer(gGlobalState->player3,
-                                 gGlobalState->player3_data, &gPlayersState[2]);
+  if (hddll::gGlobalState->player3) {
+    ensureLockedAmountsForPlayer(hddll::gGlobalState->player3,
+                                 hddll::gGlobalState->player3_data,
+                                 &gPlayersState[2]);
   }
 
-  if (gGlobalState->player4) {
-    ensureLockedAmountsForPlayer(gGlobalState->player4,
-                                 gGlobalState->player4_data, &gPlayersState[3]);
+  if (hddll::gGlobalState->player4) {
+    ensureLockedAmountsForPlayer(hddll::gGlobalState->player4,
+                                 hddll::gGlobalState->player4_data,
+                                 &gPlayersState[3]);
   }
 
   ensureLockedLevelsState();
@@ -150,8 +155,8 @@ static void drawLockedPlayerDataCheckbox(std::string title, bool &val,
   }
 }
 
-static void drawPlayerTab(EntityPlayer *player, PlayerData &data,
-                           PlayerState *state) {
+static void drawPlayerTab(hddll::EntityPlayer *player, hddll::PlayerData &data,
+                          PlayerState *state) {
   ImGuiIO &io = ImGui::GetIO();
 
   if (!player) {
@@ -260,7 +265,7 @@ static void drawPlayerTab(EntityPlayer *player, PlayerData &data,
                                state->LockedJetpackValue);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Jetpack")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 522, true);
+    hddll::gGlobalState->SpawnEntity(player->x, player->y, 522, true);
   }
 
   drawLockedPlayerDataCheckbox("Climbing Gloves", data.has_climbing_gloves,
@@ -306,7 +311,7 @@ static void drawPlayerTab(EntityPlayer *player, PlayerData &data,
                                state->LockedCapeValue);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##Cape")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 521, true);
+    hddll::gGlobalState->SpawnEntity(player->x, player->y, 521, true);
   }
 
   drawLockedPlayerDataCheckbox("Vlad's Cape", data.has_vlads_cape,
@@ -314,7 +319,7 @@ static void drawPlayerTab(EntityPlayer *player, PlayerData &data,
                                state->LockedVladsCapeValue);
   ImGui::SameLine();
   if (ImGui::Button("Spawn##VladsCape")) {
-    gGlobalState->SpawnEntity(player->x, player->y, 532, true);
+    hddll::gGlobalState->SpawnEntity(player->x, player->y, 532, true);
   }
 
   drawLockedPlayerDataCheckbox("Crysknife", data.has_crysknife,
@@ -334,23 +339,23 @@ void drawPlayersTab() {
 
   if (ImGui::BeginTabBar("Players")) {
     if (ImGui::BeginTabItem("Player 1")) {
-      drawPlayerTab(gGlobalState->player1, gGlobalState->player1_data,
-                    &gPlayersState[0]);
+      drawPlayerTab(hddll::gGlobalState->player1,
+                    hddll::gGlobalState->player1_data, &gPlayersState[0]);
       ImGui::EndTabItem();
     }
     if (ImGui::BeginTabItem("Player 2")) {
-      drawPlayerTab(gGlobalState->player2, gGlobalState->player2_data,
-                    &gPlayersState[1]);
+      drawPlayerTab(hddll::gGlobalState->player2,
+                    hddll::gGlobalState->player2_data, &gPlayersState[1]);
       ImGui::EndTabItem();
     }
     if (ImGui::BeginTabItem("Player 3")) {
-      drawPlayerTab(gGlobalState->player3, gGlobalState->player3_data,
-                    &gPlayersState[2]);
+      drawPlayerTab(hddll::gGlobalState->player3,
+                    hddll::gGlobalState->player3_data, &gPlayersState[2]);
       ImGui::EndTabItem();
     }
     if (ImGui::BeginTabItem("Player 4")) {
-      drawPlayerTab(gGlobalState->player4, gGlobalState->player4_data,
-                    &gPlayersState[3]);
+      drawPlayerTab(hddll::gGlobalState->player4,
+                    hddll::gGlobalState->player4_data, &gPlayersState[3]);
       ImGui::EndTabItem();
     }
     ImGui::EndTabBar();

@@ -17,7 +17,7 @@ extern DWORD hookSeedLevelJmpBackAddr;
 extern DWORD hookPostSpawnEntityJmpBackAddr;
 
 // Eligible BM floors (used by drawing.cpp)
-extern int ELIGIBLE_FLOORS_FOR_BM[ENTITY_FLOORS_COUNT];
+extern int ELIGIBLE_FLOORS_FOR_BM[hddll::ENTITY_FLOORS_COUNT];
 extern int ELIGIBLE_FLOORS_FOR_BM_COUNT;
 
 // Last seed (used by drawing.cpp and seeded mode)

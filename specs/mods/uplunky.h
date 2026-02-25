@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../memory.h"
 #include "../state.h"
+#include <hddll/memory.h>
 
-extern std::vector<Patch> gUplunkyPatches;
-extern std::vector<RelativePatch> gUplunkyRelativePatches;
+extern std::vector<hddll::Patch> gUplunkyPatches;
+extern std::vector<hddll::RelativePatch> gUplunkyRelativePatches;
 
 void resetUplunkyState();
 void prePlaceRoomsUplunky();

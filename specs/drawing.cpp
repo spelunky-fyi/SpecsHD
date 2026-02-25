@@ -1,10 +1,11 @@
 
 #include "drawing.h"
 
-#include "entities.h"
 #include "inputs.h"
-#include "utils.h"
-#include "ui.h"
+#include <hddll/entities.h>
+#include <hddll/ui.h>
+#include <hddll/utils.h>
+
 
 #include "game_hooks.h"
 #include "mods/full_spelunky.h"
@@ -15,25 +16,29 @@
 #include "tabs/spawn_tab.h"
 
 ImVec2 screenToGame(ImVec2 screen) {
-  if (gDisplayWidth == 0) return {0, 0};
+  if (gDisplayWidth == 0)
+    return {0, 0};
 
   auto x =
       (screen.x - ((float)gDisplayWidth / 2)) * (20 / (float)gDisplayWidth) +
-      gCameraState->camera_x;
+      hddll::gCameraState->camera_x;
   auto y =
       (screen.y - ((float)gDisplayHeight / 2)) * -(20 / (float)gDisplayWidth) +
-      gCameraState->camera_y;
+      hddll::gCameraState->camera_y;
 
   return {x, y};
 }
 
 ImVec2 gameToScreen(ImVec2 game) {
-  if (gDisplayWidth == 0) return {0, 0};
+  if (gDisplayWidth == 0)
+    return {0, 0};
 
-  auto x = (game.x - gCameraState->camera_x) / (20 / (float)gDisplayWidth) +
-           ((float)gDisplayWidth / 2);
-  auto y = (game.y - gCameraState->camera_y) / -(20 / (float)gDisplayWidth) +
-           ((float)gDisplayHeight / 2);
+  auto x =
+      (game.x - hddll::gCameraState->camera_x) / (20 / (float)gDisplayWidth) +
+      ((float)gDisplayWidth / 2);
+  auto y =
+      (game.y - hddll::gCameraState->camera_y) / -(20 / (float)gDisplayWidth) +
+      ((float)gDisplayHeight / 2);
   return {x, y};
 }
 
@@ -50,8 +55,8 @@ void drawPointAtCoord(ImVec2 coord, ImU32 color) {
                             1.f);
 }
 
-void drawEntityCircle(Entity *ent, float radius, ImU32 color, float x_offset,
-                      float y_offset, bool filled) {
+void drawEntityCircle(hddll::Entity *ent, float radius, ImU32 color,
+                      float x_offset, float y_offset, bool filled) {
   auto screen = gameToScreen({ent->x + x_offset, ent->y + y_offset});
   auto screenRadius =
       gameToScreen({ent->x + x_offset + radius, 0}).x - screen.x;
@@ -63,7 +68,7 @@ void drawEntityCircle(Entity *ent, float radius, ImU32 color, float x_offset,
   }
 }
 
-void drawEntityHitbox(Entity *ent, ImU32 color, bool filled) {
+void drawEntityHitbox(hddll::Entity *ent, ImU32 color, bool filled) {
 
   ImVec2 topLeft =
       gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
@@ -91,7 +96,8 @@ void drawEntityHitbox(Entity *ent, ImU32 color, bool filled) {
     drawPointAtCoord({ent->x, ent->y}, color);
   }
 
-  if (ent->flag_23 == 1 || ent->entity_kind == EntityKind::KIND_EXPLOSION) {
+  if (ent->flag_23 == 1 ||
+      ent->entity_kind == hddll::EntityKind::KIND_EXPLOSION) {
     drawEntityCircle(ent, ent->hitbox_down, color, 0.0f, 0.0f, filled);
   }
 }
@@ -110,7 +116,7 @@ bool drawCharBool(const char *label, uint8_t &flag) {
   return res;
 }
 
-void drawEntityDetectionRay(Entity *ent, float len, ImU32 color) {
+void drawEntityDetectionRay(hddll::Entity *ent, float len, ImU32 color) {
 
   auto factor = 1.001f;
   auto top = 0.25f;
@@ -136,17 +142,17 @@ void drawEntityDetectionRay(Entity *ent, float len, ImU32 color) {
         color);
   }
 }
-void drawEntityHitboxDefault(Entity *ent) { drawEntityHitbox(ent); }
+void drawEntityHitboxDefault(hddll::Entity *ent) { drawEntityHitbox(ent); }
 
 void drawPacifistOverlay() {
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = hddll::gGlobalState->entities->entities_active[idx];
     if (!ent) {
       continue;
     }
 
-    if (ent->owner == Ownership::Unowned) {
+    if (ent->owner == hddll::Ownership::Unowned) {
       continue;
     }
 
@@ -170,7 +176,7 @@ void drawBinBorders() {
 }
 
 void drawRoomBorders() {
-  if (gGlobalState->screen_state == 0) {
+  if (hddll::gGlobalState->screen_state == 0) {
 
     auto room_width = 10.f;
     auto room_height = 8.f;
@@ -191,7 +197,7 @@ void drawRoomBorders() {
     for (auto idx = 0; idx < 48; idx++) {
       auto column = idx % 4;
       auto row = idx / 4;
-      auto type = gGlobalState->level_state->room_types[idx];
+      auto type = hddll::gGlobalState->level_state->room_types[idx];
 
       auto y = max_height - (row * room_height);
       auto x = 2.5f + (column * room_width);
@@ -218,7 +224,7 @@ void drawTileBorders() {
   }
 }
 
-void drawEntityId(Entity *ent) {
+void drawEntityId(hddll::Entity *ent) {
   auto screen = gameToScreen({ent->x, ent->y});
   auto out = std::format("{}", ent->entity_type);
   gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 5,
@@ -226,7 +232,7 @@ void drawEntityId(Entity *ent) {
                             out.c_str());
 }
 
-void drawEntityOffsetDebug(Entity *ent) {
+void drawEntityOffsetDebug(hddll::Entity *ent) {
 
   auto it = gDebugState.DrawEntityOffsets.find(
       std::pair{ent->entity_kind, ent->entity_type});
@@ -269,8 +275,8 @@ void drawEntityOffsetDebug(Entity *ent) {
 }
 
 void forEntities(const std::unordered_set<uint32_t> &excludedEntities,
-                 EntityCallback callback, Entity **entities, size_t count,
-                 bool decos) {
+                 EntityCallback callback, hddll::Entity **entities,
+                 size_t count, bool decos) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
@@ -303,8 +309,8 @@ void forEntities(const std::unordered_set<uint32_t> &excludedEntities,
   }
 }
 
-bool findEntityArray(Entity *searchEnt, Entity **entities, size_t count,
-                     bool decos) {
+bool findEntityArray(hddll::Entity *searchEnt, hddll::Entity **entities,
+                     size_t count, bool decos) {
   for (size_t idx = 0; idx < count; idx++) {
     auto ent = entities[idx];
     if (!ent) {
@@ -345,33 +351,38 @@ bool findEntityArray(Entity *searchEnt, Entity **entities, size_t count,
   return false;
 }
 
-bool findEntity(Entity *searchEnt) {
+bool findEntity(hddll::Entity *searchEnt) {
   if (searchEnt == NULL) {
     return false;
   }
   return (
-      findEntityArray(searchEnt, gGlobalState->entities->entities_active,
-                      gGlobalState->entities->entities_active_count) ||
-      findEntityArray(searchEnt, gGlobalState->entities->array_1400,
-                      gGlobalState->entities->array_1400_count) ||
+      findEntityArray(searchEnt, hddll::gGlobalState->entities->entities_active,
+                      hddll::gGlobalState->entities->entities_active_count) ||
+      findEntityArray(searchEnt, hddll::gGlobalState->entities->array_1400,
+                      hddll::gGlobalState->entities->array_1400_count) ||
       findEntityArray(
-          searchEnt, gGlobalState->entities->entities_foreground,
-          gGlobalState->entities->array_entities_foreground_count) ||
-      findEntityArray(searchEnt,
-                      gGlobalState->entities->entities_light_emitting,
-                      gGlobalState->entities->entities_light_emitting_count) ||
-      findEntityArray(searchEnt,
-                      (Entity **)gGlobalState->level_state->entity_floors, ENTITY_FLOORS_COUNT,
-                      gDebugState.IncludeFloorDecos) ||
+          searchEnt, hddll::gGlobalState->entities->entities_foreground,
+          hddll::gGlobalState->entities->array_entities_foreground_count) ||
+      findEntityArray(
+          searchEnt, hddll::gGlobalState->entities->entities_light_emitting,
+          hddll::gGlobalState->entities->entities_light_emitting_count) ||
+      findEntityArray(
+          searchEnt,
+          (hddll::Entity **)hddll::gGlobalState->level_state->entity_floors,
+          hddll::ENTITY_FLOORS_COUNT, gDebugState.IncludeFloorDecos) ||
 
-      findEntityArray(searchEnt,
-                      (Entity **)gGlobalState->level_state->entity_floors_bg,
-                      ENTITY_FLOORS_COUNT) ||
+      findEntityArray(
+          searchEnt,
+          (hddll::Entity **)hddll::gGlobalState->level_state->entity_floors_bg,
+          hddll::ENTITY_FLOORS_COUNT) ||
 
-      findEntityArray(searchEnt,
-                      (Entity **)gGlobalState->level_state->entity_backgrounds,
-                      gGlobalState->level_state->entity_backgrounds_count) ||
-      findEntityArray(searchEnt, gGlobalState->_4cstruct->entities, 160));
+      findEntityArray(
+          searchEnt,
+          (hddll::Entity **)
+              hddll::gGlobalState->level_state->entity_backgrounds,
+          hddll::gGlobalState->level_state->entity_backgrounds_count) ||
+      findEntityArray(searchEnt, hddll::gGlobalState->_4cstruct->entities,
+                      160));
 }
 
 void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback) {
@@ -379,51 +390,55 @@ void forEnabledEntities(EnabledEntities &enabledEnts, EntityCallback callback) {
   // Active
   if (enabledEnts.activeEntities) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->entities->entities_active,
-                gGlobalState->entities->entities_active_count);
+                hddll::gGlobalState->entities->entities_active,
+                hddll::gGlobalState->entities->entities_active_count);
   }
 
   // 1400
   if (enabledEnts.unknown1400) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->entities->array_1400,
-                gGlobalState->entities->array_1400_count);
+                hddll::gGlobalState->entities->array_1400,
+                hddll::gGlobalState->entities->array_1400_count);
   }
   // Foreground
   if (enabledEnts.foregroundEntities) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->entities->entities_foreground,
-                gGlobalState->entities->array_entities_foreground_count);
+                hddll::gGlobalState->entities->entities_foreground,
+                hddll::gGlobalState->entities->array_entities_foreground_count);
   }
 
   // Light Emitting
   if (enabledEnts.lightEmittingEntities) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->entities->entities_light_emitting,
-                gGlobalState->entities->entities_light_emitting_count);
+                hddll::gGlobalState->entities->entities_light_emitting,
+                hddll::gGlobalState->entities->entities_light_emitting_count);
   }
 
   // Floors
   if (enabledEnts.floorEntities) {
-    forEntities(enabledEnts.excluded, callback,
-                (Entity **)gGlobalState->level_state->entity_floors, ENTITY_FLOORS_COUNT,
-                gDebugState.IncludeFloorDecos);
+    forEntities(
+        enabledEnts.excluded, callback,
+        (hddll::Entity **)hddll::gGlobalState->level_state->entity_floors,
+        hddll::ENTITY_FLOORS_COUNT, gDebugState.IncludeFloorDecos);
   }
   if (enabledEnts.floorBgEntities) {
-    forEntities(enabledEnts.excluded, callback,
-                (Entity **)gGlobalState->level_state->entity_floors_bg, ENTITY_FLOORS_COUNT);
+    forEntities(
+        enabledEnts.excluded, callback,
+        (hddll::Entity **)hddll::gGlobalState->level_state->entity_floors_bg,
+        hddll::ENTITY_FLOORS_COUNT);
   }
 
   // Backgrounds
   if (enabledEnts.backgroundEntities) {
-    forEntities(enabledEnts.excluded, callback,
-                (Entity **)gGlobalState->level_state->entity_backgrounds,
-                gGlobalState->level_state->entity_backgrounds_count);
+    forEntities(
+        enabledEnts.excluded, callback,
+        (hddll::Entity **)hddll::gGlobalState->level_state->entity_backgrounds,
+        hddll::gGlobalState->level_state->entity_backgrounds_count);
   }
 
   if (enabledEnts._4cStructEntities) {
     forEntities(enabledEnts.excluded, callback,
-                gGlobalState->_4cstruct->entities, 160);
+                hddll::gGlobalState->_4cstruct->entities, 160);
   }
 }
 
@@ -431,8 +446,8 @@ float dist(ImVec2 pos1, ImVec2 pos2) {
   return sqrt(pow(pos2.x - pos1.x, 2.0f) + pow(pos2.y - pos1.y, 2.0f));
 }
 
-bool entityCollidesWithCircle(Entity *targetEnt, float x_pos, float y_pos,
-                              float radius) {
+bool entityCollidesWithCircle(hddll::Entity *targetEnt, float x_pos,
+                              float y_pos, float radius) {
   auto target_edge_x_left = targetEnt->x - targetEnt->hitbox_x;
   auto target_edge_x_right = targetEnt->x + targetEnt->hitbox_x;
   auto target_x = target_edge_x_left;
@@ -464,32 +479,33 @@ bool entityCollidesWithCircle(Entity *targetEnt, float x_pos, float y_pos,
   return distance < radius;
 }
 
-bool collidesWithEntityCircle(Entity *sourceEnt, Entity *targetEnt,
-                              float x_offset, float y_offset) {
+bool collidesWithEntityCircle(hddll::Entity *sourceEnt,
+                              hddll::Entity *targetEnt, float x_offset,
+                              float y_offset) {
 
   return entityCollidesWithCircle(targetEnt, sourceEnt->x + x_offset,
                                   sourceEnt->y + y_offset,
                                   sourceEnt->hitbox_down);
 }
 
-size_t sizeofEntityKind(EntityKind entityKind) {
+size_t sizeofEntityKind(hddll::EntityKind entityKind) {
   switch (entityKind) {
-  case EntityKind::KIND_FLOOR:
-    return sizeof(EntityFloor);
-  case EntityKind::KIND_ACTIVE:
-    return sizeof(EntityActive);
-  case EntityKind::KIND_PLAYER:
-    return sizeof(EntityPlayer);
-  case EntityKind::KIND_MONSTER:
-    return sizeof(EntityMonster);
-  case EntityKind::KIND_ITEM:
-    return sizeof(EntityItem);
-  case EntityKind::KIND_BACKGROUND:
-    return sizeof(EntityBackground);
-  case EntityKind::KIND_EXPLOSION:
-    return sizeof(EntityExplosion);
-  case EntityKind::KIND_ENTITY:
-    return sizeof(Entity);
+  case hddll::EntityKind::KIND_FLOOR:
+    return sizeof(hddll::EntityFloor);
+  case hddll::EntityKind::KIND_ACTIVE:
+    return sizeof(hddll::EntityActive);
+  case hddll::EntityKind::KIND_PLAYER:
+    return sizeof(hddll::EntityPlayer);
+  case hddll::EntityKind::KIND_MONSTER:
+    return sizeof(hddll::EntityMonster);
+  case hddll::EntityKind::KIND_ITEM:
+    return sizeof(hddll::EntityItem);
+  case hddll::EntityKind::KIND_BACKGROUND:
+    return sizeof(hddll::EntityBackground);
+  case hddll::EntityKind::KIND_EXPLOSION:
+    return sizeof(hddll::EntityExplosion);
+  case hddll::EntityKind::KIND_ENTITY:
+    return sizeof(hddll::Entity);
   default:
     return 0;
   }
@@ -498,7 +514,7 @@ size_t sizeofEntityKind(EntityKind entityKind) {
 static void handleTeleportInput() {
   ImGuiIO &io = ImGui::GetIO();
   if (Specs::IsMouseClicked(gConfig->buttons[Specs::MouseFeatures_Teleport])) {
-    auto player = gGlobalState->player1;
+    auto player = hddll::gGlobalState->player1;
     if (player) {
       auto pos = screenToGame(io.MousePos);
       player->x = pos.x;
@@ -528,20 +544,20 @@ static void handleSpawnInput() {
       if (spawnEntityConfig.entityType >= 0) {
         if (io.MouseDownDurationPrev[spawnMouseConfig.Button] > 0.1f) {
           auto gamePos = screenToGame(gSpawnState.ClickedAt);
-          Entity *ent;
+          hddll::Entity *ent;
 
           if (spawnEntityConfig.entityType == 0) {
-            ent = gGlobalState->SpawnHiredHand(gamePos.x, gamePos.y, 90);
+            ent = hddll::gGlobalState->SpawnHiredHand(gamePos.x, gamePos.y, 90);
           } else {
-            ent = gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
-                                            spawnEntityConfig.entityType,
-                                            spawnEntityConfig.activeEntity);
+            ent = hddll::gGlobalState->SpawnEntity(
+                gamePos.x, gamePos.y, spawnEntityConfig.entityType,
+                spawnEntityConfig.activeEntity);
           }
 
           if (ent && (uint32_t)ent->entity_kind > 0 &&
               (uint32_t)ent->entity_kind < 5) {
 
-            auto activeEnt = (EntityActive *)ent;
+            auto activeEnt = (hddll::EntityActive *)ent;
             if (ent->entity_type != 108) {
               activeEnt->velocity_x =
                   (io.MousePos.x - gSpawnState.ClickedAt.x) * 0.01f;
@@ -552,11 +568,11 @@ static void handleSpawnInput() {
         } else {
           auto gamePos = screenToGame(io.MousePos);
           if (spawnEntityConfig.entityType == 0) {
-            gGlobalState->SpawnHiredHand(gamePos.x, gamePos.y, 90);
+            hddll::gGlobalState->SpawnHiredHand(gamePos.x, gamePos.y, 90);
           } else {
-            gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
-                                      spawnEntityConfig.entityType,
-                                      spawnEntityConfig.activeEntity);
+            hddll::gGlobalState->SpawnEntity(gamePos.x, gamePos.y,
+                                             spawnEntityConfig.entityType,
+                                             spawnEntityConfig.activeEntity);
           }
         }
       }
@@ -564,9 +580,9 @@ static void handleSpawnInput() {
   }
 }
 
-static Entity *handleSelectInput() {
+static hddll::Entity *handleSelectInput() {
   ImGuiIO &io = ImGui::GetIO();
-  Entity *closestEnt = NULL;
+  hddll::Entity *closestEnt = NULL;
 
   auto selectEntMouseConfig =
       gConfig->buttons[Specs::MouseFeatures_SelectEntity];
@@ -585,7 +601,7 @@ static Entity *handleSelectInput() {
       gSelectedEntityState.Entity = NULL;
       gSelectedEntityState.Clicking = true;
     }
-    EntityCallback getClosestEnt = [&](Entity *e) {
+    EntityCallback getClosestEnt = [&](hddll::Entity *e) {
       auto eDist = dist(gamePos, ImVec2(e->x, e->y));
       if (eDist < closestEntDist) {
         closestEnt = e;
@@ -607,7 +623,7 @@ static Entity *handleSelectInput() {
         std::lerp(gSelectedEntityState.Entity->y, gamePos.y, 1.f);
     if ((int)gSelectedEntityState.Entity->entity_kind > 0 &&
         (int)gSelectedEntityState.Entity->entity_kind < 5) {
-      auto ent = (EntityActive *)gSelectedEntityState.Entity;
+      auto ent = (hddll::EntityActive *)gSelectedEntityState.Entity;
       ent->time_in_air = 0.f;
     }
   }
@@ -616,9 +632,10 @@ static Entity *handleSelectInput() {
 }
 
 static void drawOlmecCrushProbes() {
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = (hddll::EntityActive *)
+                   hddll::gGlobalState->entities->entities_active[idx];
 
     if (!ent || ent->entity_type != 1055) {
       continue;
@@ -637,30 +654,31 @@ static void drawOlmecCrushProbes() {
 }
 
 static void drawBlackMarketTrainer() {
-  if (gGlobalState->level > 4 && gGlobalState->level < 9 &&
-      gGlobalState->is_worm == 0 && gGlobalState->is_blackmarket == 0 &&
-      gGlobalState->level_state->alt_exit_x > 0 &&
-      gGlobalState->level_state->alt_exit_y > 0) {
+  if (hddll::gGlobalState->level > 4 && hddll::gGlobalState->level < 9 &&
+      hddll::gGlobalState->is_worm == 0 &&
+      hddll::gGlobalState->is_blackmarket == 0 &&
+      hddll::gGlobalState->level_state->alt_exit_x > 0 &&
+      hddll::gGlobalState->level_state->alt_exit_y > 0) {
 
     auto color = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.25f});
     auto replace_color = ImGui::GetColorU32({255.0f, 255.0f, 0.0f, 0.25f});
     auto bm_color = ImGui::GetColorU32({0.f, 255.0f, 0.0f, 0.25f});
 
-    if (gGlobalState->player1) {
-      drawEntityCircle(gGlobalState->player1, 10.f, bm_color);
+    if (hddll::gGlobalState->player1) {
+      drawEntityCircle(hddll::gGlobalState->player1, 10.f, bm_color);
     }
 
     for (auto e_idx = 0; e_idx < ELIGIBLE_FLOORS_FOR_BM_COUNT; e_idx++) {
 
       auto idx = ELIGIBLE_FLOORS_FOR_BM[e_idx];
-      auto floor = gGlobalState->level_state->entity_floors[idx];
+      auto floor = hddll::gGlobalState->level_state->entity_floors[idx];
       if (!floor) {
         continue;
       }
 
       // BM, draw green
-      if (floor->x == gGlobalState->level_state->alt_exit_x &&
-          floor->y == gGlobalState->level_state->alt_exit_y) {
+      if (floor->x == hddll::gGlobalState->level_state->alt_exit_x &&
+          floor->y == hddll::gGlobalState->level_state->alt_exit_y) {
         drawEntityHitbox(floor, bm_color, true);
         continue;
       }
@@ -677,16 +695,17 @@ static void drawBlackMarketTrainer() {
 }
 
 static void drawHHLinks() {
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = (hddll::EntityActive *)
+                   hddll::gGlobalState->entities->entities_active[idx];
 
     if (!ent)
       continue;
-    if (ent->entity_kind != EntityKind::KIND_PLAYER)
+    if (ent->entity_kind != hddll::EntityKind::KIND_PLAYER)
       continue;
 
-    auto player = (EntityPlayer *)ent;
+    auto player = (hddll::EntityPlayer *)ent;
 
     if (gDebugState.DrawHHFollowerLink && player->follower) {
       auto follower_color = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.9f});
@@ -714,22 +733,25 @@ static void drawEnemyDetection() {
   auto waterColor = ImGui::GetColorU32({0.0f, 0.0f, 1.0f, .9f});
   auto bombColor = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.25f});
 
-  if (gGlobalState->player1) {
-    drawPointAtCoord({gGlobalState->player1->x, gGlobalState->player1->y});
+  if (hddll::gGlobalState->player1) {
+    drawPointAtCoord(
+        {hddll::gGlobalState->player1->x, hddll::gGlobalState->player1->y});
   }
-  for (size_t idx = 0; idx < gGlobalState->entities->entities_active_count;
-       idx++) {
-    auto ent = (EntityActive *)gGlobalState->entities->entities_active[idx];
+  for (size_t idx = 0;
+       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
+    auto ent = (hddll::EntityActive *)
+                   hddll::gGlobalState->entities->entities_active[idx];
 
     if (ent) {
-      auto entityRoom = gGlobalState->level_state
-                            ->room_types[GetRoomForPosition(ent->x, ent->y)];
+      auto entityRoom =
+          hddll::gGlobalState->level_state
+              ->room_types[hddll::GetRoomForPosition(ent->x, ent->y)];
       if (ent->entity_type == 1002) { // Spider
-        gOverlayDrawList->AddQuad(
-            gameToScreen({ent->x - 0.4f, ent->y}),
-            gameToScreen({ent->x + 0.4f, ent->y}),
-            gameToScreen({ent->x + 0.4f, ent->y - 7.0f}),
-            gameToScreen({ent->x - 0.4f, ent->y - 7.0f}), color);
+        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 0.4f, ent->y}),
+                                  gameToScreen({ent->x + 0.4f, ent->y}),
+                                  gameToScreen({ent->x + 0.4f, ent->y - 7.0f}),
+                                  gameToScreen({ent->x - 0.4f, ent->y - 7.0f}),
+                                  color);
       } else if (ent->entity_type == 1003) { // Bat
         gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y - 0.2f}),
                                         gameToScreen({ent->x + 6.0f, 0.f}).x -
@@ -776,17 +798,16 @@ static void drawEnemyDetection() {
         drawEntityCircle(ent, 8.f, color);
       } else if (ent->entity_type == 1010) { // UFO
         gOverlayDrawList->AddLine(gameToScreen({ent->x - 8.0f, ent->y}),
-                                  gameToScreen({ent->x + 8.0f, ent->y}),
+                                  gameToScreen({ent->x + 8.0f, ent->y}), color);
+        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
+                                  gameToScreen({ent->x + 5.25f, ent->y - 6.0f}),
                                   color);
-        gOverlayDrawList->AddLine(
-            gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
-            gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
         drawEntityCircle(ent, 8.f, color);
-        gOverlayDrawList->AddQuad(
-            gameToScreen({ent->x - 0.5f, ent->y}),
-            gameToScreen({ent->x + 0.5f, ent->y}),
-            gameToScreen({ent->x + 0.5f, ent->y - 8.0f}),
-            gameToScreen({ent->x - 0.5f, ent->y - 8.0f}), color);
+        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 0.5f, ent->y}),
+                                  gameToScreen({ent->x + 0.5f, ent->y}),
+                                  gameToScreen({ent->x + 0.5f, ent->y - 8.0f}),
+                                  gameToScreen({ent->x - 0.5f, ent->y - 8.0f}),
+                                  color);
       } else if (ent->entity_type == 1012) { // Skeleton
         gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y}),
                                         gameToScreen({ent->x + 4.0f, 0.f}).x -
@@ -798,20 +819,19 @@ static void drawEnemyDetection() {
       } else if (ent->entity_type == 1023) { // Old Bitey
         drawEntityCircle(ent, 5.f, waterColor);
       } else if (ent->entity_type == 1014) { // Mummy
-        gOverlayDrawList->AddLine(
-            gameToScreen({ent->x - 5.2f, ent->y - 3.0f}),
-            gameToScreen({ent->x + 5.2f, ent->y - 3.0f}), color);
-        gOverlayDrawList->AddLine(
-            gameToScreen({ent->x - 5.2f, ent->y + 3.0f}),
-            gameToScreen({ent->x + 5.2f, ent->y + 3.0f}), color);
+        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.2f, ent->y - 3.0f}),
+                                  gameToScreen({ent->x + 5.2f, ent->y - 3.0f}),
+                                  color);
+        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.2f, ent->y + 3.0f}),
+                                  gameToScreen({ent->x + 5.2f, ent->y + 3.0f}),
+                                  color);
         drawEntityCircle(ent, 6.f, color);
       } else if (ent->entity_type == 1015) { // Monkey
         if (ent->field71_0x203 != 0) {
-          gOverlayDrawList->PathArcToFast(
-              gameToScreen({ent->x, ent->y}),
-              gameToScreen({ent->x + 4.0f, 0.f}).x -
-                  gameToScreen({ent->x, 0.f}).x,
-              0, 6);
+          gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y}),
+                                          gameToScreen({ent->x + 4.0f, 0.f}).x -
+                                              gameToScreen({ent->x, 0.f}).x,
+                                          0, 6);
           gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
         } else {
           drawEntityCircle(ent, 4.f, color);
@@ -819,11 +839,10 @@ static void drawEnemyDetection() {
       } else if (ent->entity_type == 1020 ||
                  ent->entity_type == 1028) { // Vampire or Vlad
         if (entityRoom < 0x13 || entityRoom > 0x15) {
-          gOverlayDrawList->PathArcToFast(
-              gameToScreen({ent->x, ent->y - 0.2f}),
-              gameToScreen({ent->x + 6.0f, 0.f}).x -
-                  gameToScreen({ent->x, 0.f}).x,
-              0, 6);
+          gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y - 0.2f}),
+                                          gameToScreen({ent->x + 6.0f, 0.f}).x -
+                                              gameToScreen({ent->x, 0.f}).x,
+                                          0, 6);
           gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
         } else {
           gOverlayDrawList->AddQuad(
@@ -833,18 +852,18 @@ static void drawEnemyDetection() {
               gameToScreen({ent->x - 1.0f, ent->y - 6.0f}), color);
         }
       } else if (ent->entity_type == 1018) { // Giant Spider
-        gOverlayDrawList->AddQuad(
-            gameToScreen({ent->x - 1.0f, ent->y}),
-            gameToScreen({ent->x + 1.0f, ent->y}),
-            gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
-            gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
+        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 1.0f, ent->y}),
+                                  gameToScreen({ent->x + 1.0f, ent->y}),
+                                  gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
+                                  gameToScreen({ent->x - 1.0f, ent->y - 8.0f}),
+                                  color);
       } else if (ent->entity_type == 1019) { // Jiang Shi
         drawEntityCircle(ent, 8.f, color);
       } else if (ent->entity_type == 1024) { // Scarab
         drawEntityCircle(ent, 6.f, color);
-        gOverlayDrawList->AddLine(
-            gameToScreen({ent->x - 5.95f, ent->y - 0.2f}),
-            gameToScreen({ent->x + 5.95f, ent->y - 0.2f}), color);
+        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.95f, ent->y - 0.2f}),
+                                  gameToScreen({ent->x + 5.95f, ent->y - 0.2f}),
+                                  color);
       } else if (ent->entity_type == 1046) { // Worm Egg
         drawEntityCircle(ent, 6.f, color);
         gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.6f, ent->y + 2.f}),
@@ -853,11 +872,11 @@ static void drawEnemyDetection() {
       } else if (ent->entity_type == 1025) { // Yeti King
         drawEntityCircle(ent, 6.f, color);
       } else if (ent->entity_type == 1030) { // Imp
-        gOverlayDrawList->AddQuad(
-            gameToScreen({ent->x - 1.0f, ent->y}),
-            gameToScreen({ent->x + 1.0f, ent->y}),
-            gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
-            gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
+        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 1.0f, ent->y}),
+                                  gameToScreen({ent->x + 1.0f, ent->y}),
+                                  gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
+                                  gameToScreen({ent->x - 1.0f, ent->y - 8.0f}),
+                                  color);
       } else if (ent->entity_type == 1038) { // Giant Frog
         drawEntityCircle(ent, 6.f, color);
       } else if (ent->entity_type == 1031) { // Blue Devil
@@ -877,8 +896,7 @@ static void drawEnemyDetection() {
       } else if (ent->entity_type == 1040) { // Alien Tank
         drawEntityCircle(ent, 6.f, color);
         gOverlayDrawList->AddLine(gameToScreen({ent->x, ent->y - 2.0f}),
-                                  gameToScreen({ent->x, ent->y + 6.0f}),
-                                  color);
+                                  gameToScreen({ent->x, ent->y + 6.0f}), color);
         if (ent->flag_horizontal_flip) {
           gOverlayDrawList->AddLine(
               gameToScreen({ent->x - 5.6f, ent->y - 2.0f}),
@@ -927,13 +945,11 @@ static void drawEnemyDetection() {
       } else if (ent->entity_type == 1057) { // Yama Hand
         drawEntityCircle(ent, 6.f, color);
         gOverlayDrawList->AddLine(gameToScreen({-10.0f, ent->y - 2.0f}),
-                                  gameToScreen({60.0f, ent->y - 2.0f}),
-                                  color);
+                                  gameToScreen({60.0f, ent->y - 2.0f}), color);
       } else if (ent->entity_type == 1058) { // Turret
         drawEntityCircle(ent, 6.f, color);
         gOverlayDrawList->AddLine(gameToScreen({ent->x - 6.0f, ent->y}),
-                                  gameToScreen({ent->x + 6.0f, ent->y}),
-                                  color);
+                                  gameToScreen({ent->x + 6.0f, ent->y}), color);
       } else if (ent->entity_type == 107 ||
                  ent->entity_type == 92) { // Bomb / Landmine
         drawEntityCircle(ent, sqrt(3.75f), color);
@@ -947,9 +963,9 @@ static void drawEnemyDetection() {
           auto y_offset = (99 - y_pos) * 0x2e;
           do {
             auto floor_idx = x_offset + x_pos + y_offset;
-            if (floor_idx >= 0 && floor_idx < ENTITY_FLOORS_COUNT) {
+            if (floor_idx >= 0 && floor_idx < hddll::ENTITY_FLOORS_COUNT) {
               auto floor =
-                  gGlobalState->level_state->entity_floors[floor_idx];
+                  hddll::gGlobalState->level_state->entity_floors[floor_idx];
 
               if (floor && (floor->flag_6 != 0 || floor->flag_9 != 0) &&
                   floor->flag_4 == 0) {
@@ -971,9 +987,11 @@ static void drawEnemyDetection() {
         } while (x_offset < 4);
 
         for (size_t idx = 0;
-             idx < gGlobalState->entities->entities_active_count; idx++) {
+             idx < hddll::gGlobalState->entities->entities_active_count;
+             idx++) {
           auto collision_ent =
-              (EntityActive *)gGlobalState->entities->entities_active[idx];
+              (hddll::EntityActive *)
+                  hddll::gGlobalState->entities->entities_active[idx];
 
           if (collision_ent && collision_ent != ent &&
               collision_ent->field49_0x1ed != 0 &&
@@ -985,8 +1003,7 @@ static void drawEnemyDetection() {
             auto distance = x_distance * x_distance + y_distance * y_distance;
 
             if (distance <= 16.0f &&
-                entityCollidesWithCircle(collision_ent, ent->x, ent->y,
-                                         1.6f)) {
+                entityCollidesWithCircle(collision_ent, ent->x, ent->y, 1.6f)) {
               drawEntityHitbox(collision_ent, bombColor, true);
             }
           }
@@ -1015,7 +1032,7 @@ void drawOverlayWindow() {
     gSelectedEntityState.Entity = NULL;
   }
 
-  Entity *closestEnt = NULL;
+  hddll::Entity *closestEnt = NULL;
   if (ImGui::IsWindowHovered()) {
     handleTeleportInput();
     handleSpawnInput();
@@ -1072,8 +1089,9 @@ void drawOverlayWindow() {
   if (gDebugState.ShowOlmecCrushProbes) {
     drawOlmecCrushProbes();
   }
-  if (gDebugState.BlackMarketTrainer && gGlobalState->screen_state == 0 &&
-      gGlobalState->play_state == 0) {
+  if (gDebugState.BlackMarketTrainer &&
+      hddll::gGlobalState->screen_state == 0 &&
+      hddll::gGlobalState->play_state == 0) {
     drawBlackMarketTrainer();
   }
   if (gDebugState.DrawHHFollowerLink || gDebugState.DrawHHFollowingLink) {

@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "3rdparty/imgui/imgui.h"
+#include <imgui.h>
 
 namespace Specs {
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../memory.h"
 #include "../state.h"
+#include <hddll/memory.h>
 
-extern std::vector<Patch> gTunnelManPatches;
+extern std::vector<hddll::Patch> gTunnelManPatches;
 
 void resetTunnelManState();
-Entity *postSpawnEntityTunnelMan(Entity *ent);
+hddll::Entity *postSpawnEntityTunnelMan(hddll::Entity *ent);
 void onRunningFrameTunnelMan();
