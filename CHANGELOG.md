@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.48] - 2025-02-27
+
+### Added
+
+- Raw Entity Table now has an edit mode to let you change any entity value in memory
+
+### Updated
+
+- Massive refactor to code base to make it more maintainable. This should be a no-op to users but lemme know if you notice anything broken
+
 ## [0.0.47] - 2024-12-29
 
 ### Added

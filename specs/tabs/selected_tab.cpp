@@ -10,6 +10,9 @@ SelectedEntityState gSelectedEntityState = {};
 
 static void drawRawBytesTableForSelected(const char *str_id, char *start_addr,
                                          size_t size) {
+  static bool editMode = false;
+  ImGui::Checkbox("Edit Mode", &editMode);
+
   if (ImGui::BeginTable(str_id, 6, ImGuiTableFlags_RowBg)) {
 
     ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
@@ -23,78 +26,127 @@ static void drawRawBytesTableForSelected(const char *str_id, char *start_addr,
     for (size_t i = 0; i < size; i += 4) {
 
       ImGui::TableNextRow();
+      ImGui::PushID((int)i);
 
       char *addr = start_addr + i;
       ImGui::TableNextColumn();
       ImGui::Text("0x%X", i);
 
-      std::pair<hddll::EntityKind, uint32_t> key = {
-          gSelectedEntityState.Entity->entity_kind,
-          gSelectedEntityState.Entity->entity_type};
+      if (editMode) {
+        float byteWidth = ImGui::CalcTextSize("FF").x +
+                          ImGui::GetStyle().FramePadding.x * 2 + 4;
 
-      {
-        uint32_t a1, a2, a3, a4;
-        a1 = (*(addr)) & (0xFF);
-        a2 = (*(addr + 1)) & (0xFF);
-        a3 = (*(addr + 2)) & (0xFF);
-        a4 = (*(addr + 3)) & (0xFF);
+        ImGui::TableNextColumn();
+        ImGui::PushItemWidth(byteWidth);
+        ImGui::InputScalar("##b0", ImGuiDataType_U8, (uint8_t *)addr, NULL,
+                           NULL, "%02X", ImGuiInputTextFlags_CharsHexadecimal);
+        ImGui::SameLine();
+        ImGui::InputScalar("##b1", ImGuiDataType_U8, (uint8_t *)(addr + 1),
+                           NULL, NULL, "%02X",
+                           ImGuiInputTextFlags_CharsHexadecimal);
+        ImGui::SameLine();
+        ImGui::InputScalar("##b2", ImGuiDataType_U8, (uint8_t *)(addr + 2),
+                           NULL, NULL, "%02X",
+                           ImGuiInputTextFlags_CharsHexadecimal);
+        ImGui::SameLine();
+        ImGui::InputScalar("##b3", ImGuiDataType_U8, (uint8_t *)(addr + 3),
+                           NULL, NULL, "%02X",
+                           ImGuiInputTextFlags_CharsHexadecimal);
+        ImGui::PopItemWidth();
+
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputScalar("##s", ImGuiDataType_S32, (int32_t *)addr);
+
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputScalar("##u", ImGuiDataType_U32, (uint32_t *)addr);
+
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputScalar("##h", ImGuiDataType_U32, (uint32_t *)addr, NULL,
+                           NULL, "%08X", ImGuiInputTextFlags_CharsHexadecimal);
+
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputFloat("##f", (float *)addr, 0.0f, 0.0f, "%.6f");
+      } else {
+        std::pair<hddll::EntityKind, uint32_t> key = {
+            gSelectedEntityState.Entity->entity_kind,
+            gSelectedEntityState.Entity->entity_type};
+
+        {
+          uint32_t a1, a2, a3, a4;
+          a1 = (*(addr)) & (0xFF);
+          a2 = (*(addr + 1)) & (0xFF);
+          a3 = (*(addr + 2)) & (0xFF);
+          a4 = (*(addr + 3)) & (0xFF);
+
+          ImGui::TableNextColumn();
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a1, i)
+                      .c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
+          }
+          ImGui::SameLine();
+
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a2, i + 1)
+                      .c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i + 1, DataType_Byte});
+          }
+          ImGui::SameLine();
+
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a3, i + 2)
+                      .c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i + 2, DataType_Byte});
+          }
+          ImGui::SameLine();
+
+          if (ImGui::Button(
+                  std::format("{:02X}##SelectedEntityRaw-{}", a4, i + 3)
+                      .c_str())) {
+            gDebugState.DrawEntityOffsets[key].insert({i + 3, DataType_Byte});
+          }
+        }
 
         ImGui::TableNextColumn();
         if (ImGui::Button(
-                std::format("{:02X}##SelectedEntityRaw-{}", a1, i).c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
+                std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
+                    .c_str(),
+                {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert(
+              {i, DataType_Dword_Signed});
         }
-        ImGui::SameLine();
 
-        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a2, i + 1)
-                              .c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i + 1, DataType_Byte});
+        ImGui::TableNextColumn();
+        if (ImGui::Button(
+                std::format("{:d}##SelectedEntityRaw-{}", *(uint32_t *)addr, i)
+                    .c_str(),
+                {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert(
+              {i, DataType_Dword_Unsigned});
         }
-        ImGui::SameLine();
 
-        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a3, i + 2)
-                              .c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i + 2, DataType_Byte});
+        ImGui::TableNextColumn();
+        if (ImGui::Button(std::format("0x{:08X}##SelectedEntityRaw-{}",
+                                      *(uint32_t *)addr, i)
+                              .c_str(),
+                          {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Hex});
         }
-        ImGui::SameLine();
 
-        if (ImGui::Button(std::format("{:02X}##SelectedEntityRaw-{}", a4, i + 3)
-                              .c_str())) {
-          gDebugState.DrawEntityOffsets[key].insert({i + 3, DataType_Byte});
+        ImGui::TableNextColumn();
+        if (ImGui::Button(
+                std::format("{:f}##SelectedEntityRaw-{}", *(float *)addr, i)
+                    .c_str(),
+                {-1, 0})) {
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Float});
         }
       }
 
-      ImGui::TableNextColumn();
-      if (ImGui::Button(
-              std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
-                  .c_str(),
-              {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Signed});
-      }
-
-      ImGui::TableNextColumn();
-      if (ImGui::Button(
-              std::format("{:d}##SelectedEntityRaw-{}", *(uint32_t *)addr, i)
-                  .c_str(),
-              {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Unsigned});
-      }
-
-      ImGui::TableNextColumn();
-      if (ImGui::Button(std::format("0x{:08X}##SelectedEntityRaw-{}",
-                                    *(uint32_t *)addr, i)
-                            .c_str(),
-                        {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Hex});
-      }
-
-      ImGui::TableNextColumn();
-      if (ImGui::Button(
-              std::format("{:f}##SelectedEntityRaw-{}", *(float *)addr, i)
-                  .c_str(),
-              {-1, 0})) {
-        gDebugState.DrawEntityOffsets[key].insert({i, DataType_Float});
-      }
+      ImGui::PopID();
     }
 
     ImGui::EndTable();
