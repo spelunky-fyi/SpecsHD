@@ -6,6 +6,7 @@
 #include "../sounds.h"
 #include "../state.h"
 #include <hddll/memory.h>
+#include <hddll/utils.h>
 
 EnabledEntities gAllEntities = {true, true, true, true, true,
                                 true, true, true, -1,   {}};
@@ -130,9 +131,9 @@ void onLevelStartOlmec() {
   hawkman->flag_horizontal_flip = 1;
   hawkman->field8_0x14c = 0xA;
   hawkman->field15_0x168 = 0x5A;
-  hawkman->field21_0x180 = 0xFF;
+  hawkman->stun_timer = 0xFF;
   hawkman->field24_0x18c = 0xFF;
-  hawkman->field81_0x20d = 1;
+  hawkman->stunned = 1;
 
   // Spawn Olmec
   auto olmec = (hddll::EntityItem *)hddll::gGlobalState->SpawnEntity(
@@ -158,11 +159,11 @@ void onLevelStartOlmec() {
 void drawDebugTab() {
   ImGuiIO &io = ImGui::GetIO();
 
-  auto gameMouse = screenToGame(io.MousePos);
+  auto gameMouse = hddll::screenToGame(io.MousePos);
   ImGui::Text("Mouse (Screen): %f %f", io.MousePos.x, io.MousePos.y);
   ImGui::Text("Mouse (Game): %f %f", gameMouse.x, gameMouse.y);
   if (hddll::gGlobalState->player1) {
-    auto screenPlayer = gameToScreen(
+    auto screenPlayer = hddll::gameToScreen(
         {hddll::gGlobalState->player1->x, hddll::gGlobalState->player1->y});
     ImGui::Text("Player (Screen): %f %f", screenPlayer.x, screenPlayer.y);
     ImGui::Text("Player (Game): %f %f", hddll::gGlobalState->player1->x,

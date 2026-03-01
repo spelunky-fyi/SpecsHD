@@ -229,7 +229,7 @@ void drawSeededCrateOverlay() {
       continue;
     }
 
-    auto screen = gameToScreen({ent->x, ent->y});
+    auto screen = hddll::gameToScreen({ent->x, ent->y});
     auto entity_type = getCrateItemForSeed(ent->z_depth_as_int);
     gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
@@ -249,7 +249,7 @@ void drawSeededPotOverlay() {
       continue;
     }
 
-    auto screen = gameToScreen({ent->x - ent->hitbox_x, ent->y});
+    auto screen = hddll::gameToScreen({ent->x - ent->hitbox_x, ent->y});
     auto fontSize = ImGui::GetFontSize() + 2.f;
 
     uint32_t entity_type = 0;
@@ -285,7 +285,7 @@ void drawSeededChestOverlay() {
       continue;
     }
 
-    auto screen = gameToScreen({ent->x - ent->hitbox_x, ent->y});
+    auto screen = hddll::gameToScreen({ent->x - ent->hitbox_x, ent->y});
     auto fontSize = ImGui::GetFontSize() + 2.f;
 
     auto entity_types =
@@ -312,7 +312,7 @@ void drawSeededKaliRewardsOverlay() {
       continue;
     }
 
-    auto screen = gameToScreen({ent->x - (ent->hitbox_x / 2), ent->y});
+    auto screen = hddll::gameToScreen({ent->x - (ent->hitbox_x / 2), ent->y});
     auto entity_type = getKaliRewardForSeed(ent->z_depth_as_int);
     gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,

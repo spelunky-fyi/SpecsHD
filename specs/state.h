@@ -9,7 +9,6 @@
 #include <hddll/hddll.h>
 #include <imgui.h>
 
-
 // Structs
 
 struct ModsState {
@@ -30,10 +29,6 @@ extern Specs::Config *gConfig;
 extern bool gPaused;
 extern int gPauseAt;
 extern int gFrame;
-
-extern int gWindowedMode;
-extern int gDisplayWidth;
-extern int gDisplayHeight;
 
 extern ModsState gModsState;
 extern uint32_t gScreenStatePrevious;

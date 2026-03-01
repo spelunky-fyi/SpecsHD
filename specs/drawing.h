@@ -8,10 +8,6 @@
 // Forward declaration (defined in tabs/debug_tab.h)
 struct EnabledEntities;
 
-// Coordinate conversion
-ImVec2 screenToGame(ImVec2 screen);
-ImVec2 gameToScreen(ImVec2 game);
-
 // Entity drawing
 void drawPointAtCoord(ImVec2 coord,
                       ImU32 color = ImGui::GetColorU32({255.f, 0.0f, 0.0f,

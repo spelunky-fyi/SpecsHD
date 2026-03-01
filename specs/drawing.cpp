@@ -6,7 +6,6 @@
 #include <hddll/ui.h>
 #include <hddll/utils.h>
 
-
 #include "game_hooks.h"
 #include "mods/full_spelunky.h"
 #include "mods/seeded_mode.h"
@@ -15,35 +14,8 @@
 #include "tabs/selected_tab.h"
 #include "tabs/spawn_tab.h"
 
-ImVec2 screenToGame(ImVec2 screen) {
-  if (gDisplayWidth == 0)
-    return {0, 0};
-
-  auto x =
-      (screen.x - ((float)gDisplayWidth / 2)) * (20 / (float)gDisplayWidth) +
-      hddll::gCameraState->camera_x;
-  auto y =
-      (screen.y - ((float)gDisplayHeight / 2)) * -(20 / (float)gDisplayWidth) +
-      hddll::gCameraState->camera_y;
-
-  return {x, y};
-}
-
-ImVec2 gameToScreen(ImVec2 game) {
-  if (gDisplayWidth == 0)
-    return {0, 0};
-
-  auto x =
-      (game.x - hddll::gCameraState->camera_x) / (20 / (float)gDisplayWidth) +
-      ((float)gDisplayWidth / 2);
-  auto y =
-      (game.y - hddll::gCameraState->camera_y) / -(20 / (float)gDisplayWidth) +
-      ((float)gDisplayHeight / 2);
-  return {x, y};
-}
-
 void drawPointAtCoord(ImVec2 coord, ImU32 color) {
-  auto topLeft = gameToScreen(coord);
+  auto topLeft = hddll::gameToScreen(coord);
   topLeft.x -= 1;
   topLeft.y += 1;
 
@@ -57,9 +29,9 @@ void drawPointAtCoord(ImVec2 coord, ImU32 color) {
 
 void drawEntityCircle(hddll::Entity *ent, float radius, ImU32 color,
                       float x_offset, float y_offset, bool filled) {
-  auto screen = gameToScreen({ent->x + x_offset, ent->y + y_offset});
+  auto screen = hddll::gameToScreen({ent->x + x_offset, ent->y + y_offset});
   auto screenRadius =
-      gameToScreen({ent->x + x_offset + radius, 0}).x - screen.x;
+      hddll::gameToScreen({ent->x + x_offset + radius, 0}).x - screen.x;
 
   if (filled) {
     gOverlayDrawList->AddCircleFilled(screen, screenRadius, color, 0);
@@ -71,13 +43,13 @@ void drawEntityCircle(hddll::Entity *ent, float radius, ImU32 color,
 void drawEntityHitbox(hddll::Entity *ent, ImU32 color, bool filled) {
 
   ImVec2 topLeft =
-      gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
+      hddll::gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
   ImVec2 topRight =
-      gameToScreen({ent->x + ent->hitbox_x, ent->y + ent->hitbox_up});
+      hddll::gameToScreen({ent->x + ent->hitbox_x, ent->y + ent->hitbox_up});
   ImVec2 bottomRight =
-      gameToScreen({ent->x + ent->hitbox_x, ent->y - ent->hitbox_down});
+      hddll::gameToScreen({ent->x + ent->hitbox_x, ent->y - ent->hitbox_down});
   ImVec2 bottomLeft =
-      gameToScreen({ent->x - ent->hitbox_x, ent->y - ent->hitbox_down});
+      hddll::gameToScreen({ent->x - ent->hitbox_x, ent->y - ent->hitbox_down});
 
   if (filled) {
     gOverlayDrawList->AddQuadFilled(topLeft, topRight, bottomRight, bottomLeft,
@@ -88,7 +60,7 @@ void drawEntityHitbox(hddll::Entity *ent, ImU32 color, bool filled) {
   }
 
   if (gDebugState.IncludeHitboxOrigins) {
-    auto ent_origin = gameToScreen({ent->x, ent->y});
+    auto ent_origin = hddll::gameToScreen({ent->x, ent->y});
     gOverlayDrawList->AddLine(topLeft, ent_origin, color, 1.f);
     gOverlayDrawList->AddLine(topRight, ent_origin, color, 1.f);
     gOverlayDrawList->AddLine(bottomLeft, ent_origin, color, 1.f);
@@ -122,23 +94,25 @@ void drawEntityDetectionRay(hddll::Entity *ent, float len, ImU32 color) {
   auto top = 0.25f;
   if (ent->flag_horizontal_flip) {
     gOverlayDrawList->AddQuad(
-        gameToScreen({ent->x + ent->hitbox_x * factor - len, ent->y - top}),
-        gameToScreen({ent->x + ent->hitbox_x * factor, ent->y - top}),
+        hddll::gameToScreen(
+            {ent->x + ent->hitbox_x * factor - len, ent->y - top}),
+        hddll::gameToScreen({ent->x + ent->hitbox_x * factor, ent->y - top}),
 
-        gameToScreen({ent->x + ent->hitbox_x * factor,
-                      ent->y - ent->hitbox_down * factor}),
+        hddll::gameToScreen({ent->x + ent->hitbox_x * factor,
+                             ent->y - ent->hitbox_down * factor}),
 
-        gameToScreen({ent->x + ent->hitbox_x * factor - len,
-                      ent->y - ent->hitbox_down * factor}),
+        hddll::gameToScreen({ent->x + ent->hitbox_x * factor - len,
+                             ent->y - ent->hitbox_down * factor}),
         color);
   } else {
     gOverlayDrawList->AddQuad(
-        gameToScreen({ent->x - ent->hitbox_x * factor + len, ent->y - top}),
-        gameToScreen({ent->x - ent->hitbox_x * factor, ent->y - top}),
-        gameToScreen({ent->x - ent->hitbox_x * factor,
-                      ent->y - ent->hitbox_down * factor}),
-        gameToScreen({ent->x - ent->hitbox_x * factor + len,
-                      ent->y - ent->hitbox_down * factor}),
+        hddll::gameToScreen(
+            {ent->x - ent->hitbox_x * factor + len, ent->y - top}),
+        hddll::gameToScreen({ent->x - ent->hitbox_x * factor, ent->y - top}),
+        hddll::gameToScreen({ent->x - ent->hitbox_x * factor,
+                             ent->y - ent->hitbox_down * factor}),
+        hddll::gameToScreen({ent->x - ent->hitbox_x * factor + len,
+                             ent->y - ent->hitbox_down * factor}),
         color);
   }
 }
@@ -156,7 +130,7 @@ void drawPacifistOverlay() {
       continue;
     }
 
-    auto screen = gameToScreen({ent->x, ent->y});
+    auto screen = hddll::gameToScreen({ent->x, ent->y});
     auto out = std::format("{}", (int)ent->owner);
     gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
                               ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
@@ -166,12 +140,12 @@ void drawPacifistOverlay() {
 
 void drawBinBorders() {
   for (auto x = -4.f; x < 12.f * 4.f; x += 4.f) {
-    gOverlayDrawList->AddLine(gameToScreen({x, -4.f}), gameToScreen({x, 120.f}),
-                              IM_COL32_WHITE);
+    gOverlayDrawList->AddLine(hddll::gameToScreen({x, -4.f}),
+                              hddll::gameToScreen({x, 120.f}), IM_COL32_WHITE);
   }
   for (auto y = -4.f; y < 26.f * 4.f; y += 4.f) {
-    gOverlayDrawList->AddLine(gameToScreen({-4.f, y}), gameToScreen({50.f, y}),
-                              IM_COL32_WHITE);
+    gOverlayDrawList->AddLine(hddll::gameToScreen({-4.f, y}),
+                              hddll::gameToScreen({50.f, y}), IM_COL32_WHITE);
   }
 }
 
@@ -184,14 +158,14 @@ void drawRoomBorders() {
     auto max_width = 42.5f;
 
     for (auto x = 2.5f; x < 50.f; x += room_width) {
-      gOverlayDrawList->AddLine(gameToScreen({x, 3.5f}),
-                                gameToScreen({x, max_height}), IM_COL32_WHITE,
-                                2.0f);
+      gOverlayDrawList->AddLine(hddll::gameToScreen({x, 3.5f}),
+                                hddll::gameToScreen({x, max_height}),
+                                IM_COL32_WHITE, 2.0f);
     }
     for (auto y = 3.5f; y < 120.f; y += room_height) {
-      gOverlayDrawList->AddLine(gameToScreen({2.5, y}),
-                                gameToScreen({max_width, y}), IM_COL32_WHITE,
-                                2.0f);
+      gOverlayDrawList->AddLine(hddll::gameToScreen({2.5, y}),
+                                hddll::gameToScreen({max_width, y}),
+                                IM_COL32_WHITE, 2.0f);
     }
 
     for (auto idx = 0; idx < 48; idx++) {
@@ -203,7 +177,7 @@ void drawRoomBorders() {
       auto x = 2.5f + (column * room_width);
 
       auto out = std::format("Type: {}", type);
-      auto screen = gameToScreen({x + 0.25f, y - 0.25f});
+      auto screen = hddll::gameToScreen({x + 0.25f, y - 0.25f});
       gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 8,
                                 ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
                                 out.c_str());
@@ -213,19 +187,19 @@ void drawRoomBorders() {
 
 void drawTileBorders() {
   for (auto x = -4.f; x < 12.f * 4.f; x += 1.f) {
-    gOverlayDrawList->AddLine(gameToScreen({x + -.5f, -4.5f}),
-                              gameToScreen({x + -.5f, 120.5f}), IM_COL32_WHITE,
-                              0.5f);
+    gOverlayDrawList->AddLine(hddll::gameToScreen({x + -.5f, -4.5f}),
+                              hddll::gameToScreen({x + -.5f, 120.5f}),
+                              IM_COL32_WHITE, 0.5f);
   }
   for (auto y = -4.f; y < 26.f * 4.f; y += 1.f) {
-    gOverlayDrawList->AddLine(gameToScreen({-4.5f, y + 0.5f}),
-                              gameToScreen({50.5f, y + 0.5f}), IM_COL32_WHITE,
-                              0.5f);
+    gOverlayDrawList->AddLine(hddll::gameToScreen({-4.5f, y + 0.5f}),
+                              hddll::gameToScreen({50.5f, y + 0.5f}),
+                              IM_COL32_WHITE, 0.5f);
   }
 }
 
 void drawEntityId(hddll::Entity *ent) {
-  auto screen = gameToScreen({ent->x, ent->y});
+  auto screen = hddll::gameToScreen({ent->x, ent->y});
   auto out = std::format("{}", ent->entity_type);
   gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 5,
                             ImVec2{screen.x, screen.y}, IM_COL32_WHITE,
@@ -244,7 +218,8 @@ void drawEntityOffsetDebug(hddll::Entity *ent) {
   auto idx = 0;
   auto font = ImGui::GetFont();
   auto fontSize = ImGui::GetFontSize() + 5;
-  auto screen = gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
+  auto screen =
+      hddll::gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up});
   screen.y -= fontSize + 8;
 
   for (auto offset_pair : entry) {
@@ -516,7 +491,7 @@ static void handleTeleportInput() {
   if (Specs::IsMouseClicked(gConfig->buttons[Specs::MouseFeatures_Teleport])) {
     auto player = hddll::gGlobalState->player1;
     if (player) {
-      auto pos = screenToGame(io.MousePos);
+      auto pos = hddll::screenToGame(io.MousePos);
       player->x = pos.x;
       player->y = pos.y;
     }
@@ -543,7 +518,7 @@ static void handleSpawnInput() {
     for (auto const &spawnEntityConfig : gSpawnState.SpawnEntityInputs) {
       if (spawnEntityConfig.entityType >= 0) {
         if (io.MouseDownDurationPrev[spawnMouseConfig.Button] > 0.1f) {
-          auto gamePos = screenToGame(gSpawnState.ClickedAt);
+          auto gamePos = hddll::screenToGame(gSpawnState.ClickedAt);
           hddll::Entity *ent;
 
           if (spawnEntityConfig.entityType == 0) {
@@ -566,7 +541,7 @@ static void handleSpawnInput() {
                 -((io.MousePos.y - gSpawnState.ClickedAt.y) * 0.01f);
           }
         } else {
-          auto gamePos = screenToGame(io.MousePos);
+          auto gamePos = hddll::screenToGame(io.MousePos);
           if (spawnEntityConfig.entityType == 0) {
             hddll::gGlobalState->SpawnHiredHand(gamePos.x, gamePos.y, 90);
           } else {
@@ -593,7 +568,7 @@ static hddll::Entity *handleSelectInput() {
     gSelectedEntityState.Clicking = false;
   }
 
-  auto gamePos = screenToGame(io.MousePos);
+  auto gamePos = hddll::screenToGame(io.MousePos);
   if (gDebugState.DrawClosestEntHitbox || gDebugState.DrawClosestEntId ||
       selectEntClicked) {
     float closestEntDist = 1;
@@ -709,8 +684,9 @@ static void drawHHLinks() {
 
     if (gDebugState.DrawHHFollowerLink && player->follower) {
       auto follower_color = ImGui::GetColorU32({255.f, 0.0f, 0.0f, 0.9f});
-      auto start = gameToScreen({player->x, player->y});
-      auto end = gameToScreen({player->follower->x, player->follower->y});
+      auto start = hddll::gameToScreen({player->x, player->y});
+      auto end =
+          hddll::gameToScreen({player->follower->x, player->follower->y});
       start.y += 4;
       end.y += 4;
       gOverlayDrawList->AddLine(start, end, follower_color, 1.f);
@@ -718,8 +694,9 @@ static void drawHHLinks() {
 
     if (gDebugState.DrawHHFollowingLink && player->following) {
       auto following_color = ImGui::GetColorU32({0.f, 255.0f, 0.0f, 0.9f});
-      auto start = gameToScreen({player->x, player->y});
-      auto end = gameToScreen({player->following->x, player->following->y});
+      auto start = hddll::gameToScreen({player->x, player->y});
+      auto end =
+          hddll::gameToScreen({player->following->x, player->following->y});
       start.y -= 4;
       end.y -= 4;
       gOverlayDrawList->AddLine(start, end, following_color, 1.f);
@@ -747,16 +724,17 @@ static void drawEnemyDetection() {
           hddll::gGlobalState->level_state
               ->room_types[hddll::GetRoomForPosition(ent->x, ent->y)];
       if (ent->entity_type == 1002) { // Spider
-        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 0.4f, ent->y}),
-                                  gameToScreen({ent->x + 0.4f, ent->y}),
-                                  gameToScreen({ent->x + 0.4f, ent->y - 7.0f}),
-                                  gameToScreen({ent->x - 0.4f, ent->y - 7.0f}),
-                                  color);
+        gOverlayDrawList->AddQuad(
+            hddll::gameToScreen({ent->x - 0.4f, ent->y}),
+            hddll::gameToScreen({ent->x + 0.4f, ent->y}),
+            hddll::gameToScreen({ent->x + 0.4f, ent->y - 7.0f}),
+            hddll::gameToScreen({ent->x - 0.4f, ent->y - 7.0f}), color);
       } else if (ent->entity_type == 1003) { // Bat
-        gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y - 0.2f}),
-                                        gameToScreen({ent->x + 6.0f, 0.f}).x -
-                                            gameToScreen({ent->x, 0.f}).x,
-                                        0, 6);
+        gOverlayDrawList->PathArcToFast(
+            hddll::gameToScreen({ent->x, ent->y - 0.2f}),
+            hddll::gameToScreen({ent->x + 6.0f, 0.f}).x -
+                hddll::gameToScreen({ent->x, 0.f}).x,
+            0, 6);
         gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
       } else if ( // Caveman / Hawk Man / Croc Man / Green Knight /
                   // Scorpion / Tiki
@@ -781,57 +759,60 @@ static void drawEnemyDetection() {
           drawEntityCircle(ent, 12.f, color);
           if (ent->flag_horizontal_flip) {
             gOverlayDrawList->AddQuad(
-                gameToScreen({ent->x - 5.0f, ent->y + 12.0f}),
-                gameToScreen({ent->x, ent->y + 12.0f}),
-                gameToScreen({ent->x, ent->y - 12.0f}),
-                gameToScreen({ent->x - 5.0f, ent->y - 12.0f}), color);
+                hddll::gameToScreen({ent->x - 5.0f, ent->y + 12.0f}),
+                hddll::gameToScreen({ent->x, ent->y + 12.0f}),
+                hddll::gameToScreen({ent->x, ent->y - 12.0f}),
+                hddll::gameToScreen({ent->x - 5.0f, ent->y - 12.0f}), color);
           } else {
             gOverlayDrawList->AddQuad(
-                gameToScreen({ent->x, ent->y + 12.0f}),
-                gameToScreen({ent->x + 5.0f, ent->y + 12.0f}),
-                gameToScreen({ent->x + 5.0f, ent->y - 12.0f}),
-                gameToScreen({ent->x, ent->y - 12.0f}), color);
+                hddll::gameToScreen({ent->x, ent->y + 12.0f}),
+                hddll::gameToScreen({ent->x + 5.0f, ent->y + 12.0f}),
+                hddll::gameToScreen({ent->x + 5.0f, ent->y - 12.0f}),
+                hddll::gameToScreen({ent->x, ent->y - 12.0f}), color);
           }
         }
       } else if (ent->entity_type == 1007 ||
                  ent->entity_type == 1021) { // Blue / Orange Frog
         drawEntityCircle(ent, 8.f, color);
       } else if (ent->entity_type == 1010) { // UFO
-        gOverlayDrawList->AddLine(gameToScreen({ent->x - 8.0f, ent->y}),
-                                  gameToScreen({ent->x + 8.0f, ent->y}), color);
-        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
-                                  gameToScreen({ent->x + 5.25f, ent->y - 6.0f}),
+        gOverlayDrawList->AddLine(hddll::gameToScreen({ent->x - 8.0f, ent->y}),
+                                  hddll::gameToScreen({ent->x + 8.0f, ent->y}),
                                   color);
+        gOverlayDrawList->AddLine(
+            hddll::gameToScreen({ent->x - 5.25f, ent->y - 6.0f}),
+            hddll::gameToScreen({ent->x + 5.25f, ent->y - 6.0f}), color);
         drawEntityCircle(ent, 8.f, color);
-        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 0.5f, ent->y}),
-                                  gameToScreen({ent->x + 0.5f, ent->y}),
-                                  gameToScreen({ent->x + 0.5f, ent->y - 8.0f}),
-                                  gameToScreen({ent->x - 0.5f, ent->y - 8.0f}),
-                                  color);
+        gOverlayDrawList->AddQuad(
+            hddll::gameToScreen({ent->x - 0.5f, ent->y}),
+            hddll::gameToScreen({ent->x + 0.5f, ent->y}),
+            hddll::gameToScreen({ent->x + 0.5f, ent->y - 8.0f}),
+            hddll::gameToScreen({ent->x - 0.5f, ent->y - 8.0f}), color);
       } else if (ent->entity_type == 1012) { // Skeleton
-        gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y}),
-                                        gameToScreen({ent->x + 4.0f, 0.f}).x -
-                                            gameToScreen({ent->x, 0.f}).x,
-                                        0, 6);
+        gOverlayDrawList->PathArcToFast(
+            hddll::gameToScreen({ent->x, ent->y}),
+            hddll::gameToScreen({ent->x + 4.0f, 0.f}).x -
+                hddll::gameToScreen({ent->x, 0.f}).x,
+            0, 6);
         gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
       } else if (ent->entity_type == 1013) { // Piranha
         drawEntityCircle(ent, 6.f, waterColor);
       } else if (ent->entity_type == 1023) { // Old Bitey
         drawEntityCircle(ent, 5.f, waterColor);
       } else if (ent->entity_type == 1014) { // Mummy
-        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.2f, ent->y - 3.0f}),
-                                  gameToScreen({ent->x + 5.2f, ent->y - 3.0f}),
-                                  color);
-        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.2f, ent->y + 3.0f}),
-                                  gameToScreen({ent->x + 5.2f, ent->y + 3.0f}),
-                                  color);
+        gOverlayDrawList->AddLine(
+            hddll::gameToScreen({ent->x - 5.2f, ent->y - 3.0f}),
+            hddll::gameToScreen({ent->x + 5.2f, ent->y - 3.0f}), color);
+        gOverlayDrawList->AddLine(
+            hddll::gameToScreen({ent->x - 5.2f, ent->y + 3.0f}),
+            hddll::gameToScreen({ent->x + 5.2f, ent->y + 3.0f}), color);
         drawEntityCircle(ent, 6.f, color);
       } else if (ent->entity_type == 1015) { // Monkey
         if (ent->field71_0x203 != 0) {
-          gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y}),
-                                          gameToScreen({ent->x + 4.0f, 0.f}).x -
-                                              gameToScreen({ent->x, 0.f}).x,
-                                          0, 6);
+          gOverlayDrawList->PathArcToFast(
+              hddll::gameToScreen({ent->x, ent->y}),
+              hddll::gameToScreen({ent->x + 4.0f, 0.f}).x -
+                  hddll::gameToScreen({ent->x, 0.f}).x,
+              0, 6);
           gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
         } else {
           drawEntityCircle(ent, 4.f, color);
@@ -839,55 +820,58 @@ static void drawEnemyDetection() {
       } else if (ent->entity_type == 1020 ||
                  ent->entity_type == 1028) { // Vampire or Vlad
         if (entityRoom < 0x13 || entityRoom > 0x15) {
-          gOverlayDrawList->PathArcToFast(gameToScreen({ent->x, ent->y - 0.2f}),
-                                          gameToScreen({ent->x + 6.0f, 0.f}).x -
-                                              gameToScreen({ent->x, 0.f}).x,
-                                          0, 6);
+          gOverlayDrawList->PathArcToFast(
+              hddll::gameToScreen({ent->x, ent->y - 0.2f}),
+              hddll::gameToScreen({ent->x + 6.0f, 0.f}).x -
+                  hddll::gameToScreen({ent->x, 0.f}).x,
+              0, 6);
           gOverlayDrawList->PathStroke(color, ImDrawFlags_Closed, 1.0f);
         } else {
           gOverlayDrawList->AddQuad(
-              gameToScreen({ent->x - 1.0f, ent->y - 0.2f}),
-              gameToScreen({ent->x + 1.0f, ent->y - 0.2f}),
-              gameToScreen({ent->x + 1.0f, ent->y - 6.0f}),
-              gameToScreen({ent->x - 1.0f, ent->y - 6.0f}), color);
+              hddll::gameToScreen({ent->x - 1.0f, ent->y - 0.2f}),
+              hddll::gameToScreen({ent->x + 1.0f, ent->y - 0.2f}),
+              hddll::gameToScreen({ent->x + 1.0f, ent->y - 6.0f}),
+              hddll::gameToScreen({ent->x - 1.0f, ent->y - 6.0f}), color);
         }
       } else if (ent->entity_type == 1018) { // Giant Spider
-        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 1.0f, ent->y}),
-                                  gameToScreen({ent->x + 1.0f, ent->y}),
-                                  gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
-                                  gameToScreen({ent->x - 1.0f, ent->y - 8.0f}),
-                                  color);
+        gOverlayDrawList->AddQuad(
+            hddll::gameToScreen({ent->x - 1.0f, ent->y}),
+            hddll::gameToScreen({ent->x + 1.0f, ent->y}),
+            hddll::gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
+            hddll::gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
       } else if (ent->entity_type == 1019) { // Jiang Shi
         drawEntityCircle(ent, 8.f, color);
       } else if (ent->entity_type == 1024) { // Scarab
         drawEntityCircle(ent, 6.f, color);
-        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.95f, ent->y - 0.2f}),
-                                  gameToScreen({ent->x + 5.95f, ent->y - 0.2f}),
-                                  color);
+        gOverlayDrawList->AddLine(
+            hddll::gameToScreen({ent->x - 5.95f, ent->y - 0.2f}),
+            hddll::gameToScreen({ent->x + 5.95f, ent->y - 0.2f}), color);
       } else if (ent->entity_type == 1046) { // Worm Egg
         drawEntityCircle(ent, 6.f, color);
-        gOverlayDrawList->AddLine(gameToScreen({ent->x - 5.6f, ent->y + 2.f}),
-                                  gameToScreen({ent->x + 5.6f, ent->y + 2.f}),
-                                  color);
+        gOverlayDrawList->AddLine(
+            hddll::gameToScreen({ent->x - 5.6f, ent->y + 2.f}),
+            hddll::gameToScreen({ent->x + 5.6f, ent->y + 2.f}), color);
       } else if (ent->entity_type == 1025) { // Yeti King
         drawEntityCircle(ent, 6.f, color);
       } else if (ent->entity_type == 1030) { // Imp
-        gOverlayDrawList->AddQuad(gameToScreen({ent->x - 1.0f, ent->y}),
-                                  gameToScreen({ent->x + 1.0f, ent->y}),
-                                  gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
-                                  gameToScreen({ent->x - 1.0f, ent->y - 8.0f}),
-                                  color);
+        gOverlayDrawList->AddQuad(
+            hddll::gameToScreen({ent->x - 1.0f, ent->y}),
+            hddll::gameToScreen({ent->x + 1.0f, ent->y}),
+            hddll::gameToScreen({ent->x + 1.0f, ent->y - 8.0f}),
+            hddll::gameToScreen({ent->x - 1.0f, ent->y - 8.0f}), color);
       } else if (ent->entity_type == 1038) { // Giant Frog
         drawEntityCircle(ent, 6.f, color);
       } else if (ent->entity_type == 1031) { // Blue Devil
         drawEntityDetectionRay(ent, 6.0f, wallColor);
         gOverlayDrawList->AddQuad(
-            gameToScreen({ent->x - ent->hitbox_x, ent->y + ent->hitbox_up}),
-            gameToScreen(
+            hddll::gameToScreen(
+                {ent->x - ent->hitbox_x, ent->y + ent->hitbox_up}),
+            hddll::gameToScreen(
                 {ent->x - ent->hitbox_x, ent->y + ent->hitbox_up + 5.0f}),
-            gameToScreen(
+            hddll::gameToScreen(
                 {ent->x + ent->hitbox_x, ent->y + ent->hitbox_up + 5.0f}),
-            gameToScreen({ent->x + ent->hitbox_x, ent->y + ent->hitbox_up}),
+            hddll::gameToScreen(
+                {ent->x + ent->hitbox_x, ent->y + ent->hitbox_up}),
             wallColor);
       } else if (ent->entity_type == 1033) { // Anubis
         drawEntityCircle(ent, 11.f, color);
@@ -895,16 +879,17 @@ static void drawEnemyDetection() {
         drawEntityCircle(ent, 4.f, color);
       } else if (ent->entity_type == 1040) { // Alien Tank
         drawEntityCircle(ent, 6.f, color);
-        gOverlayDrawList->AddLine(gameToScreen({ent->x, ent->y - 2.0f}),
-                                  gameToScreen({ent->x, ent->y + 6.0f}), color);
+        gOverlayDrawList->AddLine(hddll::gameToScreen({ent->x, ent->y - 2.0f}),
+                                  hddll::gameToScreen({ent->x, ent->y + 6.0f}),
+                                  color);
         if (ent->flag_horizontal_flip) {
           gOverlayDrawList->AddLine(
-              gameToScreen({ent->x - 5.6f, ent->y - 2.0f}),
-              gameToScreen({ent->x, ent->y - 2.0f}), color);
+              hddll::gameToScreen({ent->x - 5.6f, ent->y - 2.0f}),
+              hddll::gameToScreen({ent->x, ent->y - 2.0f}), color);
         } else {
           gOverlayDrawList->AddLine(
-              gameToScreen({ent->x, ent->y - 2.0f}),
-              gameToScreen({ent->x + 5.6f, ent->y - 2.0f}), color);
+              hddll::gameToScreen({ent->x, ent->y - 2.0f}),
+              hddll::gameToScreen({ent->x + 5.6f, ent->y - 2.0f}), color);
         }
       } else if (ent->entity_type == 1016) { // Alien Lord
         drawEntityCircle(ent, 8.f, color);
@@ -924,32 +909,37 @@ static void drawEnemyDetection() {
         if (ent->field75_0x207 == 0) {
           drawEntityCircle(ent, 6.f, color);
         } else {
-          gOverlayDrawList->AddQuad(gameToScreen({ent->x - 1.0f, 200.0}),
-                                    gameToScreen({ent->x + 1.0f, 200.0}),
-                                    gameToScreen({ent->x + 1.0f, ent->y}),
-                                    gameToScreen({ent->x - 1.0f, ent->y}),
-                                    color, 1.f);
-          gOverlayDrawList->AddQuad(gameToScreen({14.0, 110.0}),
-                                    gameToScreen({31.0, 110.0}),
-                                    gameToScreen({31.0, 88.0}),
-                                    gameToScreen({14.0, 88.0}), color, 1.f);
-          gOverlayDrawList->AddQuad(gameToScreen({-10.0, 110.0}),
-                                    gameToScreen({14.0, 110.0}),
-                                    gameToScreen({14.0, 93.0}),
-                                    gameToScreen({-10.0, 93.0}), color, 1.f);
-          gOverlayDrawList->AddQuad(gameToScreen({31.0, 110.0}),
-                                    gameToScreen({60.0, 110.0}),
-                                    gameToScreen({60.0, 93.0}),
-                                    gameToScreen({31.0, 93.0}), color, 1.f);
+          gOverlayDrawList->AddQuad(
+              hddll::gameToScreen({ent->x - 1.0f, 200.0}),
+              hddll::gameToScreen({ent->x + 1.0f, 200.0}),
+              hddll::gameToScreen({ent->x + 1.0f, ent->y}),
+              hddll::gameToScreen({ent->x - 1.0f, ent->y}), color, 1.f);
+          gOverlayDrawList->AddQuad(hddll::gameToScreen({14.0, 110.0}),
+                                    hddll::gameToScreen({31.0, 110.0}),
+                                    hddll::gameToScreen({31.0, 88.0}),
+                                    hddll::gameToScreen({14.0, 88.0}), color,
+                                    1.f);
+          gOverlayDrawList->AddQuad(hddll::gameToScreen({-10.0, 110.0}),
+                                    hddll::gameToScreen({14.0, 110.0}),
+                                    hddll::gameToScreen({14.0, 93.0}),
+                                    hddll::gameToScreen({-10.0, 93.0}), color,
+                                    1.f);
+          gOverlayDrawList->AddQuad(hddll::gameToScreen({31.0, 110.0}),
+                                    hddll::gameToScreen({60.0, 110.0}),
+                                    hddll::gameToScreen({60.0, 93.0}),
+                                    hddll::gameToScreen({31.0, 93.0}), color,
+                                    1.f);
         }
       } else if (ent->entity_type == 1057) { // Yama Hand
         drawEntityCircle(ent, 6.f, color);
-        gOverlayDrawList->AddLine(gameToScreen({-10.0f, ent->y - 2.0f}),
-                                  gameToScreen({60.0f, ent->y - 2.0f}), color);
+        gOverlayDrawList->AddLine(hddll::gameToScreen({-10.0f, ent->y - 2.0f}),
+                                  hddll::gameToScreen({60.0f, ent->y - 2.0f}),
+                                  color);
       } else if (ent->entity_type == 1058) { // Turret
         drawEntityCircle(ent, 6.f, color);
-        gOverlayDrawList->AddLine(gameToScreen({ent->x - 6.0f, ent->y}),
-                                  gameToScreen({ent->x + 6.0f, ent->y}), color);
+        gOverlayDrawList->AddLine(hddll::gameToScreen({ent->x - 6.0f, ent->y}),
+                                  hddll::gameToScreen({ent->x + 6.0f, ent->y}),
+                                  color);
       } else if (ent->entity_type == 107 ||
                  ent->entity_type == 92) { // Bomb / Landmine
         drawEntityCircle(ent, sqrt(3.75f), color);

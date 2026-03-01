@@ -8,8 +8,10 @@
 #include "game_hooks.h"
 #include "inputs.h"
 #include "state.h"
+#include <hddll/hddll.h>
 #include <hddll/memory.h>
 #include <hddll/ui.h>
+#include <hddll/utils.h>
 
 #include "mods/full_spelunky.h"
 #include "mods/seeded_mode.h"
@@ -32,20 +34,12 @@ void onInit() {
 
   gConfig = Specs::Config::load();
 
-  gBaseAddress = (size_t)GetModuleHandleA(NULL);
-  setupOffsets(gBaseAddress);
   initHooks();
 
   gDebugState.Selection.activeEntities = true;
   gDebugState.Selection.floorEntities = true;
 
   auto process = GetCurrentProcess();
-
-  BYTE patch[] = {0x4a};
-  patchReadOnlyCode(process, gBaseAddress + 0x135B2A, patch, 1);
-
-  BYTE patch2[] = {0xF0};
-  patchReadOnlyCode(process, gBaseAddress + 0x1366C6, patch2, 1);
 }
 
 void onDestroy() { cleanUpHooks(); }
@@ -107,7 +101,7 @@ static void drawToolWindow() {
     io.WantCaptureMouse = false;
   }
 
-  auto mouse_game = screenToGame(io.MousePos);
+  auto mouse_game = hddll::screenToGame(io.MousePos);
 
   if (ImGui::BeginTabBar("Specs HD")) {
     if (ImGui::BeginTabItem("Spawn")) {
@@ -171,20 +165,9 @@ static void onLevelStart() {
 namespace hddll {
 
 void onFrame() {
-
-  gCameraState =
-      reinterpret_cast<CameraState *>(*((DWORD *)(gBaseAddress + 0x154510)));
-  gGlobalState =
-      reinterpret_cast<GlobalState *>(*((DWORD *)(gBaseAddress + 0x15446C)));
-
-  gWindowedMode = static_cast<int>(*((DWORD *)(gBaseAddress + 0x15a52c)));
-  gDisplayWidth = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a8c)));
-  gDisplayHeight = static_cast<int>(*((DWORD *)(gBaseAddress + 0x140a90)));
-
   if (!gGlobalState || !gCameraState)
     return;
 
-  gGlobalState->N00001004 = 0; // 440629
   gFrame++;
 
   if (gGlobalState->screen_state == 0 && gScreenStatePrevious == 2) {
