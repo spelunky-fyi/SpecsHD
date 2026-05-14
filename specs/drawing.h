@@ -56,6 +56,14 @@ void drawBinBorders();
 void drawRoomBorders();
 void drawTileBorders();
 
+// AIBot / Hired Hand debugging overlay (operates on the selected entity when
+// it is a player that owns an AIBot). See tabs/debug_tab.h for the toggles.
+void drawAIBotOverlay();
+
+// Records AiState / CombatAction transitions for the selected hired hand into
+// gAIBotDebugState. Call once per frame (from drawOverlayWindow).
+void trackSelectedAIBot();
+
 // Entity kind size
 size_t sizeofEntityKind(hddll::EntityKind entityKind);
 

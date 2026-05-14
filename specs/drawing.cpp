@@ -1003,6 +1003,240 @@ static void drawEnemyDetection() {
   }
 }
 
+// Returns the AIBot of the currently selected entity, or nullptr if the
+// selected entity is not a player or has no AIBot (i.e. is not a hired hand /
+// CPU spelunker).
+static hddll::AIBot *selectedAIBot() {
+  auto ent = gSelectedEntityState.Entity;
+  if (!ent || ent->entity_kind != hddll::EntityKind::KIND_PLAYER) {
+    return nullptr;
+  }
+  return reinterpret_cast<hddll::EntityPlayer *>(ent)->ai_bot;
+}
+
+// Draws the bot's current A* path: the forward-linked PathNode chain from
+// pPath_current_node -> pNext ... -> pPath_start_node (the goal). Also draws a
+// line to flTarget_x/y, the world position the path was computed toward.
+static void drawAIBotPath(hddll::AIBot *bot) {
+  auto pathColor = ImGui::GetColorU32({0.2f, 0.8f, 1.0f, 0.9f});
+  auto nodeColor = ImGui::GetColorU32({0.2f, 0.8f, 1.0f, 0.6f});
+  auto activeColor = ImGui::GetColorU32({1.0f, 1.0f, 0.0f, 1.0f});
+  auto goalColor = ImGui::GetColorU32({0.0f, 1.0f, 0.3f, 1.0f});
+  auto targetColor = ImGui::GetColorU32({1.0f, 0.4f, 0.0f, 0.9f});
+
+  if (bot->entity) {
+    auto from = hddll::gameToScreen(
+        {bot->entity->x, bot->entity->y});
+    auto to = hddll::gameToScreen({bot->flTarget_x, bot->flTarget_y});
+    gOverlayDrawList->AddLine(from, to, targetColor, 1.0f);
+    drawPointAtCoord({bot->flTarget_x, bot->flTarget_y}, targetColor);
+  }
+
+  if (!bot->bPathfind_found_path) {
+    return;
+  }
+
+  auto node = bot->pPath_current_node;
+  int guard = 0;
+  while (node && guard++ < hddll::AIBOT_GRID_W * hddll::AIBOT_GRID_H) {
+    auto nodeScreen = hddll::gameToScreen(
+        {(float)node->nWorld_x, (float)node->nWorld_y});
+    auto next = node->pNext;
+    if (next) {
+      auto nextScreen = hddll::gameToScreen(
+          {(float)next->nWorld_x, (float)next->nWorld_y});
+      gOverlayDrawList->AddLine(nodeScreen, nextScreen, pathColor, 2.0f);
+    }
+
+    ImU32 color = nodeColor;
+    float radius = 3.0f;
+    if (node == bot->pPath_active_node) {
+      color = activeColor;
+      radius = 5.0f;
+    }
+    if (node == bot->pPath_start_node) {
+      color = goalColor;
+      radius = 5.0f;
+    }
+    gOverlayDrawList->AddCircleFilled(nodeScreen, radius, color);
+
+    if (node == bot->pPath_start_node) {
+      break;
+    }
+    node = next;
+  }
+}
+
+// Colors each cell of the bot's 21x17 local pathfinding grid by its flags so
+// you can see what the bot considers dangerous / blocked / a pit / etc.
+static void drawAIBotGrid(hddll::AIBot *bot) {
+  auto dangerColor = ImGui::GetColorU32({1.0f, 0.0f, 0.0f, 0.35f});
+  auto blockedColor = ImGui::GetColorU32({0.5f, 0.5f, 0.5f, 0.30f});
+  auto pitColor = ImGui::GetColorU32({0.0f, 0.3f, 1.0f, 0.30f});
+  auto lockedColor = ImGui::GetColorU32({1.0f, 0.5f, 0.0f, 0.30f});
+  auto edgeColor = ImGui::GetColorU32({1.0f, 1.0f, 0.0f, 0.25f});
+
+  for (int i = 0; i < hddll::AIBOT_GRID_W * hddll::AIBOT_GRID_H; i++) {
+    auto &node = bot->pPathfind_grid[i];
+
+    ImU32 color;
+    if (node.bDanger_flag) {
+      color = dangerColor;
+    } else if (node.bBlocked_flag) {
+      color = blockedColor;
+    } else if (node.bPit_flag) {
+      color = pitColor;
+    } else if (node.bLocked_flag) {
+      color = lockedColor;
+    } else if (node.bEdge_flag) {
+      color = edgeColor;
+    } else {
+      continue;
+    }
+
+    auto topLeft = hddll::gameToScreen(
+        {(float)node.nWorld_x - 0.5f, (float)node.nWorld_y + 0.5f});
+    auto bottomRight = hddll::gameToScreen(
+        {(float)node.nWorld_x + 0.5f, (float)node.nWorld_y - 0.5f});
+    gOverlayDrawList->AddRectFilled(topLeft, bottomRight, color);
+  }
+}
+
+// Picks an overlay color for a perception-list entity based on its kind so
+// players / monsters / items are easy to tell apart.
+static ImU32 perceptionColorForKind(hddll::EntityKind kind) {
+  switch (kind) {
+  case hddll::EntityKind::KIND_PLAYER:
+    return ImGui::GetColorU32({0.2f, 1.0f, 0.3f, 0.8f});
+  case hddll::EntityKind::KIND_MONSTER:
+    return ImGui::GetColorU32({1.0f, 0.2f, 0.2f, 0.8f});
+  case hddll::EntityKind::KIND_ITEM:
+    return ImGui::GetColorU32({1.0f, 0.9f, 0.2f, 0.8f});
+  default:
+    return ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.6f});
+  }
+}
+
+// Draws the bot's perception list (every entity it can currently "see"), its
+// current item/hunt target, and the anchor / wander destination.
+static void drawAIBotTargets(hddll::AIBot *bot) {
+  if (!bot->entity) {
+    return;
+  }
+  auto botScreen = hddll::gameToScreen(
+      {bot->entity->x, bot->entity->y});
+
+  for (int i = 0; i < 128; i++) {
+    auto e = bot->pPerception_list[i];
+    if (!e) {
+      break;
+    }
+    auto color = perceptionColorForKind(e->entity_kind);
+    drawEntityCircle(e, 0.4f, color);
+    gOverlayDrawList->AddLine(botScreen, hddll::gameToScreen({e->x, e->y}),
+                              color & 0x40FFFFFF, 1.0f);
+  }
+
+  if (bot->pCurrent_item_target && findEntity(bot->pCurrent_item_target)) {
+    auto target = bot->pCurrent_item_target;
+    auto color = ImGui::GetColorU32({1.0f, 0.2f, 0.2f, 1.0f});
+    gOverlayDrawList->AddLine(botScreen,
+                              hddll::gameToScreen({target->x, target->y}),
+                              color, 2.0f);
+    drawEntityHitbox(target, color);
+  }
+
+  if (bot->ai_state == hddll::AiState::AI_STATE_MOVE_TO_ANCHOR) {
+    auto color = ImGui::GetColorU32({0.6f, 0.0f, 1.0f, 0.9f});
+    auto anchorScreen =
+        hddll::gameToScreen({bot->flAnchor_x, bot->flAnchor_y});
+    gOverlayDrawList->AddLine(botScreen, anchorScreen, color, 1.0f);
+    gOverlayDrawList->AddCircle(anchorScreen, 6.0f, color, 0, 2.0f);
+  }
+
+  if (bot->ai_state == hddll::AiState::AI_STATE_WANDER) {
+    auto color = ImGui::GetColorU32({0.0f, 1.0f, 1.0f, 0.9f});
+    drawPointAtCoord({(float)bot->nWander_target_x_int,
+                      (float)bot->nWander_target_y_int},
+                     color);
+  }
+}
+
+// Draws the bot's current AiState / CombatAction as a label above it, plus an
+// arrow showing the movement input (left_right / up_down) it is feeding the
+// engine this frame.
+static void drawAIBotStateLabel(hddll::AIBot *bot) {
+  if (!bot->entity) {
+    return;
+  }
+  auto screen = hddll::gameToScreen({bot->entity->x, bot->entity->y});
+  auto text = std::format("{}\n{}", bot->StateName(), bot->CombatActionName());
+  gOverlayDrawList->AddText(ImGui::GetFont(), ImGui::GetFontSize() + 2.f,
+                            {screen.x + 8.f, screen.y - 28.f}, IM_COL32_WHITE,
+                            text.c_str());
+
+  auto input = bot->entity->pPlayer_input;
+  if (input && (input->left_right != 0 || input->up_down != 0)) {
+    // left_right / up_down are -32 / 0 / +32; up is negative on screen.
+    ImVec2 dir = {(float)input->left_right / 32.0f,
+                  -(float)input->up_down / 32.0f};
+    ImVec2 tip = {screen.x + dir.x * 26.0f, screen.y + dir.y * 26.0f};
+    auto arrowColor = ImGui::GetColorU32({1.0f, 0.5f, 0.0f, 1.0f});
+    gOverlayDrawList->AddLine(screen, tip, arrowColor, 2.5f);
+    gOverlayDrawList->AddCircleFilled(tip, 3.5f, arrowColor);
+  }
+}
+
+void drawAIBotOverlay() {
+  auto bot = selectedAIBot();
+  if (!bot) {
+    return;
+  }
+  if (gDebugState.DrawAIBotGrid) {
+    drawAIBotGrid(bot);
+  }
+  if (gDebugState.DrawAIBotPath) {
+    drawAIBotPath(bot);
+  }
+  if (gDebugState.DrawAIBotTargets) {
+    drawAIBotTargets(bot);
+  }
+  if (gDebugState.DrawAIBotStateLabel) {
+    drawAIBotStateLabel(bot);
+  }
+}
+
+void trackSelectedAIBot() {
+  auto &log = gAIBotDebugState;
+  auto bot = selectedAIBot();
+  if (!bot) {
+    log.trackedBot = nullptr;
+    log.hasLast = false;
+    return;
+  }
+
+  // Reset the log whenever the tracked bot changes.
+  if (log.trackedBot != bot) {
+    log.trackedBot = bot;
+    log.logCount = 0;
+    log.logHead = 0;
+    log.hasLast = false;
+  }
+
+  bool changed = !log.hasLast || log.lastState != bot->ai_state ||
+                 log.lastCombatAction != bot->combat_action;
+  if (changed) {
+    log.log[log.logHead] = {gFrame, bot->ai_state, bot->combat_action};
+    log.logHead = (log.logHead + 1) % AIBotDebugState::LogCapacity;
+    if (log.logCount < AIBotDebugState::LogCapacity) {
+      log.logCount++;
+    }
+    log.lastState = bot->ai_state;
+    log.lastCombatAction = bot->combat_action;
+    log.hasLast = true;
+  }
+}
+
 void drawOverlayWindow() {
   ImGuiIO &io = ImGui::GetIO();
 
@@ -1021,6 +1255,8 @@ void drawOverlayWindow() {
   if (!findEntity(gSelectedEntityState.Entity)) {
     gSelectedEntityState.Entity = NULL;
   }
+
+  trackSelectedAIBot();
 
   hddll::Entity *closestEnt = NULL;
   if (ImGui::IsWindowHovered()) {
@@ -1089,6 +1325,10 @@ void drawOverlayWindow() {
   }
   if (gDebugState.DrawEnemyDetection) {
     drawEnemyDetection();
+  }
+  if (gDebugState.DrawAIBotPath || gDebugState.DrawAIBotGrid ||
+      gDebugState.DrawAIBotTargets || gDebugState.DrawAIBotStateLabel) {
+    drawAIBotOverlay();
   }
 
   if (gSelectedEntityState.Entity != NULL &&

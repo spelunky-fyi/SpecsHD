@@ -11,6 +11,7 @@
 EnabledEntities gAllEntities = {true, true, true, true, true,
                                 true, true, true, -1,   {}};
 DebugState gDebugState = {};
+AIBotDebugState gAIBotDebugState = {};
 
 static void drawToggleEntityTab(const char *preText,
                                 EnabledEntities &enabledEnts) {
@@ -191,6 +192,39 @@ void drawDebugTab() {
   ImGui::Separator();
   ImGui::Checkbox("Draw HH Follower Link", &gDebugState.DrawHHFollowerLink);
   ImGui::Checkbox("Draw HH Following Link", &gDebugState.DrawHHFollowingLink);
+
+  ImGui::Separator();
+  ImGui::TextDisabled("AIBot (select a hired hand / CPU player)");
+  ImGui::Checkbox("Draw AIBot Path", &gDebugState.DrawAIBotPath);
+  ImGui::Checkbox("Draw AIBot Pathfinding Grid", &gDebugState.DrawAIBotGrid);
+  ImGui::Checkbox("Draw AIBot Targets / Perception",
+                  &gDebugState.DrawAIBotTargets);
+  ImGui::Checkbox("Draw AIBot State Label", &gDebugState.DrawAIBotStateLabel);
+
+  if (ImGui::CollapsingHeader("AIBot State Log")) {
+    auto &log = gAIBotDebugState;
+    if (!log.trackedBot) {
+      ImGui::TextDisabled("Select a hired hand / CPU player to start logging.");
+    } else {
+      ImGui::Text("Tracking 0x%X  (%d transitions)", (uint32_t)log.trackedBot,
+                  log.logCount);
+      if (ImGui::Button("Clear Log")) {
+        log.logCount = 0;
+        log.logHead = 0;
+      }
+      if (ImGui::BeginChild("##AIBotStateLog", {-1, 200}, true)) {
+        // newest first
+        for (int i = 0; i < log.logCount; i++) {
+          int idx = (log.logHead - 1 - i + AIBotDebugState::LogCapacity) %
+                    AIBotDebugState::LogCapacity;
+          auto &e = log.log[idx];
+          ImGui::Text("f%-8d  %-16s  %s", e.frame, hddll::AiStateName(e.state),
+                      hddll::CombatActionName(e.combatAction));
+        }
+      }
+      ImGui::EndChild();
+    }
+  }
 
   ImGui::Separator();
   if (ImGui::Checkbox("Disable Olmec Spawns",

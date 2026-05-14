@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- AIBot debugging for hired hands. Select a hired hand and the
+  Selected tab now has an `AIBot` section showing its decision-making in real
+  time:
+  - Current AI state (Hunt, Item Pursuit, Move to Anchor, Wander, Escape
+    Offscreen, Hold Position) and combat action, both editable
+  - Live controller inputs the bot is feeding the engine (movement stick and
+    every action button, lit when pressed)
+  - Timers and cooldowns (state timer, repath cooldown, combat cooldown)
+  - Pathfinding info (target/anchor/wander destination, open/closed node
+    counts, current/active/goal path nodes)
+  - The bot's perception list (every entity it can currently "see") with
+    distances, clickable to select
+  - Movement-gate entity flags, tracked deathmatch wins, and personality id
+- New Debug tab overlays for the selected hired hand:
+  - `Draw AIBot Path` - draws the bot's pathfinding route, highlighting the
+    node it's moving toward and its goal
+  - `Draw AIBot Pathfinding Grid` - color-codes the bot's local search grid
+    (danger, blocked, pit, locked, edge tiles)
+  - `Draw AIBot Targets / Perception` - circles every entity the bot sees
+    (color-coded by type), its current item/hunt target, and its anchor
+  - `Draw AIBot State Label` - floating label with the bot's state plus an
+    arrow showing its movement intent
+- `AIBot State Log` in the Debug tab - a running history of the selected
+  hired hand's state and combat-action changes with frame numbers
+
 ## [0.0.48] - 2025-02-27
 
 ### Added

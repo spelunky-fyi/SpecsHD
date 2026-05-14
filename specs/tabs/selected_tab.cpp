@@ -234,6 +234,170 @@ void drawSelectedEntityTab() {
     ImGui::InputInt("Following", (int *)&entityPlayer->following);
     ImGui::InputInt("Follower", (int *)&entityPlayer->follower);
   }
+  if (gSelectedEntityState.Entity->entity_kind ==
+      hddll::EntityKind::KIND_PLAYER) {
+    auto entityPlayer =
+        reinterpret_cast<hddll::EntityPlayer *>(gSelectedEntityState.Entity);
+    auto bot = entityPlayer->ai_bot;
+    if (bot && ImGui::CollapsingHeader("AIBot")) {
+      ImGui::Text("Address: 0x%X", (uint32_t)bot);
+      ImGui::Text("Deathmatch mode: %s",
+                  bot->bIs_deathmatch_mode ? "yes" : "no");
+      ImGui::Text("Personality id: %u", bot->dwPersonality_id);
+
+      // AiState
+      {
+        const char *states[] = {"HUNT",   "ITEM_PURSUIT",     "MOVE_TO_ANCHOR",
+                                "WANDER", "ESCAPE_OFFSCREEN", "HOLD_POSITION"};
+        int state = (int)bot->ai_state;
+        if (state >= 0 && state < 6) {
+          if (ImGui::Combo("AI State", &state, states, 6)) {
+            bot->ai_state = (hddll::AiState)state;
+          }
+        } else {
+          ImGui::Text("AI State: %d (raw)", state);
+        }
+      }
+      // CombatAction (NONE == -1)
+      {
+        const char *actions[] = {"NONE",
+                                 "BOMB_PRESS",
+                                 "BOMB_HOLD",
+                                 "THROW_HELD_UP",
+                                 "LIVE_BOMB_DISPOSE",
+                                 "JUMP_DIRECTIONAL",
+                                 "THROW_ROPE",
+                                 "DROP_AND_PURSUE"};
+        int action = (int)bot->combat_action + 1;
+        if (action >= 0 && action < 8) {
+          if (ImGui::Combo("Combat Action", &action, actions, 8)) {
+            bot->combat_action = (hddll::CombatAction)(action - 1);
+          }
+        } else {
+          ImGui::Text("Combat Action: %d (raw)", (int)bot->combat_action);
+        }
+      }
+
+      ImGui::InputInt("State Timer", &bot->state_timer);
+      ImGui::InputInt("Repath Cooldown", &bot->repath_cooldown);
+      ImGui::InputInt("Combat Cooldown", &bot->nCombat_cooldown);
+      ImGui::InputInt("Prefer Ranged Stance", &bot->nPrefer_ranged_stance);
+
+      drawCharBool("Path Dirty", bot->bPath_dirty);
+      drawCharBool("Pathfind Found Path", bot->bPathfind_found_path);
+      drawCharBool("Path Step Advanced", bot->bPath_step_advanced);
+      ImGui::Text("Open / Closed nodes: %d / %d", bot->nPathfind_open_count,
+                  bot->nPathfind_closed_count);
+
+      // Live controller inputs the bot is feeding the engine this frame.
+      ImGui::Separator();
+      ImGui::TextDisabled("Live Inputs");
+      if (entityPlayer->pPlayer_input) {
+        auto in = entityPlayer->pPlayer_input;
+        ImGui::Text("Move:  L/R %+d    U/D %+d", in->left_right, in->up_down);
+        struct {
+          const char *name;
+          uint8_t value;
+        } buttons[] = {
+            {"jump(0)", in->action_0},  {"djump(1)", in->action_1},
+            {"bomb(2)", in->action_2},  {"rope(3)", in->action_3},
+            {"a4", in->action_4},       {"a5", in->action_5},
+            {"a6", in->action_6},       {"run(7)", in->action_7},
+            {"a8", in->action_8},       {"a9", in->action_9},
+        };
+        for (int i = 0; i < 10; i++) {
+          if (i % 5 != 0) {
+            ImGui::SameLine();
+          }
+          auto color = buttons[i].value ? ImVec4{0.2f, 1.0f, 0.3f, 1.0f}
+                                        : ImVec4{0.4f, 0.4f, 0.4f, 1.0f};
+          ImGui::TextColored(color, "%s", buttons[i].name);
+        }
+      } else {
+        ImGui::TextDisabled("(no PlayerInput)");
+      }
+
+      // Entity-side flags that gate the bot's movement decisions.
+      ImGui::Separator();
+      ImGui::TextDisabled("AI Movement Gates (entity flags)");
+      ImGui::Text("0x1ed collidable: %d    0x1f0 ai-suspended: %d",
+                  (int)(uint8_t)entityPlayer->field49_0x1ed,
+                  (int)(uint8_t)entityPlayer->field52_0x1f0);
+      ImGui::Text("0x200 climb: %d    0x203 hang: %d    0x205 rope: %d",
+                  (int)(uint8_t)entityPlayer->field68_0x200,
+                  (int)(uint8_t)entityPlayer->field71_0x203,
+                  (int)(uint8_t)entityPlayer->field73_0x205);
+      ImGui::Separator();
+
+      ImGui::InputFloat2("Target (x,y)", &bot->flTarget_x);
+      ImGui::InputFloat2("Anchor (x,y)", &bot->flAnchor_x);
+      ImGui::Text("Wander target: %d, %d", bot->nWander_target_x_int,
+                  bot->nWander_target_y_int);
+      ImGui::Text("Ledge walk timer: %d  state: %d", bot->nLedge_walk_timer,
+                  bot->bLedge_walk_state);
+      ImGui::Text("Tracked wins (p0-p3): %d / %d / %d / %d",
+                  bot->nTracked_wins_p0, bot->nTracked_wins_p1,
+                  bot->nTracked_wins_p2, bot->nTracked_wins_p3);
+
+      // Current item / hunt target
+      if (bot->pCurrent_item_target) {
+        auto t = bot->pCurrent_item_target;
+        ImGui::Text("Item target: 0x%X  %04d %s", (uint32_t)t, t->entity_type,
+                    t->TypeName());
+        ImGui::SameLine();
+        if (ImGui::Button("Select##AIBotItemTarget")) {
+          gSelectedEntityState.Entity = t;
+        }
+      } else {
+        ImGui::Text("Item target: none");
+      }
+
+      // Perception list
+      int perceptionCount = 0;
+      for (int i = 0; i < 128; i++) {
+        if (!bot->pPerception_list[i]) {
+          break;
+        }
+        perceptionCount++;
+      }
+      if (ImGui::CollapsingHeader(
+              std::format("Perception List ({})##AIBotPerception",
+                          perceptionCount)
+                  .c_str())) {
+        ImGui::TextDisabled("entities the bot can currently 'see', nearest first-ish");
+        for (int i = 0; i < perceptionCount; i++) {
+          auto e = bot->pPerception_list[i];
+          float dx = e->x - entityPlayer->x;
+          float dy = e->y - entityPlayer->y;
+          float distSq = dx * dx + dy * dy;
+          if (ImGui::Button(
+                  std::format("{}: {:04d} {} ({})  d^2={:.1f}##AIBotPerc-{}", i,
+                              e->entity_type, e->TypeName(), e->KindName(),
+                              distSq, i)
+                      .c_str())) {
+            gSelectedEntityState.Entity = e;
+          }
+        }
+      }
+
+      // Path nodes
+      if (ImGui::CollapsingHeader("Path Nodes##AIBot")) {
+        auto describe = [](const char *label, hddll::PathNode *n) {
+          if (!n) {
+            ImGui::Text("%s: null", label);
+            return;
+          }
+          ImGui::Text(
+              "%s: cell (%d,%d) world (%d,%d) tile=%d danger=%d blocked=%d",
+              label, n->nCell_x, n->nCell_y, n->nWorld_x, n->nWorld_y,
+              n->nTile_type, n->bDanger_flag, n->bBlocked_flag);
+        };
+        describe("Current", bot->pPath_current_node);
+        describe("Active ", bot->pPath_active_node);
+        describe("Goal   ", bot->pPath_start_node);
+      }
+    }
+  }
   if ((uint32_t)gSelectedEntityState.Entity->entity_kind > 0 &&
       (uint32_t)gSelectedEntityState.Entity->entity_kind < 5 &&
       ImGui::CollapsingHeader("EntityActive")) {

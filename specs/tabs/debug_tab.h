@@ -51,6 +51,12 @@ struct DebugState {
   bool DrawHHFollowerLink = false;
   bool DrawHHFollowingLink = false;
 
+  // AIBot / Hired Hand debugging (operates on the selected entity).
+  bool DrawAIBotPath = false;
+  bool DrawAIBotGrid = false;
+  bool DrawAIBotTargets = false;
+  bool DrawAIBotStateLabel = false;
+
   EnabledEntities Ids;
   EnabledEntities Hitboxes;
   EnabledEntities Selection;
@@ -78,6 +84,27 @@ struct DebugState {
 
 extern EnabledEntities gAllEntities;
 extern DebugState gDebugState;
+
+// Rolling log of AiState / CombatAction transitions for the selected hired
+// hand. Filled once per frame by trackSelectedAIBot() (drawing.cpp).
+struct AIBotLogEntry {
+  int frame;
+  hddll::AiState state;
+  hddll::CombatAction combatAction;
+};
+
+struct AIBotDebugState {
+  static constexpr int LogCapacity = 256;
+  AIBotLogEntry log[LogCapacity] = {};
+  int logCount = 0; // number of valid entries
+  int logHead = 0;  // index of the next write slot
+  void *trackedBot = nullptr;
+  hddll::AiState lastState = hddll::AiState::AI_STATE_HUNT;
+  hddll::CombatAction lastCombatAction = hddll::CombatAction::COMBAT_ACTION_NONE;
+  bool hasLast = false;
+};
+
+extern AIBotDebugState gAIBotDebugState;
 
 void drawDebugTab();
 void onLevelStartOlmec();
