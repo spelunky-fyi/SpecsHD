@@ -84,8 +84,7 @@ static void drawRawBytesTableForSelected(const char *str_id, char *start_addr,
 
           ImGui::TableNextColumn();
           if (ImGui::Button(
-                  std::format("{:02X}##SelectedEntityRaw-{}", a1, i)
-                      .c_str())) {
+                  std::format("{:02X}##SelectedEntityRaw-{}", a1, i).c_str())) {
             gDebugState.DrawEntityOffsets[key].insert({i, DataType_Byte});
           }
           ImGui::SameLine();
@@ -116,8 +115,7 @@ static void drawRawBytesTableForSelected(const char *str_id, char *start_addr,
                 std::format("{:d}##SelectedEntityRaw-{}", *(int32_t *)addr, i)
                     .c_str(),
                 {-1, 0})) {
-          gDebugState.DrawEntityOffsets[key].insert(
-              {i, DataType_Dword_Signed});
+          gDebugState.DrawEntityOffsets[key].insert({i, DataType_Dword_Signed});
         }
 
         ImGui::TableNextColumn();
@@ -150,6 +148,76 @@ static void drawRawBytesTableForSelected(const char *str_id, char *start_addr,
     }
 
     ImGui::EndTable();
+  }
+}
+
+// Live PlayerInput state for any player entity -- human or AIBot-driven. The
+// action_* button indices are fixed (XInput button slots; see PlayerInput in
+// hd_entity.h) and are NOT affected by key rebinding. This panel is the place
+// to sanity-check that labeling against a real keyboard / controller: select
+// player1, press a button, and confirm the matching slot lights up.
+static void drawPlayerInputDebug(hddll::EntityPlayer *player) {
+  auto in = player->pPlayer_input;
+  if (!in) {
+    ImGui::TextDisabled("(no PlayerInput)");
+    return;
+  }
+
+  const char *typeName = in->input_type == 1   ? "keyboard"
+                         : in->input_type == 2 ? "gamepad"
+                                               : "?";
+  ImGui::Text("input_type: %d (%s)", in->input_type, typeName);
+  ImGui::Text("Move:  L/R %+d    U/D %+d", in->left_right, in->up_down);
+
+  struct Btn {
+    const char *name;
+    int index;
+    uint8_t value;
+    uint8_t prev;
+  };
+  Btn buttons[] = {
+      {"jump", 0, in->action_jump, in->prev_action_jump},
+      {"bomb", 1, in->action_bomb, in->prev_action_bomb},
+      {"whip", 2, in->action_whip, in->prev_action_whip},
+      {"rope", 3, in->action_rope, in->prev_action_rope},
+      {"shldrL", 4, in->action_shoulder_l, in->prev_action_shoulder_l},
+      {"door", 5, in->action_door, in->prev_action_door},
+      {"lt", 6, in->action_lt, in->prev_action_lt},
+      {"run", 7, in->action_run, in->prev_action_run},
+      {"pause", 8, in->action_pause, in->prev_action_pause},
+      {"journal", 9, in->action_journal, in->prev_action_journal},
+  };
+  for (int i = 0; i < 10; i++) {
+    if (i % 5 != 0) {
+      ImGui::SameLine();
+    }
+    auto &b = buttons[i];
+    ImVec4 color;
+    if (b.value && !b.prev) {
+      color = {1.0f, 1.0f, 0.2f, 1.0f}; // pressed this frame (rising edge)
+    } else if (b.value) {
+      color = {0.2f, 1.0f, 0.3f, 1.0f}; // held
+    } else {
+      color = {0.4f, 0.4f, 0.4f, 1.0f}; // idle
+    }
+    ImGui::TextColored(color, "%s(%d)", b.name, b.index);
+  }
+  ImGui::TextDisabled("grey=idle  green=held  yellow=pressed this frame");
+
+  if (ImGui::TreeNode("Bindings (rebind layer)")) {
+    ImGui::TextDisabled(
+        "remap_* = action index each named control is bound to");
+    ImGui::Text("whip=%d jump=%d bomb=%d rope=%d run=%d door=%d",
+                in->remap_whip, in->remap_jump, in->remap_bomb, in->remap_rope,
+                in->remap_run, in->remap_purchase_door);
+    ImGui::TextDisabled(
+        "key_* = raw DirectInput scancodes (what rebinding edits)");
+    ImGui::Text("whip=0x%X jump=0x%X bomb=0x%X rope=0x%X run=0x%X door=0x%X",
+                in->key_whip, in->key_jump, in->key_bomb, in->key_rope,
+                in->key_run, in->key_purchase_door);
+    ImGui::Text("up=0x%X down=0x%X left=0x%X right=0x%X", in->key_up,
+                in->key_down, in->key_left, in->key_right);
+    ImGui::TreePop();
   }
 }
 
@@ -238,6 +306,9 @@ void drawSelectedEntityTab() {
       hddll::EntityKind::KIND_PLAYER) {
     auto entityPlayer =
         reinterpret_cast<hddll::EntityPlayer *>(gSelectedEntityState.Entity);
+    if (ImGui::CollapsingHeader("Player Input")) {
+      drawPlayerInputDebug(entityPlayer);
+    }
     auto bot = entityPlayer->ai_bot;
     if (bot && ImGui::CollapsingHeader("AIBot")) {
       ImGui::Text("Address: 0x%X", (uint32_t)bot);
@@ -260,14 +331,10 @@ void drawSelectedEntityTab() {
       }
       // CombatAction (NONE == -1)
       {
-        const char *actions[] = {"NONE",
-                                 "BOMB_PRESS",
-                                 "BOMB_HOLD",
-                                 "THROW_HELD_UP",
-                                 "LIVE_BOMB_DISPOSE",
-                                 "JUMP_DIRECTIONAL",
-                                 "THROW_ROPE",
-                                 "DROP_AND_PURSUE"};
+        const char *actions[] = {
+            "NONE",          "BOMB_PRESS",        "BOMB_HOLD",
+            "THROW_HELD_UP", "LIVE_BOMB_DISPOSE", "JUMP_DIRECTIONAL",
+            "THROW_ROPE",    "DROP_AND_PURSUE"};
         int action = (int)bot->combat_action + 1;
         if (action >= 0 && action < 8) {
           if (ImGui::Combo("Combat Action", &action, actions, 8)) {
@@ -288,34 +355,6 @@ void drawSelectedEntityTab() {
       drawCharBool("Path Step Advanced", bot->bPath_step_advanced);
       ImGui::Text("Open / Closed nodes: %d / %d", bot->nPathfind_open_count,
                   bot->nPathfind_closed_count);
-
-      // Live controller inputs the bot is feeding the engine this frame.
-      ImGui::Separator();
-      ImGui::TextDisabled("Live Inputs");
-      if (entityPlayer->pPlayer_input) {
-        auto in = entityPlayer->pPlayer_input;
-        ImGui::Text("Move:  L/R %+d    U/D %+d", in->left_right, in->up_down);
-        struct {
-          const char *name;
-          uint8_t value;
-        } buttons[] = {
-            {"jump(0)", in->action_0},  {"djump(1)", in->action_1},
-            {"bomb(2)", in->action_2},  {"rope(3)", in->action_3},
-            {"a4", in->action_4},       {"a5", in->action_5},
-            {"a6", in->action_6},       {"run(7)", in->action_7},
-            {"a8", in->action_8},       {"a9", in->action_9},
-        };
-        for (int i = 0; i < 10; i++) {
-          if (i % 5 != 0) {
-            ImGui::SameLine();
-          }
-          auto color = buttons[i].value ? ImVec4{0.2f, 1.0f, 0.3f, 1.0f}
-                                        : ImVec4{0.4f, 0.4f, 0.4f, 1.0f};
-          ImGui::TextColored(color, "%s", buttons[i].name);
-        }
-      } else {
-        ImGui::TextDisabled("(no PlayerInput)");
-      }
 
       // Entity-side flags that gate the bot's movement decisions.
       ImGui::Separator();
@@ -364,7 +403,8 @@ void drawSelectedEntityTab() {
               std::format("Perception List ({})##AIBotPerception",
                           perceptionCount)
                   .c_str())) {
-        ImGui::TextDisabled("entities the bot can currently 'see', nearest first-ish");
+        ImGui::TextDisabled(
+            "entities the bot can currently 'see', nearest first-ish");
         for (int i = 0; i < perceptionCount; i++) {
           auto e = bot->pPerception_list[i];
           float dx = e->x - entityPlayer->x;
