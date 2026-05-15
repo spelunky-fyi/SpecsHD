@@ -21,6 +21,7 @@ add_library(
     specs.h specs.cpp
     state.h state.cpp
     drawing.h drawing.cpp
+    zoom.h zoom.cpp
     seeded_items.h seeded_items.cpp
     game_hooks.h game_hooks.cpp
     mods/dark_mode.h mods/dark_mode.cpp

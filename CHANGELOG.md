@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AIBot State Log` in the Debug tab - a running history of the selected
   hired hand's state and combat-action changes with frame numbers
 - Player / AIBot now have PlayerInput menu in selected
+- ZOOOOOOOOOM in in Debug -> Camera State
 
 ## [0.0.48] - 2025-02-27
 

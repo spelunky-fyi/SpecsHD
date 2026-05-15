@@ -5,6 +5,7 @@
 #include "../game_hooks.h"
 #include "../sounds.h"
 #include "../state.h"
+#include "../zoom.h"
 #include <hddll/memory.h>
 #include <hddll/utils.h>
 
@@ -412,6 +413,29 @@ void drawDebugTab() {
   }
 
   if (ImGui::CollapsingHeader("Camera State")) {
+
+    // Zoom: drives hddll::gViewScale, which zoom.cpp pushes into the game's
+    // orthographic projection matrix and frustum-cull pads each frame. >1.0x
+    // zooms out (see more of the level), <1.0x zooms in. The camera follow box
+    // is unchanged, so the player stays roughly centered.
+    ImGui::SliderFloat("zoom", &hddll::gViewScale, 1.0f, 4.0f, "%.2fx");
+    ImGui::SameLine();
+    if (ImGui::Button("Reset##zoom")) {
+      hddll::gViewScale = 1.0f;
+    }
+
+    // Cap on scene-texture upscale. Higher = sharper at high zoom, more VRAM.
+    // 1 = no upscale (zero overhead). 2 ~= 55 MB extra. 4 ~= 205 MB extra.
+    ImGui::Text("Max texture scale:");
+    ImGui::SameLine();
+    if (ImGui::RadioButton("1x##scenescale", gMaxSceneScale == 1))
+      gMaxSceneScale = 1;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("2x##scenescale", gMaxSceneScale == 2))
+      gMaxSceneScale = 2;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("4x##scenescale", gMaxSceneScale == 4))
+      gMaxSceneScale = 4;
 
     ImGui::InputScalar("camera_x", ImGuiDataType_Float,
                        &hddll::gCameraState->camera_x);

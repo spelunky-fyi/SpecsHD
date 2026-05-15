@@ -8,6 +8,7 @@
 #include "game_hooks.h"
 #include "inputs.h"
 #include "state.h"
+#include "zoom.h"
 #include <hddll/hddll.h>
 #include <hddll/memory.h>
 #include <hddll/ui.h>
@@ -35,6 +36,7 @@ void onInit() {
   gConfig = Specs::Config::load();
 
   initHooks();
+  initZoom();
 
   gDebugState.Selection.activeEntities = true;
   gDebugState.Selection.floorEntities = true;
@@ -42,7 +44,10 @@ void onInit() {
   auto process = GetCurrentProcess();
 }
 
-void onDestroy() { cleanUpHooks(); }
+void onDestroy() {
+  restoreZoom();
+  cleanUpHooks();
+}
 
 } // namespace hddll
 
@@ -169,6 +174,8 @@ void onFrame() {
     return;
 
   gFrame++;
+
+  applyZoom();
 
   if (gGlobalState->screen_state == 0 && gScreenStatePrevious == 2) {
     onLevelStart();
