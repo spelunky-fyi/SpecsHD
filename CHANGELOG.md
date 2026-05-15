@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.48] - 2026-05-14
+
 ### Added
 
 - AIBot debugging for hired hands. Select a hired hand and the
@@ -36,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Player / AIBot now have PlayerInput menu in selected
 - ZOOOOOOOOOM in in Debug -> Camera State
 
-## [0.0.48] - 2025-02-27
+## [0.0.48] - 2026-02-27
 
 ### Added
 
