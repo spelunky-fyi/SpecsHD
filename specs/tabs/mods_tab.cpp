@@ -11,6 +11,7 @@
 #include "../mods/biglunky.h"
 #include "../mods/dark_mode.h"
 #include "../mods/full_spelunky.h"
+#include "../mods/never_dark_mode.h"
 #include "../mods/seeded_mode.h"
 #include "../mods/tunnel_man.h"
 #include "../mods/uplunky.h"
@@ -20,9 +21,12 @@
 void drawModsTab() {
   ImGuiIO &io = ImGui::GetIO();
 
-  if (ImGui::Checkbox("Dark Mode", &gModsState.DarkMode)) {
+  if (ImGui::Checkbox("Always Dark Mode", &gModsState.DarkMode)) {
     hddll::applyPatches(gDarkModePatches, !gModsState.DarkMode);
   };
+
+  ImGui::Separator();
+  ImGui::Checkbox("Never Dark Mode", &gModsState.NeverDarkMode);
 
   ImGui::Separator();
   if (ImGui::Checkbox("The Full Spelunky", &gModsState.TheFullSpelunky)) {
