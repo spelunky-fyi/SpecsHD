@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths: [VERSION]
+  workflow_dispatch:
 
 jobs:
   release:
@@ -53,7 +54,7 @@ jobs:
 
       - name: CMake configure
         if: steps.check_tag.outputs.exists == 'false'
-        run: cmake -A Win32 -S . -B build
+        run: cmake -A Win32 -S . -B build -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: CMake build
         if: steps.check_tag.outputs.exists == 'false'
