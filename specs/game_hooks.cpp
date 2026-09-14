@@ -9,6 +9,7 @@
 // names)
 static auto _pGlobalState = &hddll::gGlobalState;
 #include "mods/full_spelunky.h"
+#include "mods/never_dark_mode.h"
 #include "mods/seeded_mode.h"
 #include "mods/tunnel_man.h"
 #include "mods/uplunky.h"
@@ -93,6 +94,10 @@ void __declspec(naked) hookPrePlaceRooms() {
 
   if (gModsState.Uplunky) {
     prePlaceRoomsUplunky();
+  }
+
+  if (gModsState.NeverDarkMode) {
+      prePlaceRoomsNeverDarkMode();
   }
 
   __asm {

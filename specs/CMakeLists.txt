@@ -25,6 +25,7 @@ add_library(
     seeded_items.h seeded_items.cpp
     game_hooks.h game_hooks.cpp
     mods/dark_mode.h mods/dark_mode.cpp
+    mods/never_dark_mode.h mods/never_dark_mode.cpp
     mods/full_spelunky.h mods/full_spelunky.cpp
     mods/biglunky.h mods/biglunky.cpp
     mods/uplunky.h mods/uplunky.cpp

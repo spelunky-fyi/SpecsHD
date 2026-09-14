@@ -15,6 +15,7 @@ struct ModsState {
   bool TheFullSpelunky = false;
   bool Biglunky = false;
   bool DarkMode = false;
+  bool NeverDarkMode = false;
   bool Uplunky = false;
   bool TunnelMan = false;
   bool SeededMode = false;
