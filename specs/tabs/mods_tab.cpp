@@ -171,6 +171,11 @@ void drawModsTab() {
   ImGui::BeginDisabled(!gSeededModeState.rollback);
   ImGui::Text("");
   ImGui::SameLine(40.0f * io.FontGlobalScale);
+  ImGui::Checkbox("Display Rollback Level##Rollback",
+                  &gSeededModeState.showRollbackOverlay);
+
+  ImGui::Text("");
+  ImGui::SameLine(40.0f * io.FontGlobalScale);
   ImGui::PushItemWidth(100 * io.FontGlobalScale);
   const uint32_t rollbackLevelsStep = 1;
   if (ImGui::InputScalar("Levels Back##Rollback", ImGuiDataType_U32,

@@ -14,6 +14,7 @@ struct SeededModeState {
   uint32_t advanceOnRestart = 1;
   bool rollback = false;
   uint32_t rollbackLevels = 1;
+  bool showRollbackOverlay = true;
   std::string exportSeed = "";
 };
 
