@@ -206,8 +206,12 @@ void __declspec(naked) hookPreResetForRun() {
   if (gModsState.Uplunky) {
     resetUplunkyState();
   }
-  if (gModsState.SeededMode && gSeededModeState.randomSeedOnRestart) {
-    chooseRandomSeed();
+  if (gModsState.SeededMode) {
+    if (startRollback()) {
+      // Rolling back replays the same seed
+    } else if (gSeededModeState.randomSeedOnRestart) {
+      chooseRandomSeed();
+    }
   }
 
   __asm {
@@ -329,6 +333,7 @@ uint32_t getSeedForLevel(int level) {
 static uint32_t gComputedSeed = 0;
 
 static void computeSeedForLevel() {
+  preSeedLevelRollback();
   lastSeed = getSeedForLevel(hddll::gGlobalState->level);
   gComputedSeed = lastSeed * hddll::gGlobalState->level;
 }
