@@ -134,6 +134,11 @@ void drawModsTab() {
 
   ImGui::Text("");
   ImGui::SameLine(20.0f * io.FontGlobalScale);
+  ImGui::Checkbox("Force Mothership Coffin##SeededMode",
+                  &gSeededModeState.forceMothershipCoffin);
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
   ImGui::Checkbox("Random Seed On Restart##SeededMode",
                   &gSeededModeState.randomSeedOnRestart);
 

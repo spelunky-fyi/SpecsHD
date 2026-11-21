@@ -124,6 +124,30 @@ uint32_t getRandomSeed() {
 
 void chooseRandomSeed() { gSeededModeState.seed = getRandomSeed(); }
 
+// Seeded mode stops the game assigning coffin characters (see "Never allow
+// coffins"), so coffin_char stays -1 and no coffin room is placed. Setting
+// it to the Robot before rooms are placed lets the game's own coffin
+// placement put the mothership coffin down like an unmodded run would.
+static bool gForcedMothershipCoffin = false;
+
+void prePlaceRoomsSeededMode() {
+  auto isMothership = hddll::gGlobalState->level == 11 &&
+                      hddll::gGlobalState->is_mothership;
+
+  if (gSeededModeState.forceMothershipCoffin && isMothership) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_ROBOT;
+    // The game loads the coffin texture when it assigns coffin_char during
+    // the level transition, which is before this. Load it again like the
+    // game does after its own late assignments (e.g. Carl in the BM).
+    hddll::LoadCoffinTexture(hddll::gGlobalState->_34struct);
+    gForcedMothershipCoffin = true;
+  } else if (gForcedMothershipCoffin) {
+    // Don't let a coffin that couldn't be placed carry over to later levels
+    hddll::gGlobalState->_34struct->coffin_char = -1;
+    gForcedMothershipCoffin = false;
+  }
+}
+
 void advanceLevel() {
 
   if (!gModsState.SeededMode) {

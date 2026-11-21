@@ -100,6 +100,10 @@ void __declspec(naked) hookPrePlaceRooms() {
       prePlaceRoomsNeverDarkMode();
   }
 
+  if (gModsState.SeededMode) {
+    prePlaceRoomsSeededMode();
+  }
+
   __asm {
     ; Restore all registers
     popad

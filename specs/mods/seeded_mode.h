@@ -9,6 +9,7 @@ struct SeededModeState {
   uint32_t seed = 1;
   std::vector<std::tuple<uint32_t, uint32_t>> levelSeeds = {};
   bool useDailySeeding = false;
+  bool forceMothershipCoffin = false;
   bool randomSeedOnRestart = false;
   uint32_t advanceOnRestart = 1;
   std::string exportSeed = "";
@@ -23,6 +24,7 @@ extern const char *levelItems[];
 
 void chooseRandomSeed();
 void advanceLevel();
+void prePlaceRoomsSeededMode();
 
 void updateExportedSeed();
 void loadFromExportSeed();
