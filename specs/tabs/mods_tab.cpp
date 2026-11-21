@@ -156,10 +156,6 @@ void drawModsTab() {
     ImGui::EndCombo();
   }
 
-  ImGui::Text("");
-  ImGui::SameLine(20.0f * io.FontGlobalScale);
-  ImGui::Checkbox("Enable Seed Search", &gSeededModeState.enabledSeedSearch);
-
   auto isDisabled = hddll::gGlobalState->screen_state != 0 ||
                     hddll::gGlobalState->play_state != 0;
   if (isDisabled) {

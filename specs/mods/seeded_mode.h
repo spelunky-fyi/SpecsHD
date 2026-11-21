@@ -11,7 +11,6 @@ struct SeededModeState {
   bool useDailySeeding = false;
   bool randomSeedOnRestart = false;
   uint32_t advanceOnRestart = 1;
-  bool enabledSeedSearch = false;
   std::string exportSeed = "";
 };
 
