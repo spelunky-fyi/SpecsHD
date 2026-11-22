@@ -178,6 +178,7 @@ static constexpr uint8_t hddll::GlobalState::*SPECIAL_LEVEL_FLAGS[] = {
 struct RollbackSnapshot {
   uint32_t level = 0;
   std::string name = "";
+  bool isMothership = false;
 
   // Saved as the level is seeded
   std::array<uint8_t, RUN_FLAGS_END - RUN_FLAGS_BEGIN> runFlags = {};
@@ -439,6 +440,13 @@ void preSeedLevelRollback() {
   snapshot = {};
   snapshot.level = level;
   snapshot.name = getRollbackLevelName();
+  snapshot.isMothership = hddll::gGlobalState->is_mothership;
+  // 3-4 is played a second time after the mothership
+  auto historySize = gRollbackHistory.size();
+  if (historySize >= 2 && gRollbackHistory[historySize - 2].isMothership &&
+      !snapshot.isMothership) {
+    snapshot.name += "-2";
+  }
   std::memcpy(snapshot.runFlags.data(), globalStateBytes(RUN_FLAGS_BEGIN),
               snapshot.runFlags.size());
   for (size_t idx = 0; idx < std::size(SPECIAL_LEVEL_FLAGS); idx++) {
