@@ -161,6 +161,13 @@ const size_t MONEY_PICKED_UP = offsetof(hddll::GlobalState, pad_445968) + 0x5C;
 static_assert(MONEY_CHECKPOINT == 0x447358);
 static_assert(MONEY_PICKED_UP == 0x4459C4);
 
+// Anubis II: the first byte is set when the Book of the Dead is picked up,
+// the second when he's killed. While only the first is set he spawns at the
+// start of every level. resetForRun zeroes both.
+const size_t ANUBIS2_FLAGS = offsetof(hddll::GlobalState, N000001A7);
+const size_t ANUBIS2_FLAGS_SIZE = 2;
+static_assert(ANUBIS2_FLAGS == 0xC4);
+
 // Which special level loads is decided from these before the level is
 // seeded, so a rollback sets them before restarting into it
 static constexpr uint8_t hddll::GlobalState::*SPECIAL_LEVEL_FLAGS[] = {
@@ -183,6 +190,7 @@ struct RollbackSnapshot {
   // Saved as the level is seeded
   std::array<uint8_t, RUN_FLAGS_END - RUN_FLAGS_BEGIN> runFlags = {};
   std::array<uint8_t, std::size(SPECIAL_LEVEL_FLAGS)> specialLevelFlags = {};
+  std::array<uint8_t, ANUBIS2_FLAGS_SIZE> anubis2Flags = {};
 
   // Saved just before the rooms are placed
   bool hasPlayerState = false;
@@ -421,6 +429,8 @@ void preSeedLevelRollback() {
     if (auto target = getRollbackTarget(level)) {
       std::memcpy(globalStateBytes(RUN_FLAGS_BEGIN), target->runFlags.data(),
                   target->runFlags.size());
+      std::memcpy(globalStateBytes(ANUBIS2_FLAGS), target->anubis2Flags.data(),
+                  target->anubis2Flags.size());
     }
     return;
   }
@@ -449,6 +459,8 @@ void preSeedLevelRollback() {
   }
   std::memcpy(snapshot.runFlags.data(), globalStateBytes(RUN_FLAGS_BEGIN),
               snapshot.runFlags.size());
+  std::memcpy(snapshot.anubis2Flags.data(), globalStateBytes(ANUBIS2_FLAGS),
+              snapshot.anubis2Flags.size());
   for (size_t idx = 0; idx < std::size(SPECIAL_LEVEL_FLAGS); idx++) {
     snapshot.specialLevelFlags[idx] =
         hddll::gGlobalState->*SPECIAL_LEVEL_FLAGS[idx];
