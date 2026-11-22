@@ -94,6 +94,7 @@ void drawModsTab() {
 
   ImGui::Separator();
   if (ImGui::Checkbox("Seeded", &gModsState.SeededMode)) {
+    resetRollback();
     if (gModsState.SeededMode) {
       if (!hookSeedLevelJmpBackAddr) {
         int hookLen = 7;
@@ -134,12 +135,17 @@ void drawModsTab() {
 
   ImGui::Text("");
   ImGui::SameLine(20.0f * io.FontGlobalScale);
-  ImGui::Checkbox("Random Seed On Restart##SeededMode",
-                  &gSeededModeState.randomSeedOnRestart);
+  ImGui::Checkbox("Force Mothership Coffin##SeededMode",
+                  &gSeededModeState.forceMothershipCoffin);
 
   int itemSelectedIdx = std::clamp(
       static_cast<int>(gSeededModeState.advanceOnRestart) - 1, 0, 19);
   const char *comboPreviewValue = levelItems[itemSelectedIdx];
+
+  ImGui::Text("");
+  ImGui::SameLine(20.0f * io.FontGlobalScale);
+  ImGui::Checkbox("Random Seed On Restart##SeededMode",
+                  &gSeededModeState.randomSeedOnRestart);
 
   ImGui::Text("");
   ImGui::SameLine(20.0f * io.FontGlobalScale);
@@ -158,7 +164,60 @@ void drawModsTab() {
 
   ImGui::Text("");
   ImGui::SameLine(20.0f * io.FontGlobalScale);
-  ImGui::Checkbox("Enable Seed Search", &gSeededModeState.enabledSeedSearch);
+  if (ImGui::Checkbox("Rollback##SeededMode", &gSeededModeState.rollback)) {
+    resetRollback();
+  }
+
+  ImGui::BeginDisabled(!gSeededModeState.rollback);
+  ImGui::Text("");
+  ImGui::SameLine(40.0f * io.FontGlobalScale);
+  ImGui::Checkbox("Display Rollback Level##Rollback",
+                  &gSeededModeState.showRollbackOverlay);
+
+  ImGui::Text("");
+  ImGui::SameLine(40.0f * io.FontGlobalScale);
+  ImGui::PushItemWidth(100 * io.FontGlobalScale);
+  const uint32_t rollbackLevelsStep = 1;
+  if (ImGui::InputScalar("Levels Back##Rollback", ImGuiDataType_U32,
+                         &gSeededModeState.rollbackLevels,
+                         &rollbackLevelsStep)) {
+    gSeededModeState.rollbackLevels =
+        (std::min)(gSeededModeState.rollbackLevels, 19u);
+  }
+  ImGui::PopItemWidth();
+  ImGui::SameLine();
+  ImGui::TextDisabled("(0 replays the level you died on)");
+
+  ImGui::Text("");
+  ImGui::SameLine(40.0f * io.FontGlobalScale);
+  if (ImGui::Checkbox("Flagplant Mode##Rollback",
+                      &gSeededModeState.rollbackFlagplant)) {
+    resetRollbackFlag();
+  }
+  ImGui::SameLine();
+  ImGui::TextDisabled("(never rolls back before the last rollback level)");
+
+  ImGui::Text("");
+  ImGui::SameLine(40.0f * io.FontGlobalScale);
+  if (ImGui::Button("Reset Saved State##Rollback")) {
+    resetRollback();
+  }
+  ImGui::SameLine();
+  auto destination = getRollbackDestination();
+  if (destination.empty()) {
+    ImGui::TextDisabled("No levels saved");
+  } else {
+    ImGui::TextDisabled("%zu saved, dying goes back to %s",
+                        getRollbackSavedLevelCount(), destination.c_str());
+  }
+
+  auto &lastRestart = getRollbackLastRestart();
+  if (!lastRestart.empty()) {
+    ImGui::Text("");
+    ImGui::SameLine(40.0f * io.FontGlobalScale);
+    ImGui::TextDisabled("Last restart: %s", lastRestart.c_str());
+  }
+  ImGui::EndDisabled();
 
   auto isDisabled = hddll::gGlobalState->screen_state != 0 ||
                     hddll::gGlobalState->play_state != 0;

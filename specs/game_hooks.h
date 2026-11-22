@@ -23,6 +23,8 @@ extern int ELIGIBLE_FLOORS_FOR_BM_COUNT;
 // Last seed (used by drawing.cpp and seeded mode)
 extern uint32_t lastSeed;
 
+void loadHiredHandTextures();
+
 // Naked hook functions (naked attribute only on definitions in game_hooks.cpp)
 void hookLoadCoffinTexture();
 void hookPrePlaceRooms();

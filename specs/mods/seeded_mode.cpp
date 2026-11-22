@@ -1,7 +1,11 @@
 
 #include "seeded_mode.h"
 
-#include <fstream>
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstring>
+#include <optional>
 
 SeededModeState gSeededModeState = {};
 
@@ -125,328 +129,412 @@ uint32_t getRandomSeed() {
 
 void chooseRandomSeed() { gSeededModeState.seed = getRandomSeed(); }
 
-static void searchStraightDown() {
-  auto entranceRoomNumber =
-      hddll::gGlobalState->level_state->entrance_room_x +
-      hddll::gGlobalState->level_state->entrance_room_y * 4;
+// Rollback
+//
+// Each level's starting state is saved as it loads, in the order the levels
+// are played. Dying restarts the run straight into the level played
+// rollbackLevels before the one died on and puts its saved state back.
+//
+// Levels are found by play order, not level number. The mothership is
+// entered from 3-4 and is level 11 (3-3), with 3-4 played again after it, and
+// the worm skips the levels it replaces.
+//
+// The run flags levels are generated from (moai spawned, black market
+// entrance spawned, ...) are saved and restored as the level is seeded,
+// before anything is rolled, so the level generates the same as the first
+// time. The player's state and the run timer are restored just before the
+// rooms are placed.
 
-  auto roomType =
-      hddll::gGlobalState->level_state->room_types[entranceRoomNumber];
-  auto roomType2 =
-      hddll::gGlobalState->level_state->room_types[entranceRoomNumber + 4];
-  auto roomType3 =
-      hddll::gGlobalState->level_state->room_types[entranceRoomNumber + 8];
-  auto exitRoomNumber = hddll::gGlobalState->level_state->exit_room_x +
-                        hddll::gGlobalState->level_state->exit_room_y * 4;
+// GlobalState byte ranges saved with each level
+const size_t RUN_FLAGS_BEGIN = offsetof(hddll::GlobalState, dark_level);
+const size_t RUN_FLAGS_END = offsetof(hddll::GlobalState, pad_44062C);
+const size_t RUN_TIMER_BEGIN = offsetof(hddll::GlobalState, total_minutes);
+const size_t RUN_TIMER_END = offsetof(hddll::GlobalState, pad_445968);
 
-  if (roomType != 2 || roomType2 != 2 || roomType3 != 2 ||
-      entranceRoomNumber + 12 != exitRoomNumber) {
-    resetRun();
+// The game's money anticheat (0x45b410) runs as each level ends. It allows
+// the money from its last check (stored as -7 * money) plus gold picked up
+// since (stored as -12 * amount), held gold and 5000, and sets total_money to
+// 1 if there's more. resetForRun zeroes both, so they're restored with the
+// money or a rollback can trip it.
+const size_t MONEY_CHECKPOINT = offsetof(hddll::GlobalState, pad_447350) + 0x8;
+const size_t MONEY_PICKED_UP = offsetof(hddll::GlobalState, pad_445968) + 0x5C;
+static_assert(MONEY_CHECKPOINT == 0x447358);
+static_assert(MONEY_PICKED_UP == 0x4459C4);
+
+// Anubis II: the first byte is set when the Book of the Dead is picked up,
+// the second when he's killed. While only the first is set he spawns at the
+// start of every level. resetForRun zeroes both.
+const size_t ANUBIS2_FLAGS = offsetof(hddll::GlobalState, N000001A7);
+const size_t ANUBIS2_FLAGS_SIZE = 2;
+static_assert(ANUBIS2_FLAGS == 0xC4);
+
+// Which special level loads is decided from these before the level is
+// seeded, so a rollback sets them before restarting into it
+static constexpr uint8_t hddll::GlobalState::*SPECIAL_LEVEL_FLAGS[] = {
+    &hddll::GlobalState::is_haunted_castle,
+    &hddll::GlobalState::at_haunted_castle_exit,
+    &hddll::GlobalState::is_blackmarket,
+    &hddll::GlobalState::at_blackmarket_exit,
+    &hddll::GlobalState::is_mothership,
+    &hddll::GlobalState::at_mothership_exit,
+    &hddll::GlobalState::is_city_of_gold,
+    &hddll::GlobalState::at_city_of_gold_exit,
+    &hddll::GlobalState::is_worm,
+};
+
+struct RollbackSnapshot {
+  uint32_t level = 0;
+  std::string name = "";
+  bool isMothership = false;
+
+  // Saved as the level is seeded
+  std::array<uint8_t, RUN_FLAGS_END - RUN_FLAGS_BEGIN> runFlags = {};
+  std::array<uint8_t, std::size(SPECIAL_LEVEL_FLAGS)> specialLevelFlags = {};
+  std::array<uint8_t, ANUBIS2_FLAGS_SIZE> anubis2Flags = {};
+
+  // Saved just before the rooms are placed
+  bool hasPlayerState = false;
+  hddll::PlayerData playerData = {};
+  uint32_t money = 0;
+  int32_t moneyCheckpoint = 0;
+  int32_t moneyPickedUp = 0;
+  int32_t favor = 0;
+  std::array<uint8_t, RUN_TIMER_END - RUN_TIMER_BEGIN> runTimer = {};
+};
+
+// In the order the levels were played. While rolling back the last one is
+// the level being restarted into.
+static std::vector<RollbackSnapshot> gRollbackHistory = {};
+static bool gRollingBack = false;
+// Level the player was dead on when last seen in a level, or 0
+static uint32_t gRollbackDiedOnLevel = 0;
+// respawn_level from before a rollback pointed it at the target level
+static std::optional<uint32_t> gRollbackRespawnLevel = {};
+// Special level flags from before a rollback changed them, to put back if the
+// reset was for going to the lobby instead of a restart
+static std::array<uint8_t, std::size(SPECIAL_LEVEL_FLAGS)>
+    gRollbackPrevSpecialLevelFlags = {};
+// Already warped to the target level after the restart missed it
+static bool gRollbackWarped = false;
+// What the last restart did, for the Mods tab
+static std::string gRollbackLastRestart = "";
+// Flagplant Mode: index in gRollbackHistory of the furthest level rolled back
+// to, which later rollbacks never go before
+static std::optional<size_t> gRollbackFlagIndex = {};
+
+static void clearRollbackHistory() {
+  gRollbackHistory.clear();
+  gRollbackFlagIndex.reset();
+}
+
+void resetRollbackFlag() { gRollbackFlagIndex.reset(); }
+
+static uint8_t *globalStateBytes(size_t offset) {
+  return reinterpret_cast<uint8_t *>(hddll::gGlobalState) + offset;
+}
+
+static void restoreRespawnLevel() {
+  if (gRollbackRespawnLevel) {
+    hddll::gGlobalState->respawn_level = *gRollbackRespawnLevel;
+    gRollbackRespawnLevel.reset();
   }
 }
 
-static void searchNoEggy13() {
-  auto hasBox = false;
-  auto hasIdol = false;
-  auto hasAltar = false;
+void resetRollback() {
+  restoreRespawnLevel();
+  clearRollbackHistory();
+  gRollingBack = false;
+  gRollbackDiedOnLevel = 0;
+  gRollbackWarped = false;
+  gRollbackLastRestart = "";
+}
 
-  auto boxPos = 0;
-  auto idolPos = 0;
-  auto altarPos = 0;
+const std::string &getRollbackLastRestart() { return gRollbackLastRestart; }
 
-  for (size_t idx = 0;
-       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
-    auto ent = hddll::gGlobalState->entities->entities_active[idx];
-    if (!ent) {
-      continue;
-    }
+static std::string getRollbackLevelName() {
+  auto globalState = hddll::gGlobalState;
+  auto name = hddll::formatLevel(static_cast<uint8_t>(globalState->level));
+  if (globalState->is_worm) {
+    return name + " W";
+  } else if (globalState->is_blackmarket) {
+    return name + " BM";
+  } else if (globalState->is_haunted_castle) {
+    return name + " HC";
+  } else if (globalState->is_mothership) {
+    return name + " MS";
+  } else if (globalState->is_city_of_gold) {
+    return name + " CoG";
+  }
+  return name;
+}
 
-    if (ent->entity_kind == hddll::EntityKind::KIND_ITEM) {
-      auto entity_item = (hddll::EntityItem *)ent;
-      if (entity_item->field52_0x1f0 == 1 and entity_item->entity_type == 248) {
-        hasBox = true;
-        boxPos = hddll::GetRoomForPosition(ent->x, ent->y) / 4;
-      }
-    }
+// Index in gRollbackHistory a death on diedOnLevel goes back to
+static std::optional<size_t> getRollbackTargetIndex(uint32_t diedOnLevel) {
+  if (gRollbackHistory.empty()) {
+    return {};
   }
 
-  for (auto idx = 0; idx < hddll::ENTITY_FLOORS_COUNT; idx++) {
-    auto ent = hddll::gGlobalState->level_state->entity_floors[idx];
-    if (!ent) {
-      continue;
-    }
-    if (ent->entity_type == 35) {
-      hasAltar = true;
-      altarPos = hddll::GetRoomForPosition(ent->x, ent->y) / 4;
-    }
-    if (ent->entity_type == 15) {
-      hasIdol = true;
-      idolPos = hddll::GetRoomForPosition(ent->x, ent->y) / 4;
-    }
+  // The level died on is the last one saved, unless it started before
+  // Rollback was turned on
+  auto current = gRollbackHistory.size();
+  if (gRollbackHistory.back().level == diedOnLevel) {
+    current--;
   }
 
-  if (hasBox && hasAltar && hasIdol && boxPos <= idolPos &&
-      idolPos == altarPos) {
-    std::ofstream file("1-3-seeds.txt", std::ios_base::app);
-    if (file.is_open())
-      file << lastSeed << std::endl;
-    resetRun();
-  } else {
-    resetRun();
+  auto levelsBack =
+      (std::min)(static_cast<size_t>(gSeededModeState.rollbackLevels), current);
+  auto index = (std::min)(current - levelsBack, gRollbackHistory.size() - 1);
+
+  if (gSeededModeState.rollbackFlagplant && gRollbackFlagIndex) {
+    index = (std::max)(index, (std::min)(*gRollbackFlagIndex,
+                                         gRollbackHistory.size() - 1));
+  }
+  return index;
+}
+
+size_t getRollbackSavedLevelCount() { return gRollbackHistory.size(); }
+
+std::string getRollbackDestination() {
+  auto index = getRollbackTargetIndex(hddll::gGlobalState->level);
+  return index ? gRollbackHistory[*index].name : "";
+}
+
+static void setSpecialLevelFlags(const RollbackSnapshot &snapshot) {
+  for (size_t idx = 0; idx < std::size(SPECIAL_LEVEL_FLAGS); idx++) {
+    hddll::gGlobalState->*SPECIAL_LEVEL_FLAGS[idx] =
+        snapshot.specialLevelFlags[idx];
   }
 }
 
-static int getFirstTileForRoomIdx(int roomIdx) {
-  const int startIdx = 141;
-  const int roomHeight = 8;
-  const int roomWidth = 10;
-  const int rowWidth = 46;
-
-  auto roomY = roomIdx / 4;
-  auto roomX = roomIdx % 4;
-
-  return startIdx + (roomY * roomHeight * rowWidth) + (roomX * roomWidth);
-}
-
-static int getTileByCoord(int x, int y) {
-  const int startIdx = 141;
-  const int rowWidth = 46;
-
-  return hddll::ENTITY_FLOORS_COUNT - (y * rowWidth) + x;
-}
-
-static void searchDaR() {
-  auto spawnedBM = hddll::gGlobalState->spawned_black_market_entrance;
-
-  auto hasHC = false;
-  auto hcRoom = 0;
-
-  for (auto idx = 0; idx < 48; idx++) {
-    auto room_type = hddll::gGlobalState->level_state->room_types[idx];
-    if (room_type == 47) {
-      hcRoom = idx;
-      hasHC = true;
-      break;
-    }
-  }
-
-  if (!hasHC || spawnedBM) {
-    resetRun();
+static void updateRollbackDeath() {
+  if (!gSeededModeState.rollback) {
     return;
   }
 
-  auto roomBelowHC = hcRoom + 4;
-  auto tileStart = getFirstTileForRoomIdx(roomBelowHC);
-
-  for (auto idx = 0; idx < 10; idx++) {
-    auto tile =
-        hddll::gGlobalState->level_state->entity_floors[tileStart + idx];
-    if (!tile || tile->entity_type == 4) {
-      continue;
-    } else {
-      resetRun();
-      return;
-    }
-  }
-
-  for (auto idx = 0; idx < 10; idx++) {
-    auto tile =
-        hddll::gGlobalState->level_state->entity_floors[tileStart + 46 + idx];
-    if (!tile) {
-      resetRun();
-      return;
-    }
-    if (tile->entity_type == 9097 || tile->entity_type == 4) {
-      continue;
-    } else {
-      resetRun();
-      return;
-    }
-  }
-
-  std::ofstream file("haunted-castle-black-market-seeds.txt",
-                     std::ios_base::app);
-  if (file.is_open())
-    file << lastSeed << std::endl;
-  resetRun();
+  // Some deaths (crushed, lava, ...) remove the player instead of leaving a
+  // body, so a missing player counts as dead too. Only being seen alive again
+  // (the ankh) clears it.
+  auto player = hddll::gGlobalState->player1;
+  auto alive = player && player->health > 0 && !player->flag_deletion;
+  gRollbackDiedOnLevel = alive ? 0 : hddll::gGlobalState->level;
 }
 
-static int hasBombChest() {
-  auto bombCount = 0;
-  for (size_t idx = 0;
-       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
-    auto ent = hddll::gGlobalState->entities->entities_active[idx];
-    if (!ent) {
-      continue;
-    }
+// Runs at the end of resetForRun so the run has already been reset
+bool startRollback() {
+  restoreRespawnLevel();
 
-    if (ent->entity_type == 100) {
-      auto entity_types = getChestItemsForSeed(ent->z_depth_as_int);
-      bombCount += std::count(entity_types.begin(), entity_types.end(), 107);
-    }
+  auto diedOnLevel = gRollbackDiedOnLevel;
+  gRollbackDiedOnLevel = 0;
+  gRollingBack = false;
+  gRollbackWarped = false;
+
+  if (!gSeededModeState.rollback) {
+    clearRollbackHistory();
+    return false;
   }
 
-  return bombCount;
+  // Going back to the lobby resets the run too, but isn't a restart
+  if (hddll::gGlobalState->screen_state == SCREEN_STATE_LOBBY) {
+    gRollbackLastRestart = "full reset, went to the lobby";
+    clearRollbackHistory();
+    return false;
+  }
+
+  auto index = getRollbackTargetIndex(diedOnLevel);
+  if (diedOnLevel == 0 || !index) {
+    gRollbackLastRestart = diedOnLevel == 0 ? "full reset, no death seen"
+                                            : "full reset, no levels saved";
+    clearRollbackHistory();
+    return false;
+  }
+
+  // Levels after the target are from a run that's been left behind
+  gRollbackHistory.resize(*index + 1);
+  if (gSeededModeState.rollbackFlagplant) {
+    gRollbackFlagIndex = *index;
+  }
+  gRollingBack = true;
+  auto &target = gRollbackHistory.back();
+  gRollbackLastRestart = std::format("went back to {}", target.name);
+
+  // The run restarts on the level after respawn_level once this reset
+  // returns, so point it at the target level until that level is seeded
+  // level is left alone: going to the lobby also resets the run and builds the
+  // lobby from it.
+  gRollbackRespawnLevel = hddll::gGlobalState->respawn_level;
+  for (size_t idx = 0; idx < std::size(SPECIAL_LEVEL_FLAGS); idx++) {
+    gRollbackPrevSpecialLevelFlags[idx] =
+        hddll::gGlobalState->*SPECIAL_LEVEL_FLAGS[idx];
+  }
+  hddll::gGlobalState->respawn_level = target.level - 1;
+  setSpecialLevelFlags(target);
+  return true;
 }
 
-static void searchHC() {
-  auto spawnedBM = hddll::gGlobalState->spawned_black_market_entrance;
-  if (!spawnedBM) {
-    resetRun();
-    return;
+// The reset turned out to be for going to the lobby, so undo the rollback
+// before the lobby is built from the target level
+static void cancelRollbackForLobby() {
+  restoreRespawnLevel();
+  for (size_t idx = 0; idx < std::size(SPECIAL_LEVEL_FLAGS); idx++) {
+    hddll::gGlobalState->*SPECIAL_LEVEL_FLAGS[idx] =
+        gRollbackPrevSpecialLevelFlags[idx];
   }
-
-  auto bmX = hddll::gGlobalState->level_state->alt_exit_x;
-  auto bmY = hddll::gGlobalState->level_state->alt_exit_y;
-
-  auto bmXGood = bmX >= 30.0 && bmX <= 31.0;
-  auto bmYGood = bmY == 69.0;
-
-  if (!bmXGood || !bmYGood) {
-    resetRun();
-    return;
-  }
-
-  std::ofstream file("haunted-castle-seeds.txt", std::ios_base::app);
-  if (file.is_open())
-    file << lastSeed << std::endl;
-  resetRun();
+  clearRollbackHistory();
+  gRollingBack = false;
+  gRollbackWarped = false;
+  gRollbackLastRestart = "full reset, went to the lobby";
 }
 
-static void searchWorm() {
-
-  auto wormEggCount = 0;
-  auto bacteriumCount = 0;
-  auto ufoCount = 0;
-  auto yetiCount = 0;
-  auto skeletonCount = 0;
-
-  for (size_t idx = 0;
-       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
-    auto ent = hddll::gGlobalState->entities->entities_active[idx];
-    if (!ent) {
-      continue;
-    }
-
-    if (ent->entity_type == 1046) {
-      wormEggCount++;
-    } else if (ent->entity_type == 1035) {
-      bacteriumCount++;
-    } else if (ent->entity_type == 1010) {
-      ufoCount++;
-    } else if (ent->entity_type == 1009) {
-      yetiCount++;
-    } else if (ent->entity_type == 1012) {
-      skeletonCount++;
-    }
-  }
-
-  std::ofstream file("worms.txt", std::ios_base::app);
-  if (!file.is_open()) {
-    resetRun();
-    return;
-  }
-  file << lastSeed << "," << wormEggCount << "," << bacteriumCount << ","
-       << ufoCount << "," << yetiCount << "," << skeletonCount << std::endl;
-  resetRun();
+static bool isRollbackLevel(uint32_t level) {
+  return gSeededModeState.rollback && level >= 1 && level <= 20;
 }
 
-static void search34() {
-  if (hddll::gGlobalState->level == 9) {
-    hddll::gGlobalState->is_worm = 1;
-    warpToLevel(hddll::gGlobalState->level);
-    return;
-  } else if (hddll::gGlobalState->level == 10) {
-    warpToLevel(hddll::gGlobalState->level);
-    return;
+// The snapshot to restore for a level that's loading, if rolling back to it
+static const RollbackSnapshot *getRollbackTarget(uint32_t level) {
+  if (!gRollingBack || gRollbackHistory.back().level != level) {
+    return nullptr;
   }
-
-  auto rightMoship =
-      hddll::gGlobalState->level_state->entity_floors[getTileByCoord(33, 96)];
-  auto leftMoship =
-      hddll::gGlobalState->level_state->entity_floors[getTileByCoord(12, 96)];
-
-  if (rightMoship && rightMoship->entity_type == 81) {
-    auto block =
-        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(32, 97)];
-    auto blockAbove =
-        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(32, 98)];
-    if (!block || block->entity_type != 9098 || blockAbove) {
-      resetRun();
-      return;
-    }
-  } else if (leftMoship && leftMoship->entity_type == 81) {
-    auto block =
-        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(13, 97)];
-    auto blockAbove =
-        hddll::gGlobalState->level_state->entity_floors[getTileByCoord(13, 98)];
-    if (!block || block->entity_type != 9098 || blockAbove) {
-      resetRun();
-      return;
-    }
-  } else {
-    resetRun();
-    return;
-  }
-
-  std::ofstream file("34-seeds.txt", std::ios_base::app);
-  if (file.is_open())
-    file << lastSeed << std::endl;
-  resetRun();
+  return &gRollbackHistory.back();
 }
 
-static void searchSeeds() {
-  extern uint32_t lastSeed;
+static void restorePlayerState(const RollbackSnapshot &snapshot) {
+  hddll::gGlobalState->player1_data = snapshot.playerData;
+  hddll::gGlobalState->total_money = snapshot.money;
+  std::memcpy(globalStateBytes(MONEY_CHECKPOINT), &snapshot.moneyCheckpoint,
+              sizeof(snapshot.moneyCheckpoint));
+  std::memcpy(globalStateBytes(MONEY_PICKED_UP), &snapshot.moneyPickedUp,
+              sizeof(snapshot.moneyPickedUp));
+  hddll::gGlobalState->total_favor = snapshot.favor;
+  std::memcpy(globalStateBytes(RUN_TIMER_BEGIN), snapshot.runTimer.data(),
+              snapshot.runTimer.size());
+  // Hired hand textures are loaded during the level transition, which was
+  // before the hired hands were put back
+  loadHiredHandTextures();
+}
 
-  std::ofstream cratesFile;
-  std::ofstream shopItemsFile;
-  cratesFile.open("crates.txt", std::ios_base::app);
-  shopItemsFile.open("shop_items.txt", std::ios_base::app);
-  if (!cratesFile.is_open() || !shopItemsFile.is_open())
+void preSeedLevelRollback() {
+  // The restart has read respawn_level by the time a level is seeded
+  restoreRespawnLevel();
+
+  // A restart reads the death before the next level is seeded, so one still
+  // set here was seen while leaving the last level (e.g. through the exit)
+  gRollbackDiedOnLevel = 0;
+
+  auto level = hddll::gGlobalState->level;
+  if (!isRollbackLevel(level)) {
     return;
-
-  auto seedForLevel = lastSeed;
-  auto formattedLevel = hddll::formatLevel(hddll::gGlobalState->level);
-
-  std::vector<hddll::EntityItem *> shopItems;
-
-  for (size_t idx = 0;
-       idx < hddll::gGlobalState->entities->entities_active_count; idx++) {
-    auto ent = hddll::gGlobalState->entities->entities_active[idx];
-    if (!ent) {
-      continue;
-    }
-
-    if (ent->entity_type == 101) {
-      auto entity_type = getCrateItemForSeed(ent->z_depth_as_int);
-      auto entity_name = hddll::EntityTypeName(entity_type);
-      cratesFile << seedForLevel << "," << formattedLevel << "," << entity_name
-                 << std::endl;
-    }
-
-    if (ent->entity_kind == hddll::EntityKind::KIND_ITEM) {
-      auto entity_item = (hddll::EntityItem *)ent;
-      if (entity_item->field52_0x1f0 == 1) {
-        shopItems.push_back(entity_item);
-      }
-    }
   }
 
-  if (shopItems.size() > 0) {
-    shopItemsFile << seedForLevel << "," << formattedLevel;
-    for (auto entity_item : shopItems) {
-      auto entity_name = hddll::EntityTypeName(entity_item->entity_type);
-      shopItemsFile << "," << entity_name;
+  if (gRollingBack) {
+    if (auto target = getRollbackTarget(level)) {
+      std::memcpy(globalStateBytes(RUN_FLAGS_BEGIN), target->runFlags.data(),
+                  target->runFlags.size());
+      std::memcpy(globalStateBytes(ANUBIS2_FLAGS), target->anubis2Flags.data(),
+                  target->anubis2Flags.size());
     }
-    shopItemsFile << std::endl;
+    return;
   }
 
-  resetRun();
+  // Levels skipped by Advance On Restart aren't part of the run
+  if (level < gSeededModeState.advanceOnRestart) {
+    return;
+  }
+
+  // A level seeded again before its rooms are placed replaces its snapshot
+  if (gRollbackHistory.empty() || gRollbackHistory.back().level != level ||
+      gRollbackHistory.back().hasPlayerState) {
+    gRollbackHistory.emplace_back();
+  }
+
+  auto &snapshot = gRollbackHistory.back();
+  snapshot = {};
+  snapshot.level = level;
+  snapshot.name = getRollbackLevelName();
+  snapshot.isMothership = hddll::gGlobalState->is_mothership;
+  // 3-4 is played a second time after the mothership
+  auto historySize = gRollbackHistory.size();
+  if (historySize >= 2 && gRollbackHistory[historySize - 2].isMothership &&
+      !snapshot.isMothership) {
+    snapshot.name += "-2";
+  }
+  std::memcpy(snapshot.runFlags.data(), globalStateBytes(RUN_FLAGS_BEGIN),
+              snapshot.runFlags.size());
+  std::memcpy(snapshot.anubis2Flags.data(), globalStateBytes(ANUBIS2_FLAGS),
+              snapshot.anubis2Flags.size());
+  for (size_t idx = 0; idx < std::size(SPECIAL_LEVEL_FLAGS); idx++) {
+    snapshot.specialLevelFlags[idx] =
+        hddll::gGlobalState->*SPECIAL_LEVEL_FLAGS[idx];
+  }
+}
+
+static void prePlaceRoomsRollback() {
+  auto level = hddll::gGlobalState->level;
+  if (!isRollbackLevel(level)) {
+    return;
+  }
+
+  if (gRollingBack) {
+    auto target = getRollbackTarget(level);
+    if (target && target->hasPlayerState) {
+      restorePlayerState(*target);
+    }
+    return;
+  }
+
+  // Only levels saved as they were seeded
+  if (gRollbackHistory.empty() || gRollbackHistory.back().level != level ||
+      gRollbackHistory.back().hasPlayerState) {
+    return;
+  }
+
+  auto &snapshot = gRollbackHistory.back();
+  snapshot.playerData = hddll::gGlobalState->player1_data;
+  snapshot.money = hddll::gGlobalState->total_money;
+  std::memcpy(&snapshot.moneyCheckpoint, globalStateBytes(MONEY_CHECKPOINT),
+              sizeof(snapshot.moneyCheckpoint));
+  std::memcpy(&snapshot.moneyPickedUp, globalStateBytes(MONEY_PICKED_UP),
+              sizeof(snapshot.moneyPickedUp));
+  snapshot.favor = hddll::gGlobalState->total_favor;
+  std::memcpy(snapshot.runTimer.data(), globalStateBytes(RUN_TIMER_BEGIN),
+              snapshot.runTimer.size());
+  snapshot.hasPlayerState = true;
+}
+
+// Seeded mode stops the game assigning coffin characters (see "Never allow
+// coffins"), so coffin_char stays -1 and no coffin room is placed. Setting
+// it to the Robot before rooms are placed lets the game's own coffin
+// placement put the mothership coffin down like an unmodded run would.
+static bool gForcedMothershipCoffin = false;
+
+void prePlaceRoomsSeededMode() {
+  auto isMothership = hddll::gGlobalState->level == 11 &&
+                      hddll::gGlobalState->is_mothership;
+
+  if (gSeededModeState.forceMothershipCoffin && isMothership) {
+    hddll::gGlobalState->_34struct->coffin_char = hddll::CHARACTER_ROBOT;
+    // The game loads the coffin texture when it assigns coffin_char during
+    // the level transition, which is before this. Load it again like the
+    // game does after its own late assignments (e.g. Carl in the BM).
+    hddll::LoadCoffinTexture(hddll::gGlobalState->_34struct);
+    gForcedMothershipCoffin = true;
+  } else if (gForcedMothershipCoffin) {
+    // Don't let a coffin that couldn't be placed carry over to later levels
+    hddll::gGlobalState->_34struct->coffin_char = -1;
+    gForcedMothershipCoffin = false;
+  }
+
+  prePlaceRoomsRollback();
 }
 
 void advanceLevel() {
 
   if (!gModsState.SeededMode) {
+    return;
+  }
+
+  if (gRollingBack &&
+      hddll::gGlobalState->screen_state == SCREEN_STATE_LOBBY) {
+    cancelRollbackForLobby();
     return;
   }
 
@@ -456,12 +544,24 @@ void advanceLevel() {
   if (isDisabled)
     return;
 
-  if (hddll::gGlobalState->level < gSeededModeState.advanceOnRestart) {
-    warpToLevel(hddll::gGlobalState->level);
+  updateRollbackDeath();
+
+  if (gRollingBack) {
+    restoreRespawnLevel();
+    auto &target = gRollbackHistory.back();
+    if (hddll::gGlobalState->level != target.level && !gRollbackWarped) {
+      // The restart didn't land on the target level
+      gRollbackWarped = true;
+      warpToLevel(target.level - 1);
+      setSpecialLevelFlags(target);
+    } else {
+      gRollingBack = false;
+    }
     return;
   }
 
-  if (gSeededModeState.enabledSeedSearch) {
-    searchSeeds();
+  if (hddll::gGlobalState->level < gSeededModeState.advanceOnRestart) {
+    warpToLevel(hddll::gGlobalState->level);
+    return;
   }
 }

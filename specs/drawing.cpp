@@ -1274,6 +1274,24 @@ void drawOverlayWindow() {
     gOverlayDrawList->AddText(
         ImGui::GetFont(), 32.f, {io.DisplaySize.x - 348.f, 40.f},
         ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.8f}), out.c_str());
+
+    if (gSeededModeState.rollback && gSeededModeState.showRollbackOverlay &&
+        hddll::gGlobalState->screen_state != SCREEN_STATE_LOBBY) {
+      // Sits to the right of the game's own current level text, where the
+      // level used to be when this was labelled "Rollback: "
+      auto destination = getRollbackDestination();
+      auto rollbackOut =
+          std::format("({})", destination.empty() ? "n/a" : destination);
+      auto labelWidth =
+          ImGui::GetFont()->CalcTextSizeA(32.f, FLT_MAX, 0.f, "Rollback: ").x;
+      // The font has no bold, so thicken it by drawing it a few times shifted
+      for (int offset = 0; offset < 3; offset++) {
+        gOverlayDrawList->AddText(
+            ImGui::GetFont(), 32.f,
+            {io.DisplaySize.x - 333.f + labelWidth + offset, 134.f},
+            ImGui::GetColorU32({1.0f, 1.0f, 1.0f, 0.8f}), rollbackOut.c_str());
+      }
+    }
   }
 
   if (gModsState.TheFullSpelunky && gFullSpelunkyState.showCharacterOverlay) {
