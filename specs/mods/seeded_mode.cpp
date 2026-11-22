@@ -151,6 +151,16 @@ const size_t RUN_FLAGS_END = offsetof(hddll::GlobalState, pad_44062C);
 const size_t RUN_TIMER_BEGIN = offsetof(hddll::GlobalState, total_minutes);
 const size_t RUN_TIMER_END = offsetof(hddll::GlobalState, pad_445968);
 
+// The game's money anticheat (0x45b410) runs as each level ends. It allows
+// the money from its last check (stored as -7 * money) plus gold picked up
+// since (stored as -12 * amount), held gold and 5000, and sets total_money to
+// 1 if there's more. resetForRun zeroes both, so they're restored with the
+// money or a rollback can trip it.
+const size_t MONEY_CHECKPOINT = offsetof(hddll::GlobalState, pad_447350) + 0x8;
+const size_t MONEY_PICKED_UP = offsetof(hddll::GlobalState, pad_445968) + 0x5C;
+static_assert(MONEY_CHECKPOINT == 0x447358);
+static_assert(MONEY_PICKED_UP == 0x4459C4);
+
 // Which special level loads is decided from these before the level is
 // seeded, so a rollback sets them before restarting into it
 static constexpr uint8_t hddll::GlobalState::*SPECIAL_LEVEL_FLAGS[] = {
@@ -177,6 +187,8 @@ struct RollbackSnapshot {
   bool hasPlayerState = false;
   hddll::PlayerData playerData = {};
   uint32_t money = 0;
+  int32_t moneyCheckpoint = 0;
+  int32_t moneyPickedUp = 0;
   int32_t favor = 0;
   std::array<uint8_t, RUN_TIMER_END - RUN_TIMER_BEGIN> runTimer = {};
 };
@@ -360,6 +372,10 @@ static const RollbackSnapshot *getRollbackTarget(uint32_t level) {
 static void restorePlayerState(const RollbackSnapshot &snapshot) {
   hddll::gGlobalState->player1_data = snapshot.playerData;
   hddll::gGlobalState->total_money = snapshot.money;
+  std::memcpy(globalStateBytes(MONEY_CHECKPOINT), &snapshot.moneyCheckpoint,
+              sizeof(snapshot.moneyCheckpoint));
+  std::memcpy(globalStateBytes(MONEY_PICKED_UP), &snapshot.moneyPickedUp,
+              sizeof(snapshot.moneyPickedUp));
   hddll::gGlobalState->total_favor = snapshot.favor;
   std::memcpy(globalStateBytes(RUN_TIMER_BEGIN), snapshot.runTimer.data(),
               snapshot.runTimer.size());
@@ -435,6 +451,10 @@ static void prePlaceRoomsRollback() {
   auto &snapshot = gRollbackHistory.back();
   snapshot.playerData = hddll::gGlobalState->player1_data;
   snapshot.money = hddll::gGlobalState->total_money;
+  std::memcpy(&snapshot.moneyCheckpoint, globalStateBytes(MONEY_CHECKPOINT),
+              sizeof(snapshot.moneyCheckpoint));
+  std::memcpy(&snapshot.moneyPickedUp, globalStateBytes(MONEY_PICKED_UP),
+              sizeof(snapshot.moneyPickedUp));
   snapshot.favor = hddll::gGlobalState->total_favor;
   std::memcpy(snapshot.runTimer.data(), globalStateBytes(RUN_TIMER_BEGIN),
               snapshot.runTimer.size());
