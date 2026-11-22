@@ -14,6 +14,7 @@ struct SeededModeState {
   uint32_t advanceOnRestart = 1;
   bool rollback = false;
   uint32_t rollbackLevels = 1;
+  bool rollbackFlagplant = true;
   bool showRollbackOverlay = true;
   std::string exportSeed = "";
 };
@@ -34,6 +35,7 @@ const uint32_t SCREEN_STATE_LOBBY = 22;
 
 bool startRollback();
 void resetRollback();
+void resetRollbackFlag();
 void preSeedLevelRollback();
 size_t getRollbackSavedLevelCount();
 // Name of the level dying now would go back to, or empty

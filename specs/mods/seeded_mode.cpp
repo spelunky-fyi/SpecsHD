@@ -209,6 +209,16 @@ static std::array<uint8_t, std::size(SPECIAL_LEVEL_FLAGS)>
 static bool gRollbackWarped = false;
 // What the last restart did, for the Mods tab
 static std::string gRollbackLastRestart = "";
+// Flagplant Mode: index in gRollbackHistory of the furthest level rolled back
+// to, which later rollbacks never go before
+static std::optional<size_t> gRollbackFlagIndex = {};
+
+static void clearRollbackHistory() {
+  gRollbackHistory.clear();
+  gRollbackFlagIndex.reset();
+}
+
+void resetRollbackFlag() { gRollbackFlagIndex.reset(); }
 
 static uint8_t *globalStateBytes(size_t offset) {
   return reinterpret_cast<uint8_t *>(hddll::gGlobalState) + offset;
@@ -223,7 +233,7 @@ static void restoreRespawnLevel() {
 
 void resetRollback() {
   restoreRespawnLevel();
-  gRollbackHistory.clear();
+  clearRollbackHistory();
   gRollingBack = false;
   gRollbackDiedOnLevel = 0;
   gRollbackWarped = false;
@@ -264,7 +274,13 @@ static std::optional<size_t> getRollbackTargetIndex(uint32_t diedOnLevel) {
 
   auto levelsBack =
       (std::min)(static_cast<size_t>(gSeededModeState.rollbackLevels), current);
-  return (std::min)(current - levelsBack, gRollbackHistory.size() - 1);
+  auto index = (std::min)(current - levelsBack, gRollbackHistory.size() - 1);
+
+  if (gSeededModeState.rollbackFlagplant && gRollbackFlagIndex) {
+    index = (std::max)(index, (std::min)(*gRollbackFlagIndex,
+                                         gRollbackHistory.size() - 1));
+  }
+  return index;
 }
 
 size_t getRollbackSavedLevelCount() { return gRollbackHistory.size(); }
@@ -304,14 +320,14 @@ bool startRollback() {
   gRollbackWarped = false;
 
   if (!gSeededModeState.rollback) {
-    gRollbackHistory.clear();
+    clearRollbackHistory();
     return false;
   }
 
   // Going back to the lobby resets the run too, but isn't a restart
   if (hddll::gGlobalState->screen_state == SCREEN_STATE_LOBBY) {
     gRollbackLastRestart = "full reset, went to the lobby";
-    gRollbackHistory.clear();
+    clearRollbackHistory();
     return false;
   }
 
@@ -319,12 +335,15 @@ bool startRollback() {
   if (diedOnLevel == 0 || !index) {
     gRollbackLastRestart = diedOnLevel == 0 ? "full reset, no death seen"
                                             : "full reset, no levels saved";
-    gRollbackHistory.clear();
+    clearRollbackHistory();
     return false;
   }
 
   // Levels after the target are from a run that's been left behind
   gRollbackHistory.resize(*index + 1);
+  if (gSeededModeState.rollbackFlagplant) {
+    gRollbackFlagIndex = *index;
+  }
   gRollingBack = true;
   auto &target = gRollbackHistory.back();
   gRollbackLastRestart = std::format("went back to {}", target.name);
@@ -351,7 +370,7 @@ static void cancelRollbackForLobby() {
     hddll::gGlobalState->*SPECIAL_LEVEL_FLAGS[idx] =
         gRollbackPrevSpecialLevelFlags[idx];
   }
-  gRollbackHistory.clear();
+  clearRollbackHistory();
   gRollingBack = false;
   gRollbackWarped = false;
   gRollbackLastRestart = "full reset, went to the lobby";

@@ -190,6 +190,15 @@ void drawModsTab() {
 
   ImGui::Text("");
   ImGui::SameLine(40.0f * io.FontGlobalScale);
+  if (ImGui::Checkbox("Flagplant Mode##Rollback",
+                      &gSeededModeState.rollbackFlagplant)) {
+    resetRollbackFlag();
+  }
+  ImGui::SameLine();
+  ImGui::TextDisabled("(never rolls back before the last rollback level)");
+
+  ImGui::Text("");
+  ImGui::SameLine(40.0f * io.FontGlobalScale);
   if (ImGui::Button("Reset Saved State##Rollback")) {
     resetRollback();
   }
